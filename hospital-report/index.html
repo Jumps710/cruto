@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>入退院報告</title>
+  <script src="https://static.worksmobile.net/static/wm/woff/edge/3.7.1/sdk.js"></script>
+  <link rel="stylesheet" href="../common/css/base.css">
+  <link rel="stylesheet" href="css/hospital-report.css">
+  <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+  <script>new VConsole();</script>
+</head>
+<body>
+  <div class="container">
+    <h1>入退院報告</h1>
+    <form id="hospitalForm">
+      <!-- 基本情報 -->
+      <div class="form-section">
+        <h3>基本情報</h3>
+        <div class="form-group">
+          <label>報告者:</label>
+          <input type="text" id="reporter" name="reporter" readonly>
+        </div>
+        
+        <div class="form-group">
+          <label>事業所:</label>
+          <select id="office" name="office" required>
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>発生日:</label>
+          <input type="date" name="date" required>
+        </div>
+        
+        <div class="form-group">
+          <label>発生時刻:</label>
+          <input type="time" name="time" required>
+        </div>
+      </div>
+
+      <!-- 利用者情報 -->
+      <div class="form-section">
+        <h3>利用者情報</h3>
+        <div class="form-group">
+          <label>利用者名:</label>
+          <div class="autocomplete-container">
+            <input type="text" id="userName" name="userName" placeholder="利用者名を入力..." required autocomplete="off">
+            <div id="userSuggestions" class="suggestions-list"></div>
+          </div>
+          <small class="help-text">名前を入力すると候補が表示されます。該当者がいない場合はそのまま入力してください。</small>
+        </div>
+      </div>
+
+      <!-- 脱落理由 -->
+      <div class="form-section">
+        <h3>脱落理由</h3>
+        <div class="form-group">
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="dropoutReason" value="hospitalization" required>
+              <span>入院</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="dropoutReason" value="discontinuation" required>
+              <span>中止</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 入院詳細 -->
+      <div id="hospitalizationSection" class="form-section" style="display: none;">
+        <h3>入院詳細</h3>
+        
+        <div class="form-group">
+          <label>入院日:</label>
+          <input type="date" name="hospitalizationDate">
+        </div>
+        
+        <div class="form-group">
+          <label>入院先:</label>
+          <div class="autocomplete-container">
+            <input type="text" id="hospital" name="hospital" placeholder="医療機関名を入力..." autocomplete="off">
+            <div id="hospitalSuggestions" class="suggestions-list"></div>
+          </div>
+          <small class="help-text">医療機関名を入力すると候補が表示されます。</small>
+        </div>
+        
+        <div class="form-group">
+          <label>診断名:</label>
+          <div class="diagnosis-options">
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="diagnosis" value="誤嚥性肺炎">
+                <span>誤嚥性肺炎</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="diagnosis" value="肺炎">
+                <span>肺炎</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="diagnosis" value="尿路感染">
+                <span>尿路感染</span>
+              </label>
+            </div>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="diagnosis" value="心不全">
+                <span>心不全</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="diagnosis" value="消化器系疾患">
+                <span>消化器系疾患</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="diagnosis" value="骨折">
+                <span>骨折</span>
+              </label>
+            </div>
+            <label class="radio-label">
+              <input type="radio" name="diagnosis" value="その他">
+              <span>その他</span>
+            </label>
+          </div>
+          
+          <div id="otherDiagnosisGroup" class="form-group" style="display: none; margin-top: 12px;">
+            <input type="text" name="otherDiagnosis" placeholder="その他の診断名を入力">
+          </div>
+        </div>
+      </div>
+
+      <!-- 中止詳細 -->
+      <div id="discontinuationSection" class="form-section" style="display: none;">
+        <h3>中止詳細</h3>
+        
+        <div class="form-group">
+          <label>中止日:</label>
+          <input type="date" name="discontinuationDate">
+        </div>
+        
+        <div class="form-group">
+          <label>診断名:</label>
+          <textarea name="discontinuationDiagnosis" rows="3" placeholder="診断名を入力してください"></textarea>
+        </div>
+      </div>
+
+      <!-- 共通事項 -->
+      <div class="form-section">
+        <h3>今後の予定</h3>
+        
+        <div class="form-group">
+          <label id="dischargeDateLabel">退院日・再開日:</label>
+          <input type="date" name="dischargeDate">
+          <small class="help-text">予定日が決まっている場合は入力してください。</small>
+        </div>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="contractEnded" value="true">
+            <span>契約終了</span>
+          </label>
+          <small class="help-text">利用契約が終了する場合はチェックしてください。</small>
+        </div>
+      </div>
+
+      <!-- 備考 -->
+      <div class="form-section">
+        <h3>備考</h3>
+        <div class="form-group">
+          <textarea name="notes" rows="4" placeholder="その他特記事項があれば入力してください（任意）"></textarea>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="submit" class="button-primary">確認画面へ</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 確認モーダル -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>入力内容確認</h2>
+      <div id="modalSummary"></div>
+      <div class="button-group">
+        <button id="confirmSubmit" class="button-primary">送信</button>
+        <button id="editBtn" class="button-secondary">修正</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common/js/woff-init.js"></script>
+  <script src="js/hospital-report.js"></script>
+</body>
+</html>

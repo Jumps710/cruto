@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>営業支援Bot</title>
+  <script src="https://static.worksmobile.net/static/wm/woff/edge/3.7.1/sdk.js"></script>
+  <link rel="stylesheet" href="../common/css/base.css">
+  <link rel="stylesheet" href="css/sales-bot.css">
+  <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+  <script>new VConsole();</script>
+</head>
+<body>
+  <div class="container">
+    <div class="chat-header">
+      <h1>🤖 営業支援Bot</h1>
+      <p class="subtitle">位置情報から最適な営業ルートを提案します</p>
+    </div>
+
+    <!-- チャット画面 -->
+    <div class="chat-container">
+      <div id="chatMessages" class="chat-messages">
+        <!-- 初期メッセージ -->
+        <div class="message bot-message">
+          <div class="message-avatar">🤖</div>
+          <div class="message-content">
+            <p>こんにちは！営業支援Botです。</p>
+            <p>位置情報をもとに、効率的な営業ルートを提案いたします。</p>
+            <p>まずは営業戦略を選択してください：</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 入力エリア -->
+      <div class="chat-input-area">
+        <div id="strategySelector" class="strategy-selector">
+          <h3>営業戦略を選択</h3>
+          <div class="strategy-options">
+            <button class="strategy-btn" data-strategy="high-conversion">
+              <div class="strategy-icon">📈</div>
+              <div class="strategy-title">契約率重視</div>
+              <div class="strategy-desc">契約率が高いお得意様を優先</div>
+            </button>
+            
+            <button class="strategy-btn" data-strategy="quick-start">
+              <div class="strategy-icon">⚡</div>
+              <div class="strategy-title">早期契約</div>
+              <div class="strategy-desc">契約開始までが短い先を優先</div>
+            </button>
+            
+            <button class="strategy-btn" data-strategy="new-development">
+              <div class="strategy-icon">🌱</div>
+              <div class="strategy-title">新規開拓</div>
+              <div class="strategy-desc">契約率が低い新規開拓先を優先</div>
+            </button>
+            
+            <button class="strategy-btn" data-strategy="improvement">
+              <div class="strategy-icon">💡</div>
+              <div class="strategy-title">改善相談</div>
+              <div class="strategy-desc">契約期間が長い先の改善を図る</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 位置情報取得 -->
+        <div id="locationStep" class="step-section" style="display: none;">
+          <h3>現在地の取得</h3>
+          <button id="getLocationBtn" class="location-btn">
+            📍 現在地を取得
+          </button>
+          <div id="locationDisplay" class="location-display" style="display: none;"></div>
+          <div class="manual-location" style="display: none;">
+            <input type="text" id="manualLocation" placeholder="手動で住所を入力...">
+            <button id="useManualLocationBtn">この住所を使用</button>
+          </div>
+        </div>
+
+        <!-- 追加条件 -->
+        <div id="conditionsStep" class="step-section" style="display: none;">
+          <h3>追加条件</h3>
+          <div class="condition-options">
+            <label class="checkbox-option">
+              <input type="checkbox" name="condition" value="same-day-visit">
+              <span>当日訪問可能</span>
+            </label>
+            <label class="checkbox-option">
+              <input type="checkbox" name="condition" value="appointment-preferred">
+              <span>アポイント優先</span>
+            </label>
+            <label class="checkbox-option">
+              <input type="checkbox" name="condition" value="new-service">
+              <span>新サービス提案あり</span>
+            </label>
+          </div>
+          
+          <div class="max-visits">
+            <label>最大訪問件数:</label>
+            <select id="maxVisits">
+              <option value="3">3件</option>
+              <option value="5" selected>5件</option>
+              <option value="7">7件</option>
+              <option value="10">10件</option>
+            </select>
+          </div>
+          
+          <button id="generateRouteBtn" class="generate-btn">
+            🗺️ 営業ルートを生成
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ルート表示モーダル -->
+    <div id="routeModal" class="modal">
+      <div class="modal-content route-modal-content">
+        <span class="close">&times;</span>
+        <h2>🗺️ 最適営業ルート</h2>
+        
+        <div class="route-summary">
+          <div class="summary-item">
+            <span class="summary-label">選択戦略:</span>
+            <span id="selectedStrategy" class="summary-value"></span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">予想所要時間:</span>
+            <span id="estimatedTime" class="summary-value"></span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">総移動距離:</span>
+            <span id="totalDistance" class="summary-value"></span>
+          </div>
+        </div>
+
+        <div class="route-list" id="routeList">
+          <!-- 動的に生成されるルート項目 -->
+        </div>
+
+        <div class="route-map" id="routeMap">
+          <!-- Google Maps表示エリア -->
+          <div class="map-placeholder">
+            <p>🗺️ 地図表示エリア</p>
+            <small>実装時にGoogle Maps APIを統合</small>
+          </div>
+        </div>
+
+        <div class="route-actions">
+          <button id="startNavigationBtn" class="action-btn primary">
+            🧭 ナビゲーション開始
+          </button>
+          <button id="exportRouteBtn" class="action-btn secondary">
+            📤 ルートをエクスポート
+          </button>
+          <button id="newRouteBtn" class="action-btn secondary">
+            🔄 新しいルートを作成
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分析結果モーダル -->
+    <div id="analyticsModal" class="modal">
+      <div class="modal-content analytics-modal-content">
+        <span class="close">&times;</span>
+        <h2>📊 営業先分析結果</h2>
+        
+        <div class="analytics-content" id="analyticsContent">
+          <!-- 動的に生成される分析データ -->
+        </div>
+
+        <div class="analytics-actions">
+          <button id="closeAnalyticsBtn" class="action-btn primary">閉じる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common/js/woff-init.js"></script>
+  <script src="js/sales-bot.js"></script>
+</body>
+</html>

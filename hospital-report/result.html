@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>送信完了 - 入退院報告</title>
+  <link rel="stylesheet" href="../common/css/base.css">
+  <style>
+    .success-container {
+      text-align: center;
+      padding: 40px 24px;
+    }
+    
+    .success-icon {
+      font-size: 64px;
+      color: #2196F3;
+      margin-bottom: 24px;
+    }
+    
+    .success-title {
+      color: #2196F3;
+      font-size: 24px;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+    
+    .success-message {
+      color: #666;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    
+    .next-steps {
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    
+    .next-steps h3 {
+      color: #333;
+      margin-bottom: 12px;
+      font-size: 18px;
+    }
+    
+    .next-steps ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    
+    .next-steps li {
+      margin-bottom: 8px;
+      color: #555;
+    }
+    
+    .important-notice {
+      background-color: #fff3e0;
+      border: 1px solid #ffcc02;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    
+    .important-notice h4 {
+      color: #f57c00;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+    
+    .important-notice p {
+      color: #555;
+      margin: 0;
+      font-size: 14px;
+    }
+    
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+    
+    .btn-close {
+      background-color: #2196F3;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .btn-close:hover {
+      background-color: #1976D2;
+    }
+    
+    .btn-new-report {
+      background-color: #fff;
+      color: #2196F3;
+      padding: 12px 24px;
+      border: 2px solid #2196F3;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+    
+    .btn-new-report:hover {
+      background-color: #2196F3;
+      color: white;
+    }
+    
+    @media (max-width: 480px) {
+      .success-container {
+        padding: 24px 16px;
+      }
+      
+      .success-icon {
+        font-size: 48px;
+      }
+      
+      .success-title {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="success-container">
+      <div class="success-icon">📋</div>
+      <h2 class="success-title">送信が完了しました</h2>
+      <p class="success-message">
+        入退院報告を受け付けました。<br>
+        ご報告いただき、ありがとうございました。
+      </p>
+      
+      <div class="important-notice">
+        <h4>⚠️ 重要なお知らせ</h4>
+        <p>入退院管理システムのN列が自動更新されます。契約状況の変更も反映されますので、関係部署にご確認ください。</p>
+      </div>
+      
+      <div class="next-steps">
+        <h3>今後の流れ</h3>
+        <ul>
+          <li>報告内容は関係部署に共有されます</li>
+          <li>入退院管理シートが自動更新されます</li>
+          <li>契約終了の場合は事務手続きが開始されます</li>
+          <li>退院・再開予定日が近づきましたら改めてご連絡いたします</li>
+        </ul>
+      </div>
+      
+      <div class="action-buttons">
+        <button class="btn-close" onclick="closeApp()">アプリを閉じる</button>
+        <a href="index.html" class="btn-new-report">新しい報告を作成</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // URLパラメータから報告IDを取得（オプション）
+    const urlParams = new URLSearchParams(window.location.search);
+    const reportId = urlParams.get('id');
+    
+    if (reportId) {
+      const message = document.querySelector('.success-message');
+      message.innerHTML += `<br><small>報告ID: ${reportId}</small>`;
+    }
+    
+    // アプリを閉じる機能
+    function closeApp() {
+      // LINE WORKSアプリの場合は閉じる
+      if (typeof woff !== 'undefined' && woff.isInClient()) {
+        woff.closeWindow();
+      } else {
+        // ブラウザの場合は前のページに戻る
+        window.history.back();
+      }
+    }
+    
+    // 自動閉じる機能（オプション）
+    // 45秒後に自動的にアプリを閉じる
+    setTimeout(() => {
+      const autoClose = confirm('45秒が経過しました。アプリを閉じますか？');
+      if (autoClose) {
+        closeApp();
+      }
+    }, 45000);
+  </script>
+</body>
+</html>
