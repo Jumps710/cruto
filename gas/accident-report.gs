@@ -438,78 +438,356 @@ K7JGqeB3/kYJmt9h1rZQr1o=
 
 // JWTトークン生成
 function generateJWT(clientId, serviceAccount, privateKey) {
-  const header = {
-    "alg": "RS256",
-    "typ": "JWT"
-  };
+  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("log");
+  const debugId = 'JWT_' + new Date().getTime();
   
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    "iss": serviceAccount,
-    "sub": clientId,
-    "iat": now,
-    "exp": now + 3600 // 1時間後
-  };
-  
-  const headerEncoded = Utilities.base64EncodeWebSafe(JSON.stringify(header)).replace(/=+$/, '');
-  const payloadEncoded = Utilities.base64EncodeWebSafe(JSON.stringify(payload)).replace(/=+$/, '');
-  
-  const signatureInput = headerEncoded + "." + payloadEncoded;
-  const signature = Utilities.computeRsaSha256Signature(signatureInput, privateKey);
-  const signatureEncoded = Utilities.base64EncodeWebSafe(signature).replace(/=+$/, '');
-  
-  return signatureInput + "." + signatureEncoded;
+  try {
+    logSheet.appendRow([
+      new Date(),
+      "JWT生成",
+      "開始",
+      "",
+      debugId,
+      "JWT生成開始",
+      "",
+      "",
+      JSON.stringify({clientId: clientId, serviceAccount: serviceAccount})
+    ]);
+
+    const header = {
+      "alg": "RS256",
+      "typ": "JWT"
+    };
+    
+    const now = Math.floor(Date.now() / 1000);
+    const payload = {
+      "iss": serviceAccount,
+      "sub": clientId,
+      "iat": now,
+      "exp": now + 3600, // 1時間後
+      "aud": "https://auth.worksmobile.com/oauth2/v2.0/token"
+    };
+    
+    logSheet.appendRow([
+      new Date(),
+      "JWT生成",
+      "ペイロード作成",
+      "",
+      debugId,
+      "JWT payload作成完了",
+      "",
+      "",
+      JSON.stringify(payload)
+    ]);
+    
+    const headerEncoded = Utilities.base64EncodeWebSafe(JSON.stringify(header)).replace(/=+$/, '');
+    const payloadEncoded = Utilities.base64EncodeWebSafe(JSON.stringify(payload)).replace(/=+$/, '');
+    
+    const signatureInput = headerEncoded + "." + payloadEncoded;
+    
+    logSheet.appendRow([
+      new Date(),
+      "JWT生成",
+      "署名前",
+      "",
+      debugId,
+      "署名前文字列生成完了",
+      "",
+      "",
+      JSON.stringify({signatureInput: signatureInput.substring(0, 100) + "..."})
+    ]);
+    
+    const signature = Utilities.computeRsaSha256Signature(signatureInput, privateKey);
+    const signatureEncoded = Utilities.base64EncodeWebSafe(signature).replace(/=+$/, '');
+    
+    const jwt = signatureInput + "." + signatureEncoded;
+    
+    logSheet.appendRow([
+      new Date(),
+      "JWT生成",
+      "完了",
+      "",
+      debugId,
+      "JWT生成成功",
+      "",
+      "",
+      JSON.stringify({jwtLength: jwt.length, jwtPrefix: jwt.substring(0, 50)})
+    ]);
+    
+    return jwt;
+  } catch (error) {
+    logSheet.appendRow([
+      new Date(),
+      "JWT生成",
+      "エラー",
+      "",
+      debugId,
+      "JWT生成エラー: " + error.toString(),
+      "",
+      "",
+      JSON.stringify({error: error.toString(), stack: error.stack})
+    ]);
+    throw error;
+  }
 }
 
 // アクセストークン取得
 function getAccessToken(jwt, clientId, clientSecret) {
+  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("log");
+  const debugId = 'TOKEN_' + new Date().getTime();
   const url = 'https://auth.worksmobile.com/oauth2/v2.0/token';
   
-  const payload = {
-    'assertion': jwt,
-    'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-    'client_id': clientId,
-    'client_secret': clientSecret,
-    'scope': 'directory:read'
-  };
-  
-  const options = {
-    'method': 'POST',
-    'headers': {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    'payload': Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&')
-  };
-  
-  const response = UrlFetchApp.fetch(url, options);
-  const data = JSON.parse(response.getContentText());
-  
-  if (data.access_token) {
-    return data.access_token;
-  } else {
-    throw new Error('アクセストークンの取得に失敗しました: ' + response.getContentText());
+  try {
+    logSheet.appendRow([
+      new Date(),
+      "アクセストークン取得",
+      "開始",
+      "",
+      debugId,
+      "トークン取得開始",
+      "",
+      "",
+      JSON.stringify({url: url, clientId: clientId})
+    ]);
+    
+    const payload = {
+      'assertion': jwt,
+      'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      'client_id': clientId,
+      'client_secret': clientSecret,
+      'scope': 'user:read'
+    };
+    
+    logSheet.appendRow([
+      new Date(),
+      "アクセストークン取得",
+      "リクエスト準備",
+      "",
+      debugId,
+      "OAuth2リクエスト準備完了",
+      "",
+      "",
+      JSON.stringify({
+        grant_type: payload.grant_type,
+        client_id: payload.client_id,
+        scope: payload.scope,
+        jwtLength: jwt.length
+      })
+    ]);
+    
+    const options = {
+      'method': 'POST',
+      'headers': {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      'payload': Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&')
+    };
+    
+    logSheet.appendRow([
+      new Date(),
+      "アクセストークン取得",
+      "API呼び出し中",
+      "",
+      debugId,
+      "UrlFetchApp.fetch実行中",
+      "",
+      "",
+      JSON.stringify({method: options.method, headers: options.headers})
+    ]);
+    
+    const response = UrlFetchApp.fetch(url, options);
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+    
+    logSheet.appendRow([
+      new Date(),
+      "アクセストークン取得",
+      "レスポンス受信",
+      "",
+      debugId,
+      "OAuth2 APIレスポンス受信",
+      "",
+      "",
+      JSON.stringify({
+        responseCode: responseCode,
+        responseText: responseText.substring(0, 200)
+      })
+    ]);
+    
+    if (responseCode !== 200) {
+      throw new Error(`HTTP ${responseCode}: ${responseText}`);
+    }
+    
+    const data = JSON.parse(responseText);
+    
+    if (data.access_token) {
+      logSheet.appendRow([
+        new Date(),
+        "アクセストークン取得",
+        "成功",
+        "",
+        debugId,
+        "アクセストークン取得成功",
+        "",
+        "",
+        JSON.stringify({
+          token_type: data.token_type,
+          expires_in: data.expires_in,
+          tokenLength: data.access_token.length
+        })
+      ]);
+      return data.access_token;
+    } else {
+      throw new Error('アクセストークンが含まれていません: ' + responseText);
+    }
+  } catch (error) {
+    logSheet.appendRow([
+      new Date(),
+      "アクセストークン取得",
+      "エラー",
+      "",
+      debugId,
+      "トークン取得エラー: " + error.toString(),
+      "",
+      "",
+      JSON.stringify({error: error.toString(), stack: error.stack})
+    ]);
+    throw error;
   }
 }
 
 // ユーザー情報取得
 function getUserInfo(accessToken, domainId, userId) {
+  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("log");
+  const debugId = 'USER_' + new Date().getTime();
   const url = `https://www.worksapis.com/v1.0/domains/${domainId}/users/${userId}`;
   
-  const options = {
-    'method': 'GET',
-    'headers': {
-      'Authorization': 'Bearer ' + accessToken,
-      'Content-Type': 'application/json'
+  try {
+    logSheet.appendRow([
+      new Date(),
+      "ユーザー情報取得",
+      "開始",
+      userId,
+      debugId,
+      "ユーザー情報API呼び出し開始",
+      "",
+      "",
+      JSON.stringify({url: url, domainId: domainId, userId: userId})
+    ]);
+    
+    const options = {
+      'method': 'GET',
+      'headers': {
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    logSheet.appendRow([
+      new Date(),
+      "ユーザー情報取得",
+      "リクエスト準備完了",
+      userId,
+      debugId,
+      "APIリクエストオプション設定完了",
+      "",
+      "",
+      JSON.stringify({
+        method: options.method,
+        headers: options.headers,
+        tokenLength: accessToken.length
+      })
+    ]);
+    
+    logSheet.appendRow([
+      new Date(),
+      "ユーザー情報取得",
+      "API呼び出し中",
+      userId,
+      debugId,
+      "UrlFetchApp.fetch実行中",
+      "",
+      "",
+      JSON.stringify({url: url})
+    ]);
+    
+    const response = UrlFetchApp.fetch(url, options);
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+    
+    logSheet.appendRow([
+      new Date(),
+      "ユーザー情報取得",
+      "レスポンス受信",
+      userId,
+      debugId,
+      "LINE WORKS User APIレスポンス受信",
+      "",
+      "",
+      JSON.stringify({
+        responseCode: responseCode,
+        responseText: responseText.substring(0, 300)
+      })
+    ]);
+    
+    if (responseCode === 200) {
+      const data = JSON.parse(responseText);
+      
+      logSheet.appendRow([
+        new Date(),
+        "ユーザー情報取得",
+        "成功",
+        userId,
+        debugId,
+        "ユーザー情報API呼び出し成功",
+        "",
+        "",
+        JSON.stringify({
+          userId: data.userId,
+          userName: data.userName,
+          orgUnitName: data.orgUnitName,
+          orgUnitId: data.orgUnitId
+        })
+      ]);
+      
+      return data;
+    } else {
+      const errorMessage = `HTTP ${responseCode}: ${responseText}`;
+      
+      logSheet.appendRow([
+        new Date(),
+        "ユーザー情報取得",
+        "HTTPエラー",
+        userId,
+        debugId,
+        "LINE WORKS User API HTTPエラー: " + errorMessage,
+        "",
+        "",
+        JSON.stringify({
+          responseCode: responseCode,
+          responseText: responseText
+        })
+      ]);
+      
+      throw new Error('ユーザー情報の取得に失敗しました: ' + errorMessage);
     }
-  };
-  
-  const response = UrlFetchApp.fetch(url, options);
-  const data = JSON.parse(response.getContentText());
-  
-  if (response.getResponseCode() === 200) {
-    return data;
-  } else {
-    throw new Error('ユーザー情報の取得に失敗しました: ' + response.getContentText());
+  } catch (error) {
+    logSheet.appendRow([
+      new Date(),
+      "ユーザー情報取得",
+      "エラー",
+      userId,
+      debugId,
+      "ユーザー情報取得エラー: " + error.toString(),
+      "",
+      "",
+      JSON.stringify({
+        error: error.toString(),
+        stack: error.stack,
+        message: error.message
+      })
+    ]);
+    throw error;
   }
 }
 

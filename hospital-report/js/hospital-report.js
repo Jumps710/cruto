@@ -73,41 +73,27 @@ async function getUserOrganization(userId) {
         let result;
         
         try {
-            // WOFF環境内かチェック
-            if (typeof woff !== 'undefined' && woff.isInClient && woff.isInClient()) {
-                console.log('🔧 WOFF環境内: woff.proxyCallを使用');
-                // WOFF proxyCallを使用
-                result = await woff.proxyCall(config.gasUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData)
-                });
-                console.log('📬 woff.proxyCall レスポンス（JSON）:', result);
-            } else {
-                console.log('🌐 通常環境: fetchを使用');
-                // 通常のfetchを使用
-                response = await fetch(config.gasUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData)
-                });
-                
-                console.log('📬 レスポンス受信', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    ok: response.ok
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                result = await response.json();
+            console.log('🌐 GAS API呼び出し開始');
+            // 直接fetchを使用
+            response = await fetch(config.gasUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            });
+            
+            console.log('📬 レスポンス受信', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
+            
+            result = await response.json();
         } catch (fetchError) {
             console.error('📛 API呼び出しエラー:', fetchError);
             console.error('エラー詳細:', {
@@ -162,41 +148,25 @@ async function loadOfficesFromSheet() {
         let response;
         let offices;
         
-        // WOFF環境内かチェック
-        if (typeof woff !== 'undefined' && woff.isInClient && woff.isInClient()) {
-            console.log('🔧 WOFF環境内: woff.proxyCallを使用');
-            // WOFF proxyCallを使用
-            offices = await woff.proxyCall(config.gasUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'getOffices'
-                })
-            });
-            console.log('📬 woff.proxyCall レスポンス（JSON）:', offices);
-        } else {
-            console.log('🌐 通常環境: fetchを使用');
-            // 通常のfetchを使用
-            response = await fetch(config.gasUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'getOffices'
-                })
-            });
-            
-            console.log('📬 getOffices レスポンス受信', {
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok
-            });
-            
-            offices = await response.json();
-        }
+        console.log('🌐 getOffices API呼び出し開始');
+        // 直接fetchを使用
+        response = await fetch(config.gasUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'getOffices'
+            })
+        });
+        
+        console.log('📬 getOffices レスポンス受信', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok
+        });
+        
+        offices = await response.json();
         
         console.log('📋 事業所一覧パース結果:', offices);
         
