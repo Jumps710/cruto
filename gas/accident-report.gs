@@ -208,45 +208,149 @@ function getOffices() {
 
 function getUserOrganization(userId) {
   try {
-    // LINE WORKS API設定（実際の設定値に置き換える必要があります）
-    const API_ID = 'YOUR_API_ID';
-    const CONSUMER_KEY = 'YOUR_CONSUMER_KEY';
-    const SERVER_ID = 'YOUR_SERVER_ID';
-    const PRIVATE_KEY = 'YOUR_PRIVATE_KEY';
+    console.log("ユーザー組織情報取得開始:", userId);
     
-    // JWTトークン生成とAPIコール
-    // 注意: 実際の実装では、LINE WORKS APIの認証とユーザー情報取得を行う
-    // ここでは簡易的な実装例を示します
-    
-    // 暫定的に、ユーザーIDから組織名を推定（実際はAPIから取得）
-    const orgMapping = {
-      'tokyo_': '東京事業所',
-      'osaka_': '大阪事業所',
-      'nagoya_': '名古屋事業所',
-      'fukuoka_': '福岡事業所',
-      'sendai_': '仙台事業所',
-      'sapporo_': '札幌事業所'
-    };
-    
-    let orgName = '';
-    for (const prefix in orgMapping) {
-      if (userId.startsWith(prefix)) {
-        orgName = orgMapping[prefix];
-        break;
+    // LINE WORKS API設定
+    const CLIENT_ID = 'De3dyIflyPCDY2xrHUak';
+    const CLIENT_SECRET = 'ckuFb6OYxV';
+    const SERVICE_ACCOUNT = 'nagmx.serviceaccount@works-demo.org';
+    const DOMAIN_ID = '10000389';
+    const PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCu74LymyotkWke
+aglpN7YHTumde+b/VmdMVzSBe1s77M5WwVw+W4AvR1jfQvYXx5dzdHj69DtABSlE
+1nLihxHu1MxU2gGG4m7Hhh8mRf3vF/vWw+KjaQFsQaD3ZFfaoq4BbiS2eYx9Z6YA
+IV/3/BfCHTF+yVWkkYenYRHYB0q+Fx/pZMsKkVLUt2PCzlR+EmcYzC1e5JFxZ0/K
+lfGmW/d4+XYjiyouGOcrD5e/jSfThi+ABuo2pUWJd1/q96o3QCIICJ7oYKx/ybz5
+DP5aTJIOt0aRIt8wdswWBMAsVnbOS3H/VQSMlz0DonpkmMZ0YhK5ZwHT/Nz4hWpc
++nRe8u67AgMBAAECggEATYt4VYi4oqhxm3zPnSeH9idh4WB6Hjez5KBHcxo2cBLh
+yI1AEZhH8y1CVP1+zz23ggNgWYYH+bIQACa7mHTdWyxTQ028HYmkJ6fpiPK/xMux
+5BrDDULP0agp7WA6nX09ev7TIVwyDajzad1hiDDkazS7qwMehqvIIUcjPMrGtAoY
+c/HUK5+ciNsmORmeQ392e8MLaWTSVq56IAtb+1xbRmucagmxPXiVHBRRi450B/5j
+vQsi0XLDWog+h/c+wScqAfW4LgqVh82PnK/kUe34cICOrz9P/vuPf9/N8CSW+z5F
+Jov95hQd8zajpb43ur7NNlA5JvS4KBMy21FdN15gYQKBgQC2UKy8ytDhLEm8H4b5
+1VZURznIReqn0VYWmS76gXYpMP3a5Ztf6xHzBSYnzB+ndLcBGhahD0fbhMsPJD35
+mUfn4orC+bglWXNLLascIOGhbfjp0coHje7v4tQcs7x1Ale5sQLqqHFPrCYc0hrO
+TKJ4NxGpl//tnmdOlBdyXgx1SwKBgQD1o08Bd68Zs0mhXITgfwDF0Q5colQEwNUO
+YRbGcTLV4RFEmsVmx9y2VZKbNeW4N6mME2EXLN4JgXJv6pVuPav+CcDq+gKnJt/Z
+BqFiL6tD09YMK+K0j2dQF7zXLk+fghP8gRqAchfYW3Rx1jAOuS2xf7QbE6yBi+BY
+X0EZPkw2UQKBgQCYxkXZ9oLPDhPDxw+Ob41mFkF/Z8dZVXw0d6z8Ulw37EvtkJaA
+7DUgVmJA2zZzVsS78aag1HM8qqyWRaKBdEbjM91fwW7kLW8FwoEukwdABS2ekiQf
+7HobHxLr8lmsG4hznLd6+CfrwbA2WoIH+gPzhQISAcN+1UxwdnynY9RAvQKBgGn0
+WIbshkYStOb6joJ7peyuIYDJsG4gc4ZxUK6mc2QYYidyj0WnXkf0H3n9xKoysFqw
+nUeu3dPB14f46x4TUhYRRPrWfsB1H0dw+bntj/WA8apsX6y80raUlqtG2aeXJ2Ha
+moDfNfPodxEHb9FaBSC0Ug7/7IAwwsO7ysvFuIARAoGALC60V6AvHw5jhU/sBWHp
+ULDW2wqcYOFlC2b3PWTuG/VE7maywLbA9MYwGVy52hD4AgkiSuqxDtlsO9DZn5nd
+Yn32j0gdBElxoy4BvBe2Bd0KZ1wybuCyPgSNsZfVa9dnoqmDDV2w0EeAxhS2IPPp
+K7JGqeB3/kYJmt9h1rZQr1o=
+-----END PRIVATE KEY-----`;
+
+    try {
+      // JWTトークンを生成
+      const jwt = generateJWT(CLIENT_ID, SERVICE_ACCOUNT, PRIVATE_KEY);
+      
+      // アクセストークンを取得
+      const accessToken = getAccessToken(jwt, CLIENT_ID, CLIENT_SECRET);
+      
+      // ユーザー情報を取得
+      const userInfo = getUserInfo(accessToken, DOMAIN_ID, userId);
+      
+      if (userInfo && userInfo.orgUnitName) {
+        console.log("組織情報取得成功:", userInfo.orgUnitName);
+        return createSuccessResponse({
+          orgUnitName: userInfo.orgUnitName
+        });
+      } else {
+        throw new Error('組織情報が取得できませんでした');
       }
+      
+    } catch (apiError) {
+      console.error("LINE WORKS API呼び出しエラー:", apiError);
+      
+      // フォールバック: 事業所シートから取得
+      console.log("フォールバック: 事業所シートから事業所一覧を取得");
+      return getOffices();
     }
-    
-    if (!orgName) {
-      orgName = '本社'; // デフォルト
-    }
-    
-    return createSuccessResponse({
-      orgUnitName: orgName
-    });
     
   } catch (error) {
     console.error("組織情報取得エラー:", error);
     return createErrorResponse("組織情報の取得に失敗しました: " + error.toString());
+  }
+}
+
+// JWTトークン生成
+function generateJWT(clientId, serviceAccount, privateKey) {
+  const header = {
+    "alg": "RS256",
+    "typ": "JWT"
+  };
+  
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    "iss": serviceAccount,
+    "sub": clientId,
+    "iat": now,
+    "exp": now + 3600 // 1時間後
+  };
+  
+  const headerEncoded = Utilities.base64EncodeWebSafe(JSON.stringify(header)).replace(/=+$/, '');
+  const payloadEncoded = Utilities.base64EncodeWebSafe(JSON.stringify(payload)).replace(/=+$/, '');
+  
+  const signatureInput = headerEncoded + "." + payloadEncoded;
+  const signature = Utilities.computeRsaSha256Signature(signatureInput, privateKey);
+  const signatureEncoded = Utilities.base64EncodeWebSafe(signature).replace(/=+$/, '');
+  
+  return signatureInput + "." + signatureEncoded;
+}
+
+// アクセストークン取得
+function getAccessToken(jwt, clientId, clientSecret) {
+  const url = 'https://auth.worksmobile.com/oauth2/v2.0/token';
+  
+  const payload = {
+    'assertion': jwt,
+    'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+    'client_id': clientId,
+    'client_secret': clientSecret,
+    'scope': 'directory:read'
+  };
+  
+  const options = {
+    'method': 'POST',
+    'headers': {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    'payload': Object.keys(payload).map(key => key + '=' + encodeURIComponent(payload[key])).join('&')
+  };
+  
+  const response = UrlFetchApp.fetch(url, options);
+  const data = JSON.parse(response.getContentText());
+  
+  if (data.access_token) {
+    return data.access_token;
+  } else {
+    throw new Error('アクセストークンの取得に失敗しました: ' + response.getContentText());
+  }
+}
+
+// ユーザー情報取得
+function getUserInfo(accessToken, domainId, userId) {
+  const url = `https://www.worksapis.com/v1.0/domains/${domainId}/users/${userId}`;
+  
+  const options = {
+    'method': 'GET',
+    'headers': {
+      'Authorization': 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    }
+  };
+  
+  const response = UrlFetchApp.fetch(url, options);
+  const data = JSON.parse(response.getContentText());
+  
+  if (response.getResponseCode() === 200) {
+    return data;
+  } else {
+    throw new Error('ユーザー情報の取得に失敗しました: ' + response.getContentText());
   }
 }
 
