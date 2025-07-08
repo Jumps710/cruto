@@ -1,99 +1,94 @@
+// 入退院報告システム GAS
 function doPost(e) {
-  const action = e.parameter.action || 'submit';
-  
-  switch(action) {
-    case 'submit':
-      return handleHospitalReport(e);
-    case 'getOffices':
-      return getOffices();
-    case 'getUsers':
-      return getUsers();
-    case 'getHospitals':
-      return getHospitals();
-    default:
-      return createErrorResponse('無効なアクション');
+  try {
+    const requestText = e.postData.contents;
+    const requestData = JSON.parse(requestText);
+    const action = requestData.action;
+    
+    switch(action) {
+      case 'submitHospitalReport':
+        return handleHospitalReport(requestData.data);
+      case 'getUsers':
+        return getUsers();
+      case 'getHospitals':
+        return getHospitals();
+      case 'getOffices':
+        return getOffices();
+      case 'getUserOrganization':
+        return getUserOrganization(requestData.userId);
+      default:
+        return createErrorResponse('無効なアクション: ' + action);
+    }
+  } catch (error) {
+    console.error("doPost エラー:", error);
+    return createErrorResponse('リクエストの処理に失敗しました: ' + error.toString());
   }
 }
 
-function handleHospitalReport(e) {
+function handleHospitalReport(data) {
   try {
+    console.log("入退院報告データ受信:", JSON.stringify(data));
+    
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("入退院管理");
     const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("log");
     
-    const data = {
-      reporter: e.parameter.reporter,
-      userId: e.parameter.userId,
-      office: e.parameter.office,
-      date: e.parameter.date,
-      time: e.parameter.time,
-      userName: e.parameter.userName,
-      dropoutReason: e.parameter.dropoutReason,
-      contractEnded: e.parameter.contractEnded === 'true',
-      notes: e.parameter.notes || ''
-    };
-
-    // 入院の場合の追加情報
-    if (data.dropoutReason === 'hospitalization') {
-      data.hospitalizationDate = e.parameter.hospitalizationDate;
-      data.hospital = e.parameter.hospital;
-      data.diagnosis = e.parameter.diagnosis;
-      data.dischargeDate = e.parameter.dischargeDate;
-    }
-    
-    // 中止の場合の追加情報
-    if (data.dropoutReason === 'discontinuation') {
-      data.discontinuationDate = e.parameter.discontinuationDate;
-      data.discontinuationDiagnosis = e.parameter.discontinuationDiagnosis;
-      data.restartDate = e.parameter.restartDate;
-    }
-
     const timestamp = new Date();
+    const reportId = 'HR' + timestamp.getTime();
 
     // 入退院管理シートに記録
     const row = [
-      timestamp,                    // A: 報告日時
-      data.date,                   // B: 発生日付
-      data.time,                   // C: 発生時間
-      data.reporter,               // D: 報告者名
-      data.office,                 // E: 事業所
-      data.userName,               // F: 利用者名
-      data.dropoutReason,          // G: 脱落理由
-      data.dropoutReason === 'hospitalization' ? data.hospitalizationDate : data.discontinuationDate, // H: 入院日/中止日
-      data.hospital || '',         // I: 入院先
-      data.diagnosis || data.discontinuationDiagnosis || '', // J: 診断名
-      data.dischargeDate || data.restartDate || '', // K: 退院日/再開日
-      data.contractEnded,          // L: 契約終了フラグ
-      timestamp,                   // M: 更新日時
-      data.notes,                  // N: 備考（管理用列）
-      ''                          // O: ステータス
+      reportId,                           // A: 報告ID
+      timestamp,                          // B: 報告日時
+      data.incidentDate,                  // C: 発生日付
+      data.incidentTime,                  // D: 発生時間
+      data.reporter,                      // E: 報告者名
+      data.userId || '',                  // F: ユーザーID
+      data.department || '',              // G: 部署
+      data.office,                        // H: 事業所
+      data.userName,                      // I: 利用者名
+      data.reason,                        // J: 脱落理由
+      data.reason === 'hospital' ? data.hospitalDate : data.stopDate, // K: 入院日/中止日
+      data.hospitalName || '',            // L: 入院先
+      data.reason === 'hospital' ? 
+        (data.hospitalDiagnosis === 'その他' ? data.hospitalOtherDiagnosisText : data.hospitalDiagnosis) : 
+        data.stopDiagnosis,               // M: 診断名
+      data.resumeDate || '',              // N: 退院日・再開日
+      data.contractEnd ? '契約終了' : '', // O: 契約終了フラグ
+      data.remarks || '',                 // P: 備考
+      'pending'                           // Q: ステータス
     ];
 
-    const newRowIndex = sheet.getLastRow() + 1;
-    sheet.getRange(newRowIndex, 1, 1, row.length).setValues([row]);
+    sheet.appendRow(row);
 
-    // N列更新処理（要件に応じて）
-    updateManagementColumn(sheet, newRowIndex, data);
+    // 契約終了処理
+    if (data.contractEnd) {
+      updateContractEndStatus(data.userName, data.resumeDate);
+    }
+
+    // N列の更新（退院日・再開日がある場合）
+    if (data.resumeDate) {
+      updateResumeDate(data.userName, data.resumeDate);
+    }
 
     // ログシートに記録
     logSheet.appendRow([
       timestamp,
       "入退院報告",
       data.reporter,
-      data.userId,
+      data.userId || '',
+      reportId,
       data.userName,
-      data.dropoutReason,
-      data.contractEnded ? "契約終了" : "契約継続"
+      data.reason,
+      data.contractEnd ? '契約終了' : '',
+      JSON.stringify(data)
     ]);
 
-    // 関係者への通知（オプション）
-    if (data.contractEnded) {
-      notifyContractEnd(data);
-    }
+    console.log("入退院報告保存完了:", reportId);
 
     return createSuccessResponse({
+      success: true,
       message: "入退院報告を受け付けました",
-      reportId: newRowIndex - 1,
-      managementUpdated: true
+      reportId: reportId
     });
 
   } catch (error) {
@@ -102,137 +97,170 @@ function handleHospitalReport(e) {
   }
 }
 
-function updateManagementColumn(sheet, rowIndex, data) {
-  try {
-    // N列の更新ロジック（入退院管理の特別な処理）
-    let managementNote = "";
-    
-    if (data.dropoutReason === 'hospitalization') {
-      managementNote = `入院: ${data.hospital} (${data.diagnosis})`;
-      if (data.dischargeDate) {
-        managementNote += ` 退院予定: ${data.dischargeDate}`;
-      }
-    } else {
-      managementNote = `中止: ${data.discontinuationDiagnosis}`;
-      if (data.restartDate) {
-        managementNote += ` 再開予定: ${data.restartDate}`;
-      }
-    }
-    
-    if (data.contractEnded) {
-      managementNote += " [契約終了]";
-    }
-    
-    // N列（14列目）に更新
-    sheet.getRange(rowIndex, 14).setValue(managementNote);
-    
-    // 条件付き書式や色付けなどの追加処理
-    if (data.contractEnded) {
-      sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).setBackground("#ffebee");
-    } else if (data.dropoutReason === 'hospitalization') {
-      sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).setBackground("#e8f5e8");
-    }
-    
-  } catch (error) {
-    console.error("N列更新エラー:", error);
-  }
-}
-
 function getUsers() {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("利用者マスタ");
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("利用者管理");
+    if (!sheet) {
+      throw new Error("利用者管理シートが見つかりません");
+    }
+    
     const data = sheet.getDataRange().getValues();
-    const users = data.slice(1).map(row => ({
-      id: row[0],
-      name: row[1],
-      office: row[2],
-      birthDate: row[3] ? Utilities.formatDate(new Date(row[3]), "JST", "yyyy-MM-dd") : "",
-      status: row[4] || "active"
-    })).filter(user => user.status === "active"); // アクティブな利用者のみ
+    const users = [];
+    
+    // B列（氏名）とC列（フリガナ）から取得（1行目はヘッダーなのでスキップ）
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1] && data[i][1].toString().trim() !== '') {
+        users.push({
+          name: data[i][1].toString().trim(),
+          reading: data[i][2] ? data[i][2].toString().trim() : ''
+        });
+      }
+    }
     
     return createSuccessResponse(users);
   } catch (error) {
-    console.error("利用者マスタ取得エラー:", error);
-    return createErrorResponse("利用者情報の取得に失敗しました");
+    console.error("利用者取得エラー:", error);
+    return createErrorResponse("利用者情報の取得に失敗しました: " + error.toString());
   }
 }
 
 function getHospitals() {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("医療機関マスタ");
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("医療マスタ");
+    if (!sheet) {
+      throw new Error("医療マスタシートが見つかりません");
+    }
+    
     const data = sheet.getDataRange().getValues();
-    const hospitals = data.slice(1).map(row => ({
-      id: row[0],
-      name: row[1],
-      area: row[2],
-      address: row[3],
-      phone: row[4] || "",
-      type: row[5] || "hospital"
-    }));
+    const hospitals = [];
+    
+    // A列（病院名）とB列（エリア）から取得（1行目はヘッダーなのでスキップ）
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] && data[i][0].toString().trim() !== '') {
+        hospitals.push({
+          name: data[i][0].toString().trim(),
+          area: data[i][1] ? data[i][1].toString().trim() : ''
+        });
+      }
+    }
     
     return createSuccessResponse(hospitals);
   } catch (error) {
-    console.error("医療機関マスタ取得エラー:", error);
-    return createErrorResponse("医療機関情報の取得に失敗しました");
+    console.error("医療機関取得エラー:", error);
+    return createErrorResponse("医療機関情報の取得に失敗しました: " + error.toString());
   }
 }
 
-function notifyContractEnd(data) {
+function getOffices() {
   try {
-    // 契約終了時の通知処理
-    // メール送信、Slack通知などを実装
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事業所");
+    if (!sheet) {
+      throw new Error("事業所シートが見つかりません");
+    }
     
-    const subject = `【契約終了】${data.userName}様の利用契約終了について`;
-    const body = `
-利用者: ${data.userName}
-事業所: ${data.office}
-終了理由: ${data.dropoutReason === 'hospitalization' ? '入院' : '中止'}
-報告者: ${data.reporter}
-報告日時: ${new Date().toLocaleString('ja-JP')}
-
-※事務手続きを開始してください。
-    `;
+    const data = sheet.getDataRange().getValues();
+    const offices = [];
     
-    // 実際の送信先メールアドレスに変更
-    // MailApp.sendEmail("admin@example.com", subject, body);
+    // A列から事業所名を取得（1行目はヘッダーなのでスキップ）
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] && data[i][0].toString().trim() !== '') {
+        offices.push({
+          value: data[i][0].toString().trim(),
+          name: data[i][0].toString().trim()
+        });
+      }
+    }
     
-    console.log("契約終了通知:", data.userName);
+    return createSuccessResponse(offices);
   } catch (error) {
-    console.error("通知送信エラー:", error);
+    console.error("事業所取得エラー:", error);
+    return createErrorResponse("事業所情報の取得に失敗しました: " + error.toString());
+  }
+}
+
+function getUserOrganization(userId) {
+  try {
+    // 暫定的に、ユーザーIDから組織名を推定（実際はAPIから取得）
+    const orgMapping = {
+      'tokyo_': '東京事業所',
+      'osaka_': '大阪事業所',
+      'nagoya_': '名古屋事業所',
+      'fukuoka_': '福岡事業所',
+      'sendai_': '仙台事業所',
+      'sapporo_': '札幌事業所'
+    };
+    
+    let orgName = '';
+    for (const prefix in orgMapping) {
+      if (userId.startsWith(prefix)) {
+        orgName = orgMapping[prefix];
+        break;
+      }
+    }
+    
+    if (!orgName) {
+      orgName = '本社'; // デフォルト
+    }
+    
+    return createSuccessResponse({
+      orgUnitName: orgName
+    });
+    
+  } catch (error) {
+    console.error("組織情報取得エラー:", error);
+    return createErrorResponse("組織情報の取得に失敗しました: " + error.toString());
+  }
+}
+
+// 契約終了ステータス更新
+function updateContractEndStatus(userName, endDate) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("入退院管理");
+    const data = sheet.getDataRange().getValues();
+    
+    // 該当利用者のレコードを検索してM列を更新
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][8] === userName) { // I列（利用者名）で検索
+        sheet.getRange(i + 1, 15).setValue('契約終了'); // O列（M列は13番目、O列は15番目）
+        console.log(`契約終了ステータス更新: ${userName}`);
+        break;
+      }
+    }
+  } catch (error) {
+    console.error("契約終了ステータス更新エラー:", error);
+  }
+}
+
+// N列の退院日・再開日更新
+function updateResumeDate(userName, resumeDate) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("入退院管理");
+    const data = sheet.getDataRange().getValues();
+    
+    // 該当利用者のレコードを検索してN列を更新
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][8] === userName) { // I列（利用者名）で検索
+        sheet.getRange(i + 1, 14).setValue(resumeDate); // N列（14番目）
+        console.log(`退院日・再開日更新: ${userName} -> ${resumeDate}`);
+        break;
+      }
+    }
+  } catch (error) {
+    console.error("退院日・再開日更新エラー:", error);
   }
 }
 
 function createSuccessResponse(data) {
   return ContentService
-    .createTextOutput(JSON.stringify({ 
-      status: "success", 
-      data: data 
-    }))
+    .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
 function createErrorResponse(message) {
   return ContentService
     .createTextOutput(JSON.stringify({ 
-      status: "error", 
-      message: message 
+      success: false,
+      error: message 
     }))
     .setMimeType(ContentService.MimeType.JSON);
-}
-
-// 共通関数（事故報告と共有）
-function getOffices() {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事業所マスタ");
-    const data = sheet.getDataRange().getValues();
-    const offices = data.slice(1).map(row => ({
-      id: row[0],
-      name: row[1],
-      address: row[2]
-    }));
-    
-    return createSuccessResponse(offices);
-  } catch (error) {
-    return createErrorResponse("事業所情報の取得に失敗しました");
-  }
 }
