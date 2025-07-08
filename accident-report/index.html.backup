@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>事故報告</title>
+  <script src="https://static.worksmobile.net/static/wm/woff/edge/3.7.1/sdk.js"></script>
+  <link rel="stylesheet" href="../common/css/base.css">
+  <link rel="stylesheet" href="css/accident-report.css">
+  <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+  <script>new VConsole();</script>
+</head>
+<body>
+  <div class="container">
+    <h1>事故報告</h1>
+    <form id="accidentForm">
+      <!-- 基本情報 -->
+      <div class="form-section">
+        <h3>基本情報</h3>
+        <div class="form-group">
+          <label>報告者:</label>
+          <input type="text" id="reporter" name="reporter" readonly>
+        </div>
+        
+        <div class="form-group">
+          <label>事業所:</label>
+          <select id="office" name="office" required>
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>発生日:</label>
+          <input type="date" name="date" required>
+        </div>
+        
+        <div class="form-group">
+          <label>発生時刻:</label>
+          <input type="time" name="time" required>
+        </div>
+      </div>
+
+      <!-- 事故種類 -->
+      <div class="form-section">
+        <h3>事故種類</h3>
+        <div class="form-group">
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="accidentType" value="vehicle" required>
+              <span>車両事故</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="accidentType" value="other" required>
+              <span>その他</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 発生場所 -->
+      <div class="form-section">
+        <h3>発生場所</h3>
+        <div class="form-group" id="locationGroup">
+          <label>場所分類:</label>
+          <select id="location" name="location" required>
+            <option value="">選択してください</option>
+            <option value="visiting">訪看</option>
+            <option value="pediatric">小児</option>
+            <option value="facility">施設</option>
+          </select>
+        </div>
+        
+        <div class="form-group" id="locationDetailGroup" style="display: none;">
+          <label>詳細場所:</label>
+          <select id="locationDetail" name="locationDetail">
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        
+        <div class="form-group" id="locationOtherGroup" style="display: none;">
+          <label>その他の場所:</label>
+          <input type="text" id="locationOther" name="locationOther" placeholder="詳細を入力してください">
+        </div>
+      </div>
+
+      <!-- 車両事故の詳細情報 (条件分岐) -->
+      <div id="vehicleAccidentSection" class="form-section" style="display: none;">
+        <h3>車両事故詳細</h3>
+        
+        <div class="form-group">
+          <label>運転手の名前:</label>
+          <input type="text" name="driverName" placeholder="運転手の名前を入力">
+        </div>
+        
+        <div class="form-group">
+          <label>対物:</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="propertyDamage" value="あり">
+              <span>あり</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="propertyDamage" value="なし">
+              <span>なし</span>
+            </label>
+          </div>
+          <textarea name="propertyDamageDetail" rows="2" placeholder="対物がある場合の詳細（任意）"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>対人:</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="personalDamage" value="あり">
+              <span>あり</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="personalDamage" value="なし">
+              <span>なし</span>
+            </label>
+          </div>
+        </div>
+        
+        <div id="injuryDetails" class="form-group" style="display: none;">
+          <label>負傷詳細:</label>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="injuryType" value="本人">
+              <span>本人</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="injuryType" value="同乗者">
+              <span>同乗者</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="injuryType" value="対人">
+              <span>対人</span>
+            </label>
+          </div>
+          <textarea name="injuryDetail" rows="3" placeholder="負傷詳細（任意）"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>発生場所:</label>
+          <button type="button" id="getLocationBtn" class="button-secondary">
+            現在地を取得
+          </button>
+          <input type="text" id="locationGPS" name="locationGPS" placeholder="GPS位置情報または手動入力" readonly>
+          <input type="text" id="locationManual" name="locationManual" placeholder="手動で場所を入力" style="margin-top: 8px;">
+        </div>
+      </div>
+
+      <!-- 事故内容詳細 -->
+      <div class="form-section">
+        <h3>事故内容</h3>
+        <div class="form-group">
+          <label>詳細:</label>
+          <textarea name="details" rows="4" required placeholder="事故の詳細を入力してください"></textarea>
+        </div>
+      </div>
+
+      <!-- 写真アップロード -->
+      <div class="form-section">
+        <h3>写真 (必須)</h3>
+        <div id="photoSection">
+          <div class="photo-upload-group">
+            <label>事故現場の写真:</label>
+            <div class="file-group">
+              <label for="photo1" class="custom-file-label">写真を選択</label>
+              <input type="file" id="photo1" accept="image/*" style="display: none;">
+              <span class="file-name">ファイル未選択</span>
+            </div>
+            <div class="photo-preview" id="preview1"></div>
+          </div>
+        </div>
+        
+        <div id="vehiclePhotoSection" style="display: none;">
+          <div class="photo-upload-group">
+            <label>相手の車の写真:</label>
+            <div class="file-group">
+              <label for="photo2" class="custom-file-label">写真を選択</label>
+              <input type="file" id="photo2" accept="image/*" style="display: none;">
+              <span class="file-name">ファイル未選択</span>
+            </div>
+            <div class="photo-preview" id="preview2"></div>
+          </div>
+          
+          <div class="photo-upload-group">
+            <label>自分の車の写真:</label>
+            <div class="file-group">
+              <label for="photo3" class="custom-file-label">写真を選択</label>
+              <input type="file" id="photo3" accept="image/*" style="display: none;">
+              <span class="file-name">ファイル未選択</span>
+            </div>
+            <div class="photo-preview" id="preview3"></div>
+          </div>
+          
+          <div class="photo-upload-group" id="licensePhotoGroup" style="display: none;">
+            <label>相手の免許証の写真:</label>
+            <div class="file-group">
+              <label for="photo4" class="custom-file-label">写真を選択</label>
+              <input type="file" id="photo4" accept="image/*" style="display: none;">
+              <span class="file-name">ファイル未選択</span>
+            </div>
+            <div class="photo-preview" id="preview4"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="submit" class="button-primary">確認画面へ</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 確認モーダル -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>入力内容確認</h2>
+      <div id="modalSummary"></div>
+      <div class="button-group">
+        <button id="confirmSubmit" class="button-primary">送信</button>
+        <button id="editBtn" class="button-secondary">修正</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common/js/woff-init.js"></script>
+  <script src="js/accident-report.js"></script>
+</body>
+</html>

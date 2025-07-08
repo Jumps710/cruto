@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>事故報告フォーム - モックアップ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #1e3a8a;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-section h2 {
+            color: #1e3a8a;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #374151;
+        }
+
+        .required::after {
+            content: " *";
+            color: #dc2626;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="time"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        input[readonly] {
+            background-color: #f3f4f6;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .radio-group,
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .radio-item,
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        input[type="radio"],
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .conditional-section {
+            display: none;
+            background-color: #f9fafb;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .conditional-section.active {
+            display: block;
+        }
+
+        .photo-upload {
+            border: 2px dashed #9ca3af;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .photo-upload:hover {
+            border-color: #3b82f6;
+            background-color: #f0f9ff;
+        }
+
+        .photo-preview {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .photo-preview img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .location-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .location-input input {
+            flex: 1;
+        }
+
+        .btn-location {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .submit-section {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            display: block;
+            background-color: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-submit:hover {
+            background-color: #1e40af;
+        }
+
+        .btn-submit:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .help-text {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .error-message {
+            color: #dc2626;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 8px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: #1e3a8a;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-confirm {
+            background-color: #1e3a8a;
+            color: white;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            .form-section {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .radio-group,
+            .checkbox-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>事故報告フォーム</h1>
+
+        <!-- 基本情報 -->
+        <div class="form-section">
+            <h2>基本情報</h2>
+            
+            <div class="form-group">
+                <label>報告者</label>
+                <input type="text" id="reporter" value="山田 太郎" readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="required">事業所</label>
+                <select id="office" required>
+                    <option value="">選択してください</option>
+                    <option value="office1">東京事業所</option>
+                    <option value="office2">大阪事業所</option>
+                    <option value="office3">名古屋事業所</option>
+                    <option value="office4">福岡事業所</option>
+                </select>
+                <span class="error-message">事業所を選択してください</span>
+            </div>
+
+            <div class="form-group">
+                <label class="required">発生日</label>
+                <input type="date" id="incidentDate" required>
+                <span class="error-message">発生日を入力してください</span>
+            </div>
+
+            <div class="form-group">
+                <label class="required">発生時刻</label>
+                <input type="time" id="incidentTime" required>
+                <span class="error-message">発生時刻を入力してください</span>
+            </div>
+        </div>
+
+        <!-- 事故種類 -->
+        <div class="form-section">
+            <h2>事故種類</h2>
+            
+            <div class="form-group">
+                <label class="required">事故の種類を選択してください</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" id="typeVehicle" name="accidentType" value="vehicle">
+                        <label for="typeVehicle">車両事故</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="typeOther" name="accidentType" value="other">
+                        <label for="typeOther">その他</label>
+                    </div>
+                </div>
+                <span class="error-message">事故種類を選択してください</span>
+            </div>
+
+            <!-- 車両事故の場合の追加項目 -->
+            <div id="vehicleSection" class="conditional-section">
+                <div class="form-group">
+                    <label class="required">運転手の名前</label>
+                    <input type="text" id="driverName" placeholder="運転手の氏名を入力">
+                    <span class="error-message">運転手の名前を入力してください</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">対物</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="propertyYes" name="propertyDamage" value="yes">
+                            <label for="propertyYes">あり</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="propertyNo" name="propertyDamage" value="no">
+                            <label for="propertyNo">なし</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="propertyDetails" class="conditional-section">
+                    <div class="form-group">
+                        <label class="required">対物詳細</label>
+                        <textarea id="propertyDetailsText" placeholder="対物の詳細を入力してください"></textarea>
+                        <span class="error-message">対物詳細を入力してください</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">対人</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="personalYes" name="personalInjury" value="yes">
+                            <label for="personalYes">あり</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="personalNo" name="personalInjury" value="no">
+                            <label for="personalNo">なし</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="injuryDetails" class="conditional-section">
+                    <div class="form-group">
+                        <label>負傷者（複数選択可）</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="injurySelf" value="self">
+                                <label for="injurySelf">本人</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="injuryPassenger" value="passenger">
+                                <label for="injuryPassenger">同乗者</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="injuryOther" value="other">
+                                <label for="injuryOther">対人</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">負傷詳細</label>
+                        <textarea id="injuryDetailsText" placeholder="負傷の詳細を入力してください"></textarea>
+                        <span class="error-message">負傷詳細を入力してください</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">発生場所</label>
+                    <div class="location-input">
+                        <input type="text" id="location" placeholder="住所または場所名">
+                        <button type="button" class="btn-location" onclick="getLocation()">
+                            📍 GPS取得
+                        </button>
+                    </div>
+                    <span class="help-text">GPS取得または手動で入力してください</span>
+                    <span class="error-message">発生場所を入力してください</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 発生場所（その他の場合） -->
+        <div id="otherLocationSection" class="form-section" style="display: none;">
+            <h2>発生場所</h2>
+            
+            <div class="form-group">
+                <label class="required">場所分類</label>
+                <select id="locationCategory">
+                    <option value="">選択してください</option>
+                    <option value="visit">訪看</option>
+                    <option value="child">小児</option>
+                    <option value="facility">施設</option>
+                </select>
+                <span class="error-message">場所分類を選択してください</span>
+            </div>
+
+            <div id="detailLocationDiv" class="form-group" style="display: none;">
+                <label class="required">詳細場所</label>
+                <select id="detailLocation">
+                    <option value="">選択してください</option>
+                </select>
+                <span class="error-message">詳細場所を選択してください</span>
+            </div>
+
+            <div id="otherLocationDiv" class="form-group" style="display: none;">
+                <label class="required">その他の場所</label>
+                <input type="text" id="otherLocation" placeholder="場所を入力してください">
+                <span class="error-message">場所を入力してください</span>
+            </div>
+        </div>
+
+        <!-- 事故内容詳細 -->
+        <div class="form-section">
+            <h2>事故内容詳細</h2>
+            
+            <div class="form-group">
+                <label class="required">詳細</label>
+                <textarea id="accidentDetails" rows="5" placeholder="事故の詳細を入力してください" required></textarea>
+                <span class="help-text">できるだけ詳しく記入してください（いつ、どこで、何が、どのように）</span>
+                <span class="error-message">事故の詳細を入力してください</span>
+            </div>
+        </div>
+
+        <!-- 写真アップロード -->
+        <div class="form-section">
+            <h2>写真アップロード</h2>
+            
+            <div class="form-group">
+                <label class="required">事故現場の写真</label>
+                <div class="photo-upload" onclick="document.getElementById('scenePhoto').click()">
+                    <p>📷 クリックまたはタップして写真を選択</p>
+                    <p class="help-text">複数枚選択可能</p>
+                </div>
+                <input type="file" id="scenePhoto" accept="image/*" multiple style="display: none;">
+                <div class="photo-preview" id="scenePhotoPreview"></div>
+                <span class="error-message">事故現場の写真を1枚以上アップロードしてください</span>
+            </div>
+
+            <!-- 車両事故の場合の追加写真 -->
+            <div id="vehiclePhotos" class="conditional-section">
+                <div class="form-group">
+                    <label>相手の車の写真</label>
+                    <div class="photo-upload" onclick="document.getElementById('otherVehiclePhoto').click()">
+                        <p>📷 相手の車の写真を選択</p>
+                    </div>
+                    <input type="file" id="otherVehiclePhoto" accept="image/*" multiple style="display: none;">
+                    <div class="photo-preview" id="otherVehiclePhotoPreview"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>自分の車の写真</label>
+                    <div class="photo-upload" onclick="document.getElementById('ownVehiclePhoto').click()">
+                        <p>📷 自分の車の写真を選択</p>
+                    </div>
+                    <input type="file" id="ownVehiclePhoto" accept="image/*" multiple style="display: none;">
+                    <div class="photo-preview" id="ownVehiclePhotoPreview"></div>
+                </div>
+
+                <div id="licensePhotoDiv" class="form-group" style="display: none;">
+                    <label>相手の免許証の写真</label>
+                    <div class="photo-upload" onclick="document.getElementById('licensePhoto').click()">
+                        <p>📷 免許証の写真を選択</p>
+                    </div>
+                    <input type="file" id="licensePhoto" accept="image/*" style="display: none;">
+                    <div class="photo-preview" id="licensePhotoPreview"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 送信ボタン -->
+    <div class="submit-section">
+        <button type="button" class="btn-submit" onclick="showConfirmModal()">
+            送信内容を確認
+        </button>
+    </div>
+
+    <!-- 確認モーダル -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3>送信内容の確認</h3>
+            <div id="confirmContent">
+                <!-- 確認内容がここに表示される -->
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-cancel" onclick="closeModal()">修正する</button>
+                <button type="button" class="btn-confirm" onclick="submitForm()">送信する</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 事故種類の選択による表示切替
+        document.querySelectorAll('input[name="accidentType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const vehicleSection = document.getElementById('vehicleSection');
+                const otherLocationSection = document.getElementById('otherLocationSection');
+                
+                if (this.value === 'vehicle') {
+                    vehicleSection.classList.add('active');
+                    otherLocationSection.style.display = 'none';
+                } else {
+                    vehicleSection.classList.remove('active');
+                    otherLocationSection.style.display = 'block';
+                }
+            });
+        });
+
+        // 対物ありの場合の詳細表示
+        document.querySelectorAll('input[name="propertyDamage"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const propertyDetails = document.getElementById('propertyDetails');
+                if (this.value === 'yes') {
+                    propertyDetails.classList.add('active');
+                } else {
+                    propertyDetails.classList.remove('active');
+                }
+            });
+        });
+
+        // 対人ありの場合の詳細表示
+        document.querySelectorAll('input[name="personalInjury"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const injuryDetails = document.getElementById('injuryDetails');
+                const licensePhotoDiv = document.getElementById('licensePhotoDiv');
+                
+                if (this.value === 'yes') {
+                    injuryDetails.classList.add('active');
+                    licensePhotoDiv.style.display = 'block';
+                } else {
+                    injuryDetails.classList.remove('active');
+                    licensePhotoDiv.style.display = 'none';
+                }
+            });
+        });
+
+        // 場所分類による詳細場所の表示
+        document.getElementById('locationCategory').addEventListener('change', function() {
+            const detailLocationDiv = document.getElementById('detailLocationDiv');
+            const otherLocationDiv = document.getElementById('otherLocationDiv');
+            const detailLocation = document.getElementById('detailLocation');
+            
+            // 選択肢をクリア
+            detailLocation.innerHTML = '<option value="">選択してください</option>';
+            
+            if (this.value === 'visit') {
+                detailLocationDiv.style.display = 'block';
+                otherLocationDiv.style.display = 'none';
+                // 訪看の選択肢を追加
+                const options = ['利用者宅', '移動中', 'その他'];
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    option.textContent = opt;
+                    detailLocation.appendChild(option);
+                });
+            } else if (this.value === 'child') {
+                detailLocationDiv.style.display = 'block';
+                otherLocationDiv.style.display = 'none';
+                // 小児の選択肢を追加
+                const options = ['送迎中', '訓練中', 'その他'];
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    option.textContent = opt;
+                    detailLocation.appendChild(option);
+                });
+            } else if (this.value === 'facility') {
+                detailLocationDiv.style.display = 'block';
+                otherLocationDiv.style.display = 'none';
+                // 施設の選択肢を追加
+                const options = ['施設内', '施設外', 'その他'];
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    option.textContent = opt;
+                    detailLocation.appendChild(option);
+                });
+            } else {
+                detailLocationDiv.style.display = 'none';
+                otherLocationDiv.style.display = 'none';
+            }
+        });
+
+        // 詳細場所でその他を選択した場合
+        document.getElementById('detailLocation').addEventListener('change', function() {
+            const otherLocationDiv = document.getElementById('otherLocationDiv');
+            if (this.value === 'その他') {
+                otherLocationDiv.style.display = 'block';
+            } else {
+                otherLocationDiv.style.display = 'none';
+            }
+        });
+
+        // GPS位置情報取得
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        document.getElementById('location').value = `緯度: ${lat}, 経度: ${lng}`;
+                    },
+                    function(error) {
+                        alert('位置情報の取得に失敗しました。手動で入力してください。');
+                    }
+                );
+            } else {
+                alert('お使いのブラウザは位置情報をサポートしていません。');
+            }
+        }
+
+        // 写真プレビュー機能
+        function setupPhotoPreview(inputId, previewId) {
+            document.getElementById(inputId).addEventListener('change', function(e) {
+                const preview = document.getElementById(previewId);
+                preview.innerHTML = '';
+                
+                Array.from(e.target.files).forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            preview.appendChild(img);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            });
+        }
+
+        // 各写真入力のプレビュー設定
+        setupPhotoPreview('scenePhoto', 'scenePhotoPreview');
+        setupPhotoPreview('otherVehiclePhoto', 'otherVehiclePhotoPreview');
+        setupPhotoPreview('ownVehiclePhoto', 'ownVehiclePhotoPreview');
+        setupPhotoPreview('licensePhoto', 'licensePhotoPreview');
+
+        // 確認モーダル表示
+        function showConfirmModal() {
+            // バリデーション（簡易版）
+            let isValid = true;
+            
+            // 必須項目のチェック
+            if (!document.getElementById('office').value) {
+                document.querySelector('#office + .error-message').style.display = 'block';
+                isValid = false;
+            }
+            
+            if (!document.getElementById('incidentDate').value) {
+                document.querySelector('#incidentDate + .error-message').style.display = 'block';
+                isValid = false;
+            }
+            
+            if (!document.querySelector('input[name="accidentType"]:checked')) {
+                document.querySelector('.radio-group + .error-message').style.display = 'block';
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                alert('必須項目を入力してください');
+                return;
+            }
+            
+            // 確認内容の生成
+            const confirmContent = document.getElementById('confirmContent');
+            confirmContent.innerHTML = `
+                <p><strong>報告者:</strong> ${document.getElementById('reporter').value}</p>
+                <p><strong>事業所:</strong> ${document.getElementById('office').options[document.getElementById('office').selectedIndex].text}</p>
+                <p><strong>発生日:</strong> ${document.getElementById('incidentDate').value}</p>
+                <p><strong>発生時刻:</strong> ${document.getElementById('incidentTime').value}</p>
+                <p><strong>事故種類:</strong> ${document.querySelector('input[name="accidentType"]:checked').value === 'vehicle' ? '車両事故' : 'その他'}</p>
+                <p><strong>事故詳細:</strong> ${document.getElementById('accidentDetails').value}</p>
+            `;
+            
+            document.getElementById('confirmModal').style.display = 'block';
+        }
+
+        // モーダルを閉じる
+        function closeModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+        }
+
+        // フォーム送信
+        function submitForm() {
+            alert('フォームが送信されました（モックアップ）');
+            closeModal();
+        }
+
+        // エラーメッセージをクリア
+        document.querySelectorAll('input, select, textarea').forEach(element => {
+            element.addEventListener('input', function() {
+                const errorMsg = this.parentElement.querySelector('.error-message');
+                if (errorMsg) {
+                    errorMsg.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

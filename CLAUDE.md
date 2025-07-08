@@ -55,6 +55,33 @@ GET /api/hospitals/suggest - 医療機関の自動補完
 POST /api/sales-route - 最適化された営業ルートの生成
 ```
 
+## 本番環境エンドポイント情報
+
+### GitHub Pages（フロントエンド）
+- **リポジトリ**: https://github.com/Jumps710/cruto
+- **ベースURL**: https://jumps710.github.io/cruto/
+
+### Google Apps Script（バックエンドAPI）
+- **WebアプリURL**: https://script.google.com/macros/s/AKfycbyaHucPNASJmzi_LLaIBuTAXtxxU-VZx4xOBeSXfbPzur_36Omq25ajThTHZ-M8Jk2lVw/exec
+- **スクリプトID**: 1tRFxjvtWORDXfaYU3aHH2CcoKPG_Wf4qw92OJCMCJ8dxdqsBdm_88nkZ
+
+### WOFF アプリ登録情報
+
+#### 1. 事故報告WOFF
+- **WOFF ID**: `EownaFs9auCN-igUa84MDA`
+- **WOFF URL**: https://woff.worksmobile.com/woff/EownaFs9auCN-igUa84MDA
+- **GitHub Pages URL**: https://jumps710.github.io/cruto/accident-report/
+
+#### 2. 入退院報告WOFF
+- **WOFF ID**: `Exth8PXun2d80vxUyBamIw`
+- **WOFF URL**: https://woff.worksmobile.com/woff/Exth8PXun2d80vxUyBamIw
+- **GitHub Pages URL**: https://jumps710.github.io/cruto/hospital-report/
+
+#### 3. 営業支援Bot
+- **WOFF ID**: `Ilofk_65rvB6VHiOceQ0sg`
+- **WOFF URL**: https://woff.worksmobile.com/woff/Ilofk_65rvB6VHiOceQ0sg
+- **GitHub Pages URL**: https://jumps710.github.io/cruto/sales-bot/
+
 ## 開発フロー
 
 段階的開発アプローチ：

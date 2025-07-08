@@ -1,516 +1,508 @@
-// 事故報告WOFF JavaScript
-const AccidentReport = {
-  // 設定
-  config: {
-    woffId: "8Fo2NCnUsmTkXxVSzJ5CNQ", // 実際のWOFF IDに変更
-    gasUrl: "https://script.google.com/macros/s/YOUR_GAS_URL/exec" // 実際のGAS URLに変更
-  },
-  
-  // データ
-  photos: {},
-  offices: [],
-  
-  // 位置情報設定
-  locationOptions: {
-    visiting: [
-      { value: "user_home", text: "ご利用者宅" },
-      { value: "other", text: "その他" }
-    ],
-    pediatric: [
-      { value: "activity_space", text: "活動スペース" },
-      { value: "toilet", text: "トイレ" },
-      { value: "outdoor", text: "屋外" },
-      { value: "other", text: "その他" }
-    ],
-    facility: [
-      { value: "room", text: "居室" },
-      { value: "common_space", text: "共有スペース" },
-      { value: "toilet", text: "トイレ" },
-      { value: "bathroom", text: "浴室" },
-      { value: "courtyard", text: "中庭" },
-      { value: "entrance", text: "玄関前" },
-      { value: "parking", text: "駐車場" },
-      { value: "stairs", text: "階段" },
-      { value: "other", text: "その他" }
-    ]
-  },
+// 事故報告フォーム JavaScript
 
-  async init() {
-    try {
-      // WOFF初期化
-      const profile = await WOFFManager.init(this.config.woffId);
-      this.setUserInfo(profile);
-      
-      // 事業所リストを取得
-      await this.loadOffices();
-      
-      // イベントリスナー設定
-      this.setupEventListeners();
-      
-      console.log("✅ 事故報告アプリ初期化完了");
-    } catch (error) {
-      console.error("❌ 初期化エラー:", error);
-      this.showError("アプリの初期化に失敗しました");
-    }
-  },
-
-  setUserInfo(profile) {
-    const reporterInput = document.getElementById("reporter");
-    if (reporterInput && profile) {
-      reporterInput.value = profile.displayName || "";
-    }
-  },
-
-  async loadOffices() {
-    try {
-      const response = await fetch(`${this.config.gasUrl}?action=getOffices`);
-      const result = await response.json();
-      
-      if (result.status === "success") {
-        this.offices = result.data;
-        this.populateOfficeSelect();
-      }
-    } catch (error) {
-      console.error("事業所リスト取得エラー:", error);
-      // フォールバック用のデフォルト事業所
-      this.offices = [
-        { id: "main", name: "本社", address: "" },
-        { id: "branch1", name: "支社1", address: "" }
-      ];
-      this.populateOfficeSelect();
-    }
-  },
-
-  populateOfficeSelect() {
-    const select = document.getElementById("office");
-    this.offices.forEach(office => {
-      const option = document.createElement("option");
-      option.value = office.id;
-      option.textContent = office.name;
-      select.appendChild(option);
-    });
-  },
-
-  setupEventListeners() {
-    const form = document.getElementById("accidentForm");
-    const modal = document.getElementById("modal");
-    const closeModal = document.querySelector(".close");
-    const confirmBtn = document.getElementById("confirmSubmit");
-    const editBtn = document.getElementById("editBtn");
-
-    // 事故種類の変更
-    document.querySelectorAll('input[name="accidentType"]').forEach(radio => {
-      radio.addEventListener("change", this.handleAccidentTypeChange.bind(this));
-    });
-
-    // 発生場所の変更
-    document.getElementById("location").addEventListener("change", this.handleLocationChange.bind(this));
-
-    // 対人の変更（車両事故）
-    document.querySelectorAll('input[name="personalDamage"]').forEach(radio => {
-      radio.addEventListener("change", this.handlePersonalDamageChange.bind(this));
-    });
-
-    // 位置情報取得
-    document.getElementById("getLocationBtn").addEventListener("click", this.getCurrentLocation.bind(this));
-
-    // 写真アップロード
-    ["photo1", "photo2", "photo3", "photo4"].forEach(id => {
-      const input = document.getElementById(id);
-      if (input) {
-        input.addEventListener("change", (e) => this.handlePhotoUpload(e, id));
-      }
-    });
-
-    // フォーム送信
-    form.addEventListener("submit", this.handleFormSubmit.bind(this));
-
-    // モーダル
-    closeModal.addEventListener("click", () => modal.style.display = "none");
-    editBtn.addEventListener("click", () => modal.style.display = "none");
-    confirmBtn.addEventListener("click", this.handleConfirmSubmit.bind(this));
-
-    // モーダル外クリック
-    window.addEventListener("click", (e) => {
-      if (e.target === modal) modal.style.display = "none";
-    });
-  },
-
-  handleAccidentTypeChange(e) {
-    const vehicleSection = document.getElementById("vehicleAccidentSection");
-    const vehiclePhotoSection = document.getElementById("vehiclePhotoSection");
-    
-    if (e.target.value === "vehicle") {
-      vehicleSection.style.display = "block";
-      vehiclePhotoSection.style.display = "block";
-      // 車両事故の場合は必須項目を設定
-      document.querySelector('input[name="driverName"]').required = true;
-    } else {
-      vehicleSection.style.display = "none";
-      vehiclePhotoSection.style.display = "none";
-      // その他の場合は必須解除
-      document.querySelector('input[name="driverName"]').required = false;
-    }
-  },
-
-  handleLocationChange(e) {
-    const locationDetail = document.getElementById("locationDetail");
-    const locationDetailGroup = document.getElementById("locationDetailGroup");
-    const locationOtherGroup = document.getElementById("locationOtherGroup");
-    
-    // 既存のオプションをクリア
-    locationDetail.innerHTML = '<option value="">選択してください</option>';
-    
-    if (e.target.value && this.locationOptions[e.target.value]) {
-      // 詳細選択肢を表示
-      locationDetailGroup.style.display = "block";
-      
-      this.locationOptions[e.target.value].forEach(option => {
-        const optionElement = document.createElement("option");
-        optionElement.value = option.value;
-        optionElement.textContent = option.text;
-        locationDetail.appendChild(optionElement);
-      });
-      
-      // その他選択時の処理
-      locationDetail.addEventListener("change", (event) => {
-        if (event.target.value === "other") {
-          locationOtherGroup.style.display = "block";
-          document.getElementById("locationOther").required = true;
-        } else {
-          locationOtherGroup.style.display = "none";
-          document.getElementById("locationOther").required = false;
-        }
-      });
-    } else {
-      locationDetailGroup.style.display = "none";
-      locationOtherGroup.style.display = "none";
-    }
-  },
-
-  handlePersonalDamageChange(e) {
-    const injuryDetails = document.getElementById("injuryDetails");
-    const licensePhotoGroup = document.getElementById("licensePhotoGroup");
-    
-    if (e.target.value === "あり") {
-      injuryDetails.style.display = "block";
-      licensePhotoGroup.style.display = "block";
-    } else {
-      injuryDetails.style.display = "none";
-      licensePhotoGroup.style.display = "none";
-    }
-  },
-
-  async getCurrentLocation() {
-    const btn = document.getElementById("getLocationBtn");
-    const locationInput = document.getElementById("locationGPS");
-    
-    btn.disabled = true;
-    btn.textContent = "取得中...";
-    
-    try {
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        });
-      });
-      
-      const { latitude, longitude } = position.coords;
-      locationInput.value = `緯度: ${latitude.toFixed(6)}, 経度: ${longitude.toFixed(6)}`;
-      
-      // 逆ジオコーディング（オプション）
-      try {
-        const address = await this.reverseGeocode(latitude, longitude);
-        if (address) {
-          locationInput.value += ` (${address})`;
-        }
-      } catch (error) {
-        console.warn("住所取得に失敗:", error);
-      }
-      
-    } catch (error) {
-      console.error("位置情報取得エラー:", error);
-      this.showError("位置情報の取得に失敗しました。手動で入力してください。");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "現在地を取得";
-    }
-  },
-
-  async reverseGeocode(lat, lng) {
-    // 実際のプロジェクトではGoogle Maps APIなどを使用
-    // ここではダミー実装
-    return null;
-  },
-
-  async handlePhotoUpload(event, inputId) {
-    const file = event.target.files[0];
-    const fileNameSpan = event.target.nextElementSibling;
-    const previewDiv = document.getElementById(`preview${inputId.slice(-1)}`);
-    
-    if (file) {
-      try {
-        fileNameSpan.textContent = file.name;
-        
-        // Base64変換
-        const base64 = await Utils.fileToBase64(file);
-        this.photos[inputId] = {
-          base64: base64,
-          name: file.name,
-          type: this.getPhotoType(inputId)
-        };
-        
-        // プレビュー表示
-        const img = document.createElement("img");
-        img.src = `data:image/jpeg;base64,${base64}`;
-        previewDiv.innerHTML = "";
-        previewDiv.appendChild(img);
-        
-      } catch (error) {
-        console.error("画像処理エラー:", error);
-        this.showError("画像の処理に失敗しました");
-      }
-    } else {
-      fileNameSpan.textContent = "ファイル未選択";
-      previewDiv.innerHTML = "";
-      delete this.photos[inputId];
-    }
-  },
-
-  getPhotoType(inputId) {
-    const types = {
-      photo1: "scene",
-      photo2: "other_car",
-      photo3: "my_car",
-      photo4: "license"
-    };
-    return types[inputId] || "other";
-  },
-
-  handleFormSubmit(e) {
-    e.preventDefault();
-    
-    // 写真の必須チェック
-    if (Object.keys(this.photos).length === 0) {
-      this.showError("最低1枚の写真をアップロードしてください");
-      return;
-    }
-    
-    // 確認モーダルを表示
-    this.showConfirmationModal();
-  },
-
-  showConfirmationModal() {
-    const form = document.getElementById("accidentForm");
-    const formData = new FormData(form);
-    const modal = document.getElementById("modal");
-    const summary = document.getElementById("modalSummary");
-    
-    const data = Object.fromEntries(formData.entries());
-    
-    // 負傷詳細の処理
-    const injuryTypes = Array.from(document.querySelectorAll('input[name="injuryType"]:checked'))
-      .map(cb => cb.value);
-    
-    let summaryHTML = `
-      <div class="summary-section">
-        <h4>基本情報</h4>
-        <p><strong>報告者:</strong> ${WOFFManager.getDisplayName()}</p>
-        <p><strong>事業所:</strong> ${this.getOfficeName(data.office)}</p>
-        <p><strong>発生日時:</strong> ${Utils.formatDate(data.date)} ${Utils.formatTime(data.time)}</p>
-        <p><strong>事故種類:</strong> ${data.accidentType === 'vehicle' ? '車両事故' : 'その他'}</p>
-      </div>
-      
-      <div class="summary-section">
-        <h4>発生場所</h4>
-        <p><strong>場所:</strong> ${this.getLocationText(data.location, data.locationDetail, data.locationOther)}</p>
-      </div>
-    `;
-    
-    // 車両事故の詳細
-    if (data.accidentType === 'vehicle') {
-      summaryHTML += `
-        <div class="summary-section">
-          <h4>車両事故詳細</h4>
-          <p><strong>運転手:</strong> ${data.driverName}</p>
-          <p><strong>対物:</strong> ${data.propertyDamage}</p>
-          <p><strong>対人:</strong> ${data.personalDamage}</p>
-          ${injuryTypes.length > 0 ? `<p><strong>負傷:</strong> ${injuryTypes.join(', ')}</p>` : ''}
-          ${data.locationGPS ? `<p><strong>GPS位置:</strong> ${data.locationGPS}</p>` : ''}
-        </div>
-      `;
-    }
-    
-    summaryHTML += `
-      <div class="summary-section">
-        <h4>事故内容</h4>
-        <p>${data.details}</p>
-      </div>
-      
-      <div class="summary-section">
-        <h4>写真</h4>
-        <div class="photo-summary">
-    `;
-    
-    Object.values(this.photos).forEach(photo => {
-      summaryHTML += `
-        <div class="summary-photo">
-          <img src="data:image/jpeg;base64,${photo.base64}" style="max-width: 100px; max-height: 100px;">
-          <p>${photo.name}</p>
-        </div>
-      `;
-    });
-    
-    summaryHTML += `</div></div>`;
-    
-    summary.innerHTML = summaryHTML;
-    modal.style.display = "block";
-  },
-
-  getOfficeName(officeId) {
-    const office = this.offices.find(o => o.id === officeId);
-    return office ? office.name : officeId;
-  },
-
-  getLocationText(location, detail, other) {
-    const locationTexts = {
-      visiting: "訪看",
-      pediatric: "小児",
-      facility: "施設"
-    };
-    
-    let text = locationTexts[location] || location;
-    
-    if (detail) {
-      const detailOption = this.locationOptions[location]?.find(opt => opt.value === detail);
-      text += ` - ${detailOption?.text || detail}`;
-      
-      if (detail === "other" && other) {
-        text += ` (${other})`;
-      }
-    }
-    
-    return text;
-  },
-
-  async handleConfirmSubmit() {
-    const form = document.getElementById("accidentForm");
-    const formData = new FormData(form);
-    const modal = document.getElementById("modal");
-    
-    // ローディング表示
-    this.showLoading();
-    
-    try {
-      // 送信データの準備
-      const data = Object.fromEntries(formData.entries());
-      
-      // 負傷詳細の収集
-      const injuryTypes = Array.from(document.querySelectorAll('input[name="injuryType"]:checked'))
-        .map(cb => cb.value);
-      
-      const injuries = {
-        types: injuryTypes,
-        detail: data.injuryDetail || ""
-      };
-      
-      // 位置情報の処理
-      const locationGPS = data.locationGPS || data.locationManual || "";
-      
-      // APIに送信するデータ
-      const submitData = {
-        action: "submit",
-        reporter: WOFFManager.getDisplayName(),
-        userId: WOFFManager.getUserId(),
-        office: data.office,
-        date: data.date,
-        time: data.time,
-        accidentType: data.accidentType,
-        location: data.location,
-        locationDetail: data.locationDetail === "other" ? data.locationOther : data.locationDetail,
-        details: data.details,
-        photos: JSON.stringify(Object.values(this.photos))
-      };
-      
-      // 車両事故の追加データ
-      if (data.accidentType === "vehicle") {
-        submitData.driverName = data.driverName;
-        submitData.propertyDamage = data.propertyDamage;
-        submitData.personalDamage = data.personalDamage;
-        submitData.injuries = JSON.stringify(injuries);
-        submitData.locationGPS = locationGPS;
-      }
-      
-      // GASに送信
-      const response = await fetch(this.config.gasUrl, {
-        method: "POST",
-        body: new URLSearchParams(submitData)
-      });
-      
-      const result = await response.json();
-      
-      if (result.status === "success") {
-        // 成功時は完了画面に遷移
-        window.location.href = "result.html";
-      } else {
-        throw new Error(result.message || "送信に失敗しました");
-      }
-      
-    } catch (error) {
-      console.error("送信エラー:", error);
-      this.showError("送信中にエラーが発生しました: " + error.message);
-    } finally {
-      this.hideLoading();
-      modal.style.display = "none";
-    }
-  },
-
-  showLoading() {
-    const overlay = document.createElement("div");
-    overlay.className = "loading-overlay";
-    overlay.id = "loadingOverlay";
-    overlay.innerHTML = `
-      <div class="loading-content">
-        <div class="loading"></div>
-        <p>送信中...</p>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-  },
-
-  hideLoading() {
-    const overlay = document.getElementById("loadingOverlay");
-    if (overlay) {
-      overlay.remove();
-    }
-  },
-
-  showError(message) {
-    // 既存のエラーメッセージを削除
-    const existingError = document.querySelector(".error-message");
-    if (existingError) {
-      existingError.remove();
-    }
-    
-    const errorDiv = document.createElement("div");
-    errorDiv.className = "error-message";
-    errorDiv.textContent = message;
-    
-    const container = document.querySelector(".container");
-    container.insertBefore(errorDiv, container.firstChild);
-    
-    // 3秒後に自動削除
-    setTimeout(() => {
-      if (errorDiv.parentNode) {
-        errorDiv.remove();
-      }
-    }, 5000);
-  }
+// 設定
+const config = {
+    woffId: 'EownaFs9auCN-igUa84MDA', // 本番環境のWOFF ID
+    gasUrl: 'https://script.google.com/macros/s/AKfycbyaHucPNASJmzi_LLaIBuTAXtxxU-VZx4xOBeSXfbPzur_36Omq25ajThTHZ-M8Jk2lVw/exec'
 };
 
-// アプリ初期化
-document.addEventListener("DOMContentLoaded", () => {
-  AccidentReport.init();
+// 事業所マスタデータ
+const offices = [
+    { value: 'tokyo', name: '東京事業所' },
+    { value: 'osaka', name: '大阪事業所' },
+    { value: 'nagoya', name: '名古屋事業所' },
+    { value: 'fukuoka', name: '福岡事業所' },
+    { value: 'sendai', name: '仙台事業所' },
+    { value: 'sapporo', name: '札幌事業所' }
+];
+
+// グローバル変数
+let formData = {};
+let photoData = {
+    scene: [],
+    otherVehicle: [],
+    ownVehicle: [],
+    license: []
+};
+
+// 初期化
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // WOFF初期化
+        const profile = await WOFFManager.init(config.woffId);
+        
+        // 報告者名を設定
+        document.getElementById('reporter').value = profile.displayName;
+        
+        // 事業所選択肢を設定
+        const officeSelect = document.getElementById('office');
+        offices.forEach(office => {
+            const option = document.createElement('option');
+            option.value = office.value;
+            option.textContent = office.name;
+            officeSelect.appendChild(option);
+        });
+        
+        // 今日の日付を設定
+        const today = new Date();
+        document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
+        
+        // イベントリスナーの設定
+        setupEventListeners();
+        
+    } catch (error) {
+        console.error('初期化エラー:', error);
+        alert('アプリの初期化に失敗しました。LINE WORKSアプリ内で開いてください。');
+    }
 });
+
+// イベントリスナーの設定
+function setupEventListeners() {
+    // 事故種類の選択による表示切替
+    document.querySelectorAll('input[name="accidentType"]').forEach(radio => {
+        radio.addEventListener('change', handleAccidentTypeChange);
+    });
+    
+    // 対物ありの場合の詳細表示
+    document.querySelectorAll('input[name="propertyDamage"]').forEach(radio => {
+        radio.addEventListener('change', handlePropertyDamageChange);
+    });
+    
+    // 対人ありの場合の詳細表示
+    document.querySelectorAll('input[name="personalInjury"]').forEach(radio => {
+        radio.addEventListener('change', handlePersonalInjuryChange);
+    });
+    
+    // 場所分類による詳細場所の表示
+    document.getElementById('locationCategory').addEventListener('change', handleLocationCategoryChange);
+    
+    // 詳細場所でその他を選択した場合
+    document.getElementById('detailLocation').addEventListener('change', handleDetailLocationChange);
+    
+    // GPS取得ボタン
+    document.getElementById('getLocationBtn').addEventListener('click', getLocation);
+    
+    // 写真アップロード
+    setupPhotoUpload('scenePhoto', 'scenePhotoUpload', 'scenePhotoPreview', 'scene');
+    setupPhotoUpload('otherVehiclePhoto', 'otherVehiclePhotoUpload', 'otherVehiclePhotoPreview', 'otherVehicle');
+    setupPhotoUpload('ownVehiclePhoto', 'ownVehiclePhotoUpload', 'ownVehiclePhotoPreview', 'ownVehicle');
+    setupPhotoUpload('licensePhoto', 'licensePhotoUpload', 'licensePhotoPreview', 'license');
+    
+    // 送信ボタン
+    document.getElementById('submitBtn').addEventListener('click', showConfirmModal);
+    
+    // モーダルボタン
+    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+    document.getElementById('confirmBtn').addEventListener('click', submitForm);
+    
+    // エラーメッセージのクリア
+    document.querySelectorAll('input, select, textarea').forEach(element => {
+        element.addEventListener('input', function() {
+            clearError(this);
+        });
+        element.addEventListener('change', function() {
+            clearError(this);
+        });
+    });
+}
+
+// 事故種類変更時の処理
+function handleAccidentTypeChange(e) {
+    const vehicleSection = document.getElementById('vehicleSection');
+    const otherLocationSection = document.getElementById('otherLocationSection');
+    const vehiclePhotos = document.getElementById('vehiclePhotos');
+    
+    if (e.target.value === 'vehicle') {
+        vehicleSection.classList.add('active');
+        vehiclePhotos.classList.add('active');
+        otherLocationSection.style.display = 'none';
+    } else {
+        vehicleSection.classList.remove('active');
+        vehiclePhotos.classList.remove('active');
+        otherLocationSection.style.display = 'block';
+    }
+}
+
+// 対物選択時の処理
+function handlePropertyDamageChange(e) {
+    const propertyDetails = document.getElementById('propertyDetails');
+    if (e.target.value === 'yes') {
+        propertyDetails.classList.add('active');
+    } else {
+        propertyDetails.classList.remove('active');
+    }
+}
+
+// 対人選択時の処理
+function handlePersonalInjuryChange(e) {
+    const injuryDetails = document.getElementById('injuryDetails');
+    const licensePhotoDiv = document.getElementById('licensePhotoDiv');
+    
+    if (e.target.value === 'yes') {
+        injuryDetails.classList.add('active');
+        licensePhotoDiv.style.display = 'block';
+    } else {
+        injuryDetails.classList.remove('active');
+        licensePhotoDiv.style.display = 'none';
+    }
+}
+
+// 場所分類変更時の処理
+function handleLocationCategoryChange(e) {
+    const detailLocationDiv = document.getElementById('detailLocationDiv');
+    const otherLocationDiv = document.getElementById('otherLocationDiv');
+    const detailLocation = document.getElementById('detailLocation');
+    
+    // 選択肢をクリア
+    detailLocation.innerHTML = '<option value="">選択してください</option>';
+    
+    const locationOptions = {
+        visit: ['利用者宅', '移動中', 'その他'],
+        child: ['送迎中', '訓練中', 'その他'],
+        facility: ['施設内', '施設外', 'その他']
+    };
+    
+    if (e.target.value && locationOptions[e.target.value]) {
+        detailLocationDiv.style.display = 'block';
+        otherLocationDiv.style.display = 'none';
+        
+        locationOptions[e.target.value].forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            detailLocation.appendChild(option);
+        });
+    } else {
+        detailLocationDiv.style.display = 'none';
+        otherLocationDiv.style.display = 'none';
+    }
+}
+
+// 詳細場所変更時の処理
+function handleDetailLocationChange(e) {
+    const otherLocationDiv = document.getElementById('otherLocationDiv');
+    if (e.target.value === 'その他') {
+        otherLocationDiv.style.display = 'block';
+    } else {
+        otherLocationDiv.style.display = 'none';
+    }
+}
+
+// GPS位置情報取得
+function getLocation() {
+    const locationInput = document.getElementById('location');
+    const loading = Utils.showLoading(locationInput.parentElement, 'GPS取得中...');
+    
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                locationInput.value = `緯度: ${lat}, 経度: ${lng}`;
+                Utils.hideLoading(loading);
+                clearError(locationInput);
+            },
+            function(error) {
+                Utils.hideLoading(loading);
+                alert('位置情報の取得に失敗しました。手動で入力してください。');
+            }
+        );
+    } else {
+        Utils.hideLoading(loading);
+        alert('お使いのブラウザは位置情報をサポートしていません。');
+    }
+}
+
+// 写真アップロード設定
+function setupPhotoUpload(inputId, uploadDivId, previewId, photoType) {
+    const input = document.getElementById(inputId);
+    const uploadDiv = document.getElementById(uploadDivId);
+    const preview = document.getElementById(previewId);
+    
+    uploadDiv.addEventListener('click', () => input.click());
+    
+    input.addEventListener('change', async function(e) {
+        preview.innerHTML = '';
+        photoData[photoType] = [];
+        
+        for (const file of Array.from(e.target.files)) {
+            if (file.type.startsWith('image/')) {
+                try {
+                    const base64 = await Utils.fileToBase64(file);
+                    photoData[photoType].push({
+                        name: file.name,
+                        data: base64
+                    });
+                    
+                    // プレビュー表示
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        preview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                } catch (error) {
+                    console.error('画像処理エラー:', error);
+                }
+            }
+        }
+        
+        if (photoType === 'scene' && photoData[photoType].length > 0) {
+            clearError(input);
+        }
+    });
+}
+
+// エラー表示クリア
+function clearError(element) {
+    const errorMsg = element.parentElement.querySelector('.error-message');
+    if (errorMsg) {
+        errorMsg.classList.remove('show');
+    }
+}
+
+// エラー表示
+function showError(element) {
+    const errorMsg = element.parentElement.querySelector('.error-message');
+    if (errorMsg) {
+        errorMsg.classList.add('show');
+    }
+}
+
+// バリデーション
+function validateForm() {
+    let isValid = true;
+    
+    // 必須項目のチェック
+    const requiredFields = ['office', 'incidentDate', 'incidentTime', 'accidentDetails'];
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (!field.value) {
+            showError(field);
+            isValid = false;
+        }
+    });
+    
+    // 事故種類の選択チェック
+    if (!document.querySelector('input[name="accidentType"]:checked')) {
+        const radioGroup = document.querySelector('.radio-group');
+        showError(radioGroup);
+        isValid = false;
+    }
+    
+    // 事故現場の写真チェック
+    if (photoData.scene.length === 0) {
+        showError(document.getElementById('scenePhoto'));
+        isValid = false;
+    }
+    
+    // 車両事故の場合の追加チェック
+    const accidentType = document.querySelector('input[name="accidentType"]:checked');
+    if (accidentType && accidentType.value === 'vehicle') {
+        // 運転手名
+        const driverName = document.getElementById('driverName');
+        if (!driverName.value) {
+            showError(driverName);
+            isValid = false;
+        }
+        
+        // 対物・対人の選択
+        if (!document.querySelector('input[name="propertyDamage"]:checked')) {
+            isValid = false;
+        }
+        if (!document.querySelector('input[name="personalInjury"]:checked')) {
+            isValid = false;
+        }
+        
+        // 対物ありの場合の詳細
+        const propertyDamage = document.querySelector('input[name="propertyDamage"]:checked');
+        if (propertyDamage && propertyDamage.value === 'yes') {
+            const propertyDetails = document.getElementById('propertyDetailsText');
+            if (!propertyDetails.value) {
+                showError(propertyDetails);
+                isValid = false;
+            }
+        }
+        
+        // 対人ありの場合の詳細
+        const personalInjury = document.querySelector('input[name="personalInjury"]:checked');
+        if (personalInjury && personalInjury.value === 'yes') {
+            const injuryDetails = document.getElementById('injuryDetailsText');
+            if (!injuryDetails.value) {
+                showError(injuryDetails);
+                isValid = false;
+            }
+        }
+        
+        // 発生場所
+        const location = document.getElementById('location');
+        if (!location.value) {
+            showError(location);
+            isValid = false;
+        }
+    } else {
+        // その他の場合の場所チェック
+        const locationCategory = document.getElementById('locationCategory');
+        if (!locationCategory.value) {
+            showError(locationCategory);
+            isValid = false;
+        }
+        
+        if (locationCategory.value) {
+            const detailLocation = document.getElementById('detailLocation');
+            if (!detailLocation.value) {
+                showError(detailLocation);
+                isValid = false;
+            }
+            
+            if (detailLocation.value === 'その他') {
+                const otherLocation = document.getElementById('otherLocation');
+                if (!otherLocation.value) {
+                    showError(otherLocation);
+                    isValid = false;
+                }
+            }
+        }
+    }
+    
+    return isValid;
+}
+
+// 確認モーダル表示
+function showConfirmModal() {
+    if (!validateForm()) {
+        alert('必須項目を入力してください');
+        return;
+    }
+    
+    // フォームデータ収集
+    collectFormData();
+    
+    // 確認内容の生成
+    const confirmContent = document.getElementById('confirmContent');
+    confirmContent.innerHTML = generateConfirmContent();
+    
+    // モーダル表示
+    document.getElementById('confirmModal').classList.add('show');
+}
+
+// フォームデータ収集
+function collectFormData() {
+    const form = document.getElementById('accidentReportForm');
+    formData = Utils.formToObject(form);
+    
+    // チェックボックスの値を収集
+    const injuryTypes = [];
+    document.querySelectorAll('input[name="injuryType"]:checked').forEach(cb => {
+        injuryTypes.push(cb.value);
+    });
+    formData.injuryTypes = injuryTypes;
+    
+    // 写真データを追加
+    formData.photos = photoData;
+}
+
+// 確認内容生成
+function generateConfirmContent() {
+    const accidentType = formData.accidentType === 'vehicle' ? '車両事故' : 'その他';
+    const office = document.querySelector(`#office option[value="${formData.office}"]`).textContent;
+    
+    let html = `
+        <p><strong>報告者:</strong> ${formData.reporter}</p>
+        <p><strong>事業所:</strong> ${office}</p>
+        <p><strong>発生日:</strong> ${Utils.formatDate(formData.incidentDate)}</p>
+        <p><strong>発生時刻:</strong> ${Utils.formatTime(formData.incidentTime)}</p>
+        <p><strong>事故種類:</strong> ${accidentType}</p>
+    `;
+    
+    if (formData.accidentType === 'vehicle') {
+        html += `
+            <p><strong>運転手:</strong> ${formData.driverName}</p>
+            <p><strong>対物:</strong> ${formData.propertyDamage === 'yes' ? 'あり' : 'なし'}</p>
+            <p><strong>対人:</strong> ${formData.personalInjury === 'yes' ? 'あり' : 'なし'}</p>
+            <p><strong>発生場所:</strong> ${formData.location}</p>
+        `;
+    } else {
+        const locationCategory = document.querySelector(`#locationCategory option[value="${formData.locationCategory}"]`).textContent;
+        html += `<p><strong>場所分類:</strong> ${locationCategory}</p>`;
+        
+        if (formData.detailLocation) {
+            html += `<p><strong>詳細場所:</strong> ${formData.detailLocation}</p>`;
+        }
+        if (formData.otherLocation) {
+            html += `<p><strong>その他の場所:</strong> ${formData.otherLocation}</p>`;
+        }
+    }
+    
+    html += `
+        <p><strong>事故詳細:</strong><br>${formData.accidentDetails.replace(/\n/g, '<br>')}</p>
+        <p><strong>写真:</strong> 事故現場 ${photoData.scene.length}枚`;
+    
+    if (formData.accidentType === 'vehicle') {
+        if (photoData.otherVehicle.length > 0) {
+            html += `, 相手の車 ${photoData.otherVehicle.length}枚`;
+        }
+        if (photoData.ownVehicle.length > 0) {
+            html += `, 自分の車 ${photoData.ownVehicle.length}枚`;
+        }
+        if (photoData.license.length > 0) {
+            html += `, 免許証 ${photoData.license.length}枚`;
+        }
+    }
+    
+    html += '</p>';
+    
+    return html;
+}
+
+// モーダルを閉じる
+function closeModal() {
+    document.getElementById('confirmModal').classList.remove('show');
+}
+
+// フォーム送信
+async function submitForm() {
+    const submitBtn = document.getElementById('confirmBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '送信中...';
+    
+    try {
+        // タイムスタンプ追加
+        formData.timestamp = new Date().toISOString();
+        formData.userId = WOFFManager.getUserId();
+        formData.department = WOFFManager.getDepartment();
+        
+        // GASに送信
+        const response = await fetch(config.gasUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'submitAccidentReport',
+                data: formData
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 成功時は結果画面へ遷移
+            localStorage.setItem('reportResult', JSON.stringify({
+                success: true,
+                reportId: result.reportId,
+                timestamp: formData.timestamp
+            }));
+            window.location.href = 'result.html';
+        } else {
+            throw new Error(result.error || '送信に失敗しました');
+        }
+        
+    } catch (error) {
+        console.error('送信エラー:', error);
+        alert('送信に失敗しました。もう一度お試しください。');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '送信する';
+    }
+}
