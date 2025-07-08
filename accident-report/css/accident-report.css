@@ -289,6 +289,69 @@ input[type="checkbox"] {
     color: #1e3a8a;
 }
 
+/* 事業所表示 */
+.office-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+}
+
+.office-display span {
+    flex: 1;
+    font-weight: bold;
+    color: #374151;
+}
+
+.btn-change-office {
+    background-color: #6b7280;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-change-office:hover {
+    background-color: #4b5563;
+}
+
+/* 事業所選択モーダル */
+.office-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 20px 0;
+}
+
+.office-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.office-option:hover {
+    background-color: #f3f4f6;
+}
+
+.office-option input[type="radio"] {
+    margin: 0;
+}
+
+.office-option label {
+    margin: 0;
+    cursor: pointer;
+    flex: 1;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 600px) {
     .form-section {
@@ -307,6 +370,16 @@ input[type="checkbox"] {
 
     .location-input input,
     .location-input button {
+        width: 100%;
+    }
+
+    .office-display {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .btn-change-office {
         width: 100%;
     }
 }

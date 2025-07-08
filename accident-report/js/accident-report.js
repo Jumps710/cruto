@@ -6,16 +6,6 @@ const config = {
     gasUrl: 'https://script.google.com/macros/s/AKfycbyaHucPNASJmzi_LLaIBuTAXtxxU-VZx4xOBeSXfbPzur_36Omq25ajThTHZ-M8Jk2lVw/exec'
 };
 
-// 事業所マスタデータ
-const offices = [
-    { value: 'tokyo', name: '東京事業所' },
-    { value: 'osaka', name: '大阪事業所' },
-    { value: 'nagoya', name: '名古屋事業所' },
-    { value: 'fukuoka', name: '福岡事業所' },
-    { value: 'sendai', name: '仙台事業所' },
-    { value: 'sapporo', name: '札幌事業所' }
-];
-
 // グローバル変数
 let formData = {};
 let photoData = {
@@ -24,6 +14,8 @@ let photoData = {
     ownVehicle: [],
     license: []
 };
+let userOrganization = '';
+let availableOffices = [];
 
 // 初期化
 document.addEventListener('DOMContentLoaded', async function() {
@@ -34,14 +26,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 報告者名を設定
         document.getElementById('reporter').value = profile.displayName;
         
-        // 事業所選択肢を設定
-        const officeSelect = document.getElementById('office');
-        offices.forEach(office => {
-            const option = document.createElement('option');
-            option.value = office.value;
-            option.textContent = office.name;
-            officeSelect.appendChild(option);
-        });
+        // ユーザーの組織情報を取得
+        await getUserOrganization(profile.userId);
         
         // 今日の日付を設定
         const today = new Date();
@@ -55,6 +41,157 @@ document.addEventListener('DOMContentLoaded', async function() {
         alert('アプリの初期化に失敗しました。LINE WORKSアプリ内で開いてください。');
     }
 });
+
+// ユーザーの組織情報を取得
+async function getUserOrganization(userId) {
+    try {
+        const response = await fetch(config.gasUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'getUserOrganization',
+                userId: userId
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result && result.orgUnitName) {
+            userOrganization = result.orgUnitName;
+            
+            // 事業所フィールドを設定
+            const officeDiv = document.getElementById('office').parentElement;
+            officeDiv.innerHTML = `
+                <label class="required">事業所</label>
+                <div class="office-display">
+                    <span id="currentOffice">${userOrganization}</span>
+                    <button type="button" id="changeOfficeBtn" class="btn-change-office">事業所を変更</button>
+                </div>
+                <select id="office" name="office" style="display: none;" required>
+                    <option value="${userOrganization}">${userOrganization}</option>
+                </select>
+                <span class="error-message">事業所を選択してください</span>
+            `;
+            
+            // 事業所変更ボタンのイベントリスナー
+            document.getElementById('changeOfficeBtn').addEventListener('click', showOfficeSelector);
+            
+        } else {
+            throw new Error('組織情報を取得できませんでした');
+        }
+        
+    } catch (error) {
+        console.error('組織情報取得エラー:', error);
+        // フォールバック: 手動選択
+        await loadOfficesFromSheet();
+    }
+}
+
+// Sheetsから事業所一覧を取得
+async function loadOfficesFromSheet() {
+    try {
+        const response = await fetch(config.gasUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'getOffices'
+            })
+        });
+        
+        const offices = await response.json();
+        
+        if (offices && Array.isArray(offices)) {
+            availableOffices = offices;
+            
+            // 事業所選択肢を設定
+            const officeSelect = document.getElementById('office');
+            officeSelect.innerHTML = '<option value="">選択してください</option>';
+            
+            offices.forEach(office => {
+                const option = document.createElement('option');
+                option.value = office.value;
+                option.textContent = office.name;
+                officeSelect.appendChild(option);
+            });
+            
+            officeSelect.style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error('事業所情報取得エラー:', error);
+        alert('事業所情報の取得に失敗しました。');
+    }
+}
+
+// 事業所選択ダイアログを表示
+async function showOfficeSelector() {
+    if (availableOffices.length === 0) {
+        await loadOfficesFromSheet();
+    }
+    
+    // 事業所選択モーダルを表示
+    const modalHtml = `
+        <div id="officeModal" class="modal show">
+            <div class="modal-content">
+                <h3>事業所を選択</h3>
+                <div class="office-list">
+                    ${availableOffices.map(office => `
+                        <div class="office-option" data-value="${office.value}">
+                            <input type="radio" id="office_${office.value}" name="officeSelect" value="${office.value}">
+                            <label for="office_${office.value}">${office.name}</label>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" id="cancelOfficeBtn" class="btn-cancel">キャンセル</button>
+                    <button type="button" id="confirmOfficeBtn" class="btn-confirm">決定</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // 現在の選択を設定
+    const currentOffice = document.getElementById('office').value || userOrganization;
+    const currentRadio = document.querySelector(`input[name="officeSelect"][value="${currentOffice}"]`);
+    if (currentRadio) {
+        currentRadio.checked = true;
+    }
+    
+    // イベントリスナー
+    document.getElementById('cancelOfficeBtn').addEventListener('click', closeOfficeModal);
+    document.getElementById('confirmOfficeBtn').addEventListener('click', confirmOfficeSelection);
+}
+
+// 事業所選択確定
+function confirmOfficeSelection() {
+    const selectedOffice = document.querySelector('input[name="officeSelect"]:checked');
+    if (selectedOffice) {
+        const officeValue = selectedOffice.value;
+        const officeName = selectedOffice.nextElementSibling.textContent;
+        
+        // 表示を更新
+        document.getElementById('currentOffice').textContent = officeName;
+        document.getElementById('office').value = officeValue;
+        
+        closeOfficeModal();
+    } else {
+        alert('事業所を選択してください');
+    }
+}
+
+// 事業所選択モーダルを閉じる
+function closeOfficeModal() {
+    const modal = document.getElementById('officeModal');
+    if (modal) {
+        modal.remove();
+    }
+}
 
 // イベントリスナーの設定
 function setupEventListeners() {
@@ -275,7 +412,7 @@ function validateForm() {
     let isValid = true;
     
     // 必須項目のチェック
-    const requiredFields = ['office', 'incidentDate', 'incidentTime', 'accidentDetails'];
+    const requiredFields = ['incidentDate', 'incidentTime', 'accidentDetails'];
     requiredFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (!field.value) {
@@ -283,6 +420,13 @@ function validateForm() {
             isValid = false;
         }
     });
+    
+    // 事業所のチェック
+    const office = document.getElementById('office').value;
+    if (!office) {
+        alert('事業所が設定されていません');
+        isValid = false;
+    }
     
     // 事故種類の選択チェック
     if (!document.querySelector('input[name="accidentType"]:checked')) {
@@ -392,6 +536,9 @@ function collectFormData() {
     const form = document.getElementById('accidentReportForm');
     formData = Utils.formToObject(form);
     
+    // 手動で値を設定
+    formData.office = document.getElementById('office').value || userOrganization;
+    
     // チェックボックスの値を収集
     const injuryTypes = [];
     document.querySelectorAll('input[name="injuryType"]:checked').forEach(cb => {
@@ -406,7 +553,7 @@ function collectFormData() {
 // 確認内容生成
 function generateConfirmContent() {
     const accidentType = formData.accidentType === 'vehicle' ? '車両事故' : 'その他';
-    const office = document.querySelector(`#office option[value="${formData.office}"]`).textContent;
+    const office = formData.office || userOrganization;
     
     let html = `
         <p><strong>報告者:</strong> ${formData.reporter}</p>
@@ -424,7 +571,8 @@ function generateConfirmContent() {
             <p><strong>発生場所:</strong> ${formData.location}</p>
         `;
     } else {
-        const locationCategory = document.querySelector(`#locationCategory option[value="${formData.locationCategory}"]`).textContent;
+        const categorySelect = document.getElementById('locationCategory');
+        const locationCategory = categorySelect.options[categorySelect.selectedIndex].text;
         html += `<p><strong>場所分類:</strong> ${locationCategory}</p>`;
         
         if (formData.detailLocation) {
@@ -473,6 +621,8 @@ async function submitForm() {
         formData.userId = WOFFManager.getUserId();
         formData.department = WOFFManager.getDepartment();
         
+        console.log('送信データ:', formData);
+        
         // GASに送信
         const response = await fetch(config.gasUrl, {
             method: 'POST',
@@ -486,6 +636,7 @@ async function submitForm() {
         });
         
         const result = await response.json();
+        console.log('GAS応答:', result);
         
         if (result.success) {
             // 成功時は結果画面へ遷移
@@ -501,7 +652,7 @@ async function submitForm() {
         
     } catch (error) {
         console.error('送信エラー:', error);
-        alert('送信に失敗しました。もう一度お試しください。');
+        alert('送信に失敗しました。もう一度お試しください。\nエラー: ' + error.message);
         submitBtn.disabled = false;
         submitBtn.textContent = '送信する';
     }
