@@ -69,13 +69,25 @@ async function getUserOrganization(userId) {
         };
         console.log('📤 送信データ:', requestData);
         
-        const response = await fetch(config.gasUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData)
-        });
+        let response;
+        try {
+            response = await fetch(config.gasUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            });
+        } catch (fetchError) {
+            console.error('📛 fetch自体がエラー:', fetchError);
+            console.error('エラー詳細:', {
+                name: fetchError.name,
+                message: fetchError.message,
+                stack: fetchError.stack,
+                gasUrl: config.gasUrl
+            });
+            throw new Error('ネットワークエラー: ' + fetchError.message);
+        }
         
         console.log('📬 レスポンス受信', {
             status: response.status,

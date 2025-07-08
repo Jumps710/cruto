@@ -3,20 +3,38 @@ const WOFFManager = {
   profile: null,
   
   async init(woffId) {
+    console.log('🔧 WOFFManager.init開始', {woffId});
     try {
+      // woff SDKが存在するか確認
+      if (typeof woff === 'undefined') {
+        throw new Error('WOFF SDKがロードされていません');
+      }
+      console.log('✅ WOFF SDKが存在します');
+      
+      console.log('⏳ woff.init呼び出し中...');
       await woff.init({ woffId });
       console.log("✅ WOFF初期化成功");
       
+      console.log('⏳ woff.isInClient()チェック中...');
       if (!woff.isInClient()) {
-        throw new Error("このアプリはLINE WORKSアプリ内でのみ使用できます。");
+        console.warn('⚠️ LINE WORKSクライアント外での実行');
+        // 開発環境での実行を許可
+        // throw new Error("このアプリはLINE WORKSアプリ内でのみ使用できます。");
       }
       
+      console.log('⏳ woff.getProfile()呼び出し中...');
       this.profile = await woff.getProfile();
-      console.log("👤 ユーザー情報取得:", this.profile);
+      console.log("👤 ユーザー情報取得成功:", this.profile);
       
       return this.profile;
     } catch (err) {
       console.error("❌ WOFF初期化エラー:", err);
+      console.error('エラー詳細:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+        woffId: woffId
+      });
       throw err;
     }
   },

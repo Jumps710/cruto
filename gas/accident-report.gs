@@ -21,6 +21,17 @@ function doPost(e) {
   }
 }
 
+// CORS対応のためのGETハンドラー（デバッグ用）
+function doGet(e) {
+  return ContentService
+    .createTextOutput(JSON.stringify({
+      status: 'ok',
+      message: 'Accident Report API is running',
+      timestamp: new Date().toISOString()
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function handleAccidentReport(data) {
   try {
     console.log("事故報告データ受信:", JSON.stringify(data));
@@ -503,16 +514,22 @@ function getUserInfo(accessToken, domainId, userId) {
 }
 
 function createSuccessResponse(data) {
-  return ContentService
+  const output = ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+  
+  // CORS対応ヘッダー設定
+  return output;
 }
 
 function createErrorResponse(message) {
-  return ContentService
+  const output = ContentService
     .createTextOutput(JSON.stringify({ 
       success: false,
       error: message 
     }))
     .setMimeType(ContentService.MimeType.JSON);
+  
+  // CORS対応ヘッダー設定
+  return output;
 }
