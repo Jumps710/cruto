@@ -1,47 +1,26 @@
-# Cruto LW業務アプリケーション
+# Cruto LINE WORKS業務アプリケーション
 
-## プロジェクト構成
+LINE WORKS向けの業務支援アプリケーション群です。
 
-```
-cruto/
-├── accident-report/     # 事故報告WOFF
-│   ├── index.html
-│   ├── result.html
-│   ├── css/
-│   └── js/
-├── hospital-report/     # 入退院報告WOFF
-│   ├── index.html
-│   ├── result.html
-│   ├── css/
-│   └── js/
-├── sales-bot/          # 営業支援Bot
-│   ├── index.html
-│   ├── css/
-│   └── js/
-├── common/             # 共通リソース
-│   ├── css/
-│   └── js/
-└── gas/               # Google Apps Script
-    ├── accident-report.gs
-    ├── hospital-report.gs
-    └── sales-bot.gs
-```
+## アプリケーション
+
+- **[事故報告](./accident-report/)** - 事故報告フォーム（写真アップロード機能付き）
+- **[入退院報告](./hospital-report/)** - 入退院管理フォーム（予測検索機能付き）
+- **[営業支援Bot](./sales-bot/)** - 営業ルート最適化・分析機能
+
+## 利用方法
+
+これらのアプリケーションはLINE WORKS WOFFアプリとして動作します。
+
+## デプロイ
+
+GitHub Pagesで自動デプロイされます。
+
+- **本番URL**: https://jumps710.github.io/cruto/
 
 ## 技術スタック
 
-- **フロントエンド**: HTML5, CSS3, JavaScript (ES6+)
-- **LINE WORKS SDK**: v3.7.1
-- **バックエンド**: Google Apps Script
-- **データストア**: Google Sheets
-- **ファイルストレージ**: Google Drive
-
-## セットアップ
-
-1. GitHub Pagesを有効化
-2. Google Apps ScriptプロジェクトをデプロイしてWebアプリとして公開
-3. LINE WORKS WOFFアプリを作成し、woffIdを取得
-4. Google SheetsとDriveフォルダを準備
-
-## 開発手順
-
-各アプリケーションのディレクトリで開発を行い、GitHub Pagesでホスティングします。
+- Frontend: HTML5, CSS3, JavaScript (Vanilla)
+- Backend: Google Apps Script
+- Data: Google Sheets
+- Deploy: GitHub Pages

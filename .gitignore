@@ -1,10 +1,39 @@
+# CLAUDE.md - ローカル保存のみ
+CLAUDE.md
+
+# GAS関連ファイル - 本番環境で別管理
+gas/
+*.gs
+appsscript.json
+
+# Node.js関連
+node_modules/
+package-lock.json
+package.json
+
+# 開発用ファイル
+*.backup
+deploy-gas.sh
+setup-clasp.md
+manual-auth.md
+wsl-clasp-auth.md
+gas-deploy-guide.md
+
+# ドキュメントファイル（ローカルのみ）
+deployment-guide.html
+github-pages-setup.md
+github-push-guide.md
+
+# モックファイル
+*-mock.html
+
+# スクリーンショット
+screenshot/
+
 # Logs
 logs
 *.log
 npm-debug.log*
-
-# Dependency directories
-node_modules/
 
 # dotenv environment variables file
 .env
