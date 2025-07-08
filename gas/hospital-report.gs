@@ -179,8 +179,25 @@ function getOffices() {
 }
 
 function getUserOrganization(userId) {
+  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("log");
+  const timestamp = new Date();
+  const debugId = 'ORG_' + timestamp.getTime();
+  
   try {
     console.log("ユーザー組織情報取得開始:", userId);
+    
+    // デバッグログ記録開始
+    logSheet.appendRow([
+      timestamp,
+      "組織情報取得",
+      "開始",
+      userId,
+      debugId,
+      "getUserOrganization開始",
+      "",
+      "",
+      JSON.stringify({action: "start", userId: userId, source: "hospital-report"})
+    ]);
     
     // LINE WORKS API設定
     const CLIENT_ID = 'De3dyIflyPCDY2xrHUak';
@@ -218,33 +235,166 @@ K7JGqeB3/kYJmt9h1rZQr1o=
 
     try {
       // JWTトークンを生成
+      logSheet.appendRow([
+        new Date(),
+        "組織情報取得",
+        "JWT生成開始",
+        userId,
+        debugId,
+        "generateJWT実行",
+        "",
+        "",
+        JSON.stringify({clientId: CLIENT_ID, serviceAccount: SERVICE_ACCOUNT, source: "hospital-report"})
+      ]);
+      
       const jwt = generateJWT(CLIENT_ID, SERVICE_ACCOUNT, PRIVATE_KEY);
       
+      logSheet.appendRow([
+        new Date(),
+        "組織情報取得",
+        "JWT生成完了",
+        userId,
+        debugId,
+        "JWT生成成功",
+        "",
+        "",
+        JSON.stringify({jwtLength: jwt.length, jwtPrefix: jwt.substring(0, 50)})
+      ]);
+      
       // アクセストークンを取得
+      logSheet.appendRow([
+        new Date(),
+        "組織情報取得",
+        "トークン取得開始",
+        userId,
+        debugId,
+        "getAccessToken実行",
+        "",
+        "",
+        JSON.stringify({clientId: CLIENT_ID})
+      ]);
+      
       const accessToken = getAccessToken(jwt, CLIENT_ID, CLIENT_SECRET);
       
+      logSheet.appendRow([
+        new Date(),
+        "組織情報取得",
+        "トークン取得完了",
+        userId,
+        debugId,
+        "アクセストークン取得成功",
+        "",
+        "",
+        JSON.stringify({tokenLength: accessToken.length, tokenPrefix: accessToken.substring(0, 20)})
+      ]);
+      
       // ユーザー情報を取得
+      logSheet.appendRow([
+        new Date(),
+        "組織情報取得",
+        "ユーザー情報取得開始",
+        userId,
+        debugId,
+        "getUserInfo実行",
+        "",
+        "",
+        JSON.stringify({domainId: DOMAIN_ID, userId: userId})
+      ]);
+      
       const userInfo = getUserInfo(accessToken, DOMAIN_ID, userId);
+      
+      logSheet.appendRow([
+        new Date(),
+        "組織情報取得",
+        "ユーザー情報取得完了",
+        userId,
+        debugId,
+        "ユーザー情報取得成功",
+        "",
+        "",
+        JSON.stringify(userInfo)
+      ]);
       
       if (userInfo && userInfo.orgUnitName) {
         console.log("組織情報取得成功:", userInfo.orgUnitName);
+        
+        logSheet.appendRow([
+          new Date(),
+          "組織情報取得",
+          "成功",
+          userId,
+          debugId,
+          "組織名取得成功: " + userInfo.orgUnitName,
+          "",
+          "",
+          JSON.stringify({orgUnitName: userInfo.orgUnitName})
+        ]);
+        
         return createSuccessResponse({
           orgUnitName: userInfo.orgUnitName
         });
       } else {
-        throw new Error('組織情報が取得できませんでした');
+        throw new Error('組織情報が取得できませんでした - userInfo: ' + JSON.stringify(userInfo));
       }
       
     } catch (apiError) {
       console.error("LINE WORKS API呼び出しエラー:", apiError);
       
+      logSheet.appendRow([
+        new Date(),
+        "組織情報取得",
+        "API_ERROR",
+        userId,
+        debugId,
+        "LINE WORKS API エラー: " + apiError.toString(),
+        "",
+        "",
+        JSON.stringify({
+          error: apiError.toString(),
+          stack: apiError.stack,
+          message: apiError.message,
+          source: "hospital-report"
+        })
+      ]);
+      
       // フォールバック: 事業所シートから取得
       console.log("フォールバック: 事業所シートから事業所一覧を取得");
+      
+      logSheet.appendRow([
+        new Date(),
+        "組織情報取得",
+        "フォールバック",
+        userId,
+        debugId,
+        "事業所シートから取得開始",
+        "",
+        "",
+        JSON.stringify({fallback: true, source: "hospital-report"})
+      ]);
+      
       return getOffices();
     }
     
   } catch (error) {
     console.error("組織情報取得エラー:", error);
+    
+    logSheet.appendRow([
+      new Date(),
+      "組織情報取得",
+      "FATAL_ERROR",
+      userId,
+      debugId,
+      "致命的エラー: " + error.toString(),
+      "",
+      "",
+      JSON.stringify({
+        error: error.toString(),
+        stack: error.stack,
+        message: error.message,
+        source: "hospital-report"
+      })
+    ]);
+    
     return createErrorResponse("組織情報の取得に失敗しました: " + error.toString());
   }
 }
