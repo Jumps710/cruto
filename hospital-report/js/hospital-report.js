@@ -15,69 +15,118 @@ let hospitals = [];
 
 // 初期化
 document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 hospital-report DOMContentLoaded開始');
     try {
+        console.log('📱 WOFF初期化開始', {woffId: config.woffId});
+        
         // WOFF初期化
         const profile = await WOFFManager.init(config.woffId);
+        console.log('✅ WOFF初期化完了', profile);
         
         // 報告者名を設定
         document.getElementById('reporter').value = profile.displayName;
+        console.log('👤 報告者名設定完了:', profile.displayName);
         
         // ユーザーの組織情報を取得
+        console.log('🏢 ユーザー組織情報取得開始:', profile.userId);
         await getUserOrganization(profile.userId);
         
         // 今日の日付を設定
         const today = new Date();
         document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
+        console.log('📅 日付設定完了:', today.toISOString().split('T')[0]);
         
         // マスタデータを取得
+        console.log('📊 マスタデータ取得開始');
         await loadMasterData();
         
         // イベントリスナーの設定
         setupEventListeners();
+        console.log('🎧 イベントリスナー設定完了');
+        
+        console.log('✅ 全初期化処理完了');
         
     } catch (error) {
-        console.error('初期化エラー:', error);
+        console.error('❌ 初期化エラー:', error);
+        console.error('エラー詳細:', {
+            message: error.message,
+            stack: error.stack,
+            config: config
+        });
         alert('アプリの初期化に失敗しました。LINE WORKSアプリ内で開いてください。');
     }
 });
 
 // ユーザーの組織情報を取得
 async function getUserOrganization(userId) {
+    console.log('🏢 getUserOrganization開始', {userId, gasUrl: config.gasUrl});
+    
     try {
+        console.log('📡 GAS API呼び出し開始');
+        const requestData = {
+            action: 'getUserOrganization',
+            userId: userId
+        };
+        console.log('📤 送信データ:', requestData);
+        
         const response = await fetch(config.gasUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                action: 'getUserOrganization',
-                userId: userId
-            })
+            body: JSON.stringify(requestData)
         });
         
+        console.log('📬 レスポンス受信', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const result = await response.json();
+        console.log('📋 パース結果:', result);
         
         if (result && result.orgUnitName) {
             userOrganization = result.orgUnitName;
+            console.log('✅ 組織情報取得成功:', userOrganization);
             
             // 事業所フィールドを設定
             document.getElementById('currentOffice').textContent = userOrganization;
             document.getElementById('office').value = userOrganization;
+            console.log('🏗️ 事業所表示更新完了');
+            
+        } else if (result && Array.isArray(result)) {
+            // フォールバック: 事業所一覧を取得した場合
+            console.log('⚠️ フォールバック: 事業所一覧取得', result);
+            await loadOfficesFromResponse(result);
             
         } else {
-            throw new Error('組織情報を取得できませんでした');
+            throw new Error('組織情報を取得できませんでした - result: ' + JSON.stringify(result));
         }
         
     } catch (error) {
-        console.error('組織情報取得エラー:', error);
+        console.error('❌ 組織情報取得エラー:', error);
+        console.error('エラー詳細:', {
+            message: error.message,
+            stack: error.stack,
+            userId: userId,
+            gasUrl: config.gasUrl
+        });
         // フォールバック: 手動選択
+        console.log('🔄 フォールバック: 事業所一覧取得開始');
         await loadOfficesFromSheet();
     }
 }
 
 // Sheetsから事業所一覧を取得
 async function loadOfficesFromSheet() {
+    console.log('📋 loadOfficesFromSheet開始');
     try {
+        console.log('📡 getOffices API呼び出し開始');
         const response = await fetch(config.gasUrl, {
             method: 'POST',
             headers: {
@@ -88,10 +137,18 @@ async function loadOfficesFromSheet() {
             })
         });
         
+        console.log('📬 getOffices レスポンス受信', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok
+        });
+        
         const offices = await response.json();
+        console.log('📋 事業所一覧パース結果:', offices);
         
         if (offices && Array.isArray(offices)) {
             availableOffices = offices;
+            console.log('✅ 事業所一覧取得成功:', offices.length + '件');
             
             // 事業所選択肢を設定
             const officeSelect = document.getElementById('office');
