@@ -252,6 +252,38 @@ config: {
 このプロジェクトは要件定義から完成まで一貫してClaude Codeで開発し、
 実用的なLINE WORKS業務アプリケーション群として完成。
 
+## 自動デプロイ方針
+
+**重要**: 本プロジェクトではすべてのデプロイ作業をClaude Codeから自動実行します。
+
+### GAS（Google Apps Script）デプロイ
+- **ツール**: clasp (Google Apps Script CLI)
+- **コマンド**: `npm run push:gas` でコード更新
+- **WebアプリURL**: 変更しないよう既存デプロイIDを維持
+- **スクリプトID**: `1tRFxjvtWORDXfaYU3aHH2CcoKPG_Wf4qw92OJCMCJ8dxdqsBdm_88nkZ`
+- **手動作業**: 禁止（Claude Codeが自動実行）
+
+### フロントエンド（GitHub Pages）デプロイ
+- **ツール**: git push origin main（GitHub Actionsで自動デプロイ）
+- **ベースURL**: https://jumps710.github.io/cruto/
+- **手動作業**: 禁止（push時に自動実行）
+
+### 利用可能なnpmスクリプト
+```bash
+npm run push:gas      # GASコードをプッシュ
+npm run pull:gas      # GASコードをプル
+npm run open:gas      # GASプロジェクトをブラウザで開く
+npm run logs:gas      # GAS実行ログを表示
+npm run watch:gas     # ファイル変更を監視して自動プッシュ
+npm run setup:gas     # clasp認証設定
+```
+
+### 開発フロー
+1. Claude Codeでコード修正
+2. `git add .` + `git commit` + `git push` でGitHub更新
+3. `npm run push:gas` でGAS更新
+4. WOFF URLは変更されないため再設定不要
+
 
 
 
@@ -448,4 +480,42 @@ LW APIでuserが所属する組織のorgUnitName（事業所名称）を取得�
 ・契約終了
 チェックボックスで「契約終了にする」の✔を入れる
 →送信すると、入退院管理シートの、該当利用者レコードのM列を「契約終了」へ更新
+
+## LW API実行のための認証情報
+
+clinet ID: De3dyIflyPCDY2xrHUak
+client secret: ckuFb6OYxV
+scopes: bot, directory, user, calendar
+service account: nagmx.serviceaccount@works-demo.org
+domain ID: 10000389
+private key:
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCu74LymyotkWke
+aglpN7YHTumde+b/VmdMVzSBe1s77M5WwVw+W4AvR1jfQvYXx5dzdHj69DtABSlE
+1nLihxHu1MxU2gGG4m7Hhh8mRf3vF/vWw+KjaQFsQaD3ZFfaoq4BbiS2eYx9Z6YA
+IV/3/BfCHTF+yVWkkYenYRHYB0q+Fx/pZMsKkVLUt2PCzlR+EmcYzC1e5JFxZ0/K
+lfGmW/d4+XYjiyouGOcrD5e/jSfThi+ABuo2pUWJd1/q96o3QCIICJ7oYKx/ybz5
+DP5aTJIOt0aRIt8wdswWBMAsVnbOS3H/VQSMlz0DonpkmMZ0YhK5ZwHT/Nz4hWpc
++nRe8u67AgMBAAECggEATYt4VYi4oqhxm3zPnSeH9idh4WB6Hjez5KBHcxo2cBLh
+yI1AEZhH8y1CVP1+zz23ggNgWYYH+bIQACa7mHTdWyxTQ028HYmkJ6fpiPK/xMux
+5BrDDULP0agp7WA6nX09ev7TIVwyDajzad1hiDDkazS7qwMehqvIIUcjPMrGtAoY
+c/HUK5+ciNsmORmeQ392e8MLaWTSVq56IAtb+1xbRmucagmxPXiVHBRRi450B/5j
+vQsi0XLDWog+h/c+wScqAfW4LgqVh82PnK/kUe34cICOrz9P/vuPf9/N8CSW+z5F
+Jov95hQd8zajpb43ur7NNlA5JvS4KBMy21FdN15gYQKBgQC2UKy8ytDhLEm8H4b5
+1VZURznIReqn0VYWmS76gXYpMP3a5Ztf6xHzBSYnzB+ndLcBGhahD0fbhMsPJD35
+mUfn4orC+bglWXNLLascIOGhbfjp0coHje7v4tQcs7x1Ale5sQLqqHFPrCYc0hrO
+TKJ4NxGpl//tnmdOlBdyXgx1SwKBgQD1o08Bd68Zs0mhXITgfwDF0Q5colQEwNUO
+YRbGcTLV4RFEmsVmx9y2VZKbNeW4N6mME2EXLN4JgXJv6pVuPav+CcDq+gKnJt/Z
+BqFiL6tD09YMK+K0j2dQF7zXLk+fghP8gRqAchfYW3Rx1jAOuS2xf7QbE6yBi+BY
+X0EZPkw2UQKBgQCYxkXZ9oLPDhPDxw+Ob41mFkF/Z8dZVXw0d6z8Ulw37EvtkJaA
+7DUgVmJA2zZzVsS78aag1HM8qqyWRaKBdEbjM91fwW7kLW8FwoEukwdABS2ekiQf
+7HobHxLr8lmsG4hznLd6+CfrwbA2WoIH+gPzhQISAcN+1UxwdnynY9RAvQKBgGn0
+WIbshkYStOb6joJ7peyuIYDJsG4gc4ZxUK6mc2QYYidyj0WnXkf0H3n9xKoysFqw
+nUeu3dPB14f46x4TUhYRRPrWfsB1H0dw+bntj/WA8apsX6y80raUlqtG2aeXJ2Ha
+moDfNfPodxEHb9FaBSC0Ug7/7IAwwsO7ysvFuIARAoGALC60V6AvHw5jhU/sBWHp
+ULDW2wqcYOFlC2b3PWTuG/VE7maywLbA9MYwGVy52hD4AgkiSuqxDtlsO9DZn5nd
+Yn32j0gdBElxoy4BvBe2Bd0KZ1wybuCyPgSNsZfVa9dnoqmDDV2w0EeAxhS2IPPp
+K7JGqeB3/kYJmt9h1rZQr1o=
+-----END PRIVATE KEY-----
+
 
