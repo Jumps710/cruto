@@ -74,26 +74,40 @@ async function getUserOrganization(userId) {
         
         try {
             console.log('🌐 GAS API呼び出し開始');
-            // 直接fetchを使用
+            // 直接fetchを使用（リダイレクト追従設定追加）
             response = await fetch(config.gasUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestData)
+                body: JSON.stringify(requestData),
+                redirect: 'follow',  // リダイレクトを自動追従
+                mode: 'cors'         // CORS明示的設定
             });
             
             console.log('📬 レスポンス受信', {
                 status: response.status,
                 statusText: response.statusText,
-                ok: response.ok
+                ok: response.ok,
+                url: response.url,
+                headers: Array.from(response.headers.entries())
             });
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
-            result = await response.json();
+            // レスポンステキストを先に取得してログ出力
+            const responseText = await response.text();
+            console.log('📄 レスポンステキスト:', responseText.substring(0, 200));
+            
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('❌ JSON解析エラー:', parseError);
+                console.error('📄 完全なレスポンス:', responseText);
+                throw new Error('レスポンスのJSON解析に失敗: ' + parseError.message);
+            }
         } catch (fetchError) {
             console.error('📛 API呼び出しエラー:', fetchError);
             console.error('エラー詳細:', {
