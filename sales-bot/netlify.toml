@@ -1,0 +1,21 @@
+[build]
+  # ビルド設定なし（静的ファイルのみ）
+  publish = "."
+  
+[build.environment]
+  # Node.jsバージョン指定（必要に応じて）
+  NODE_VERSION = "18"
+
+# リダイレクト設定
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+
+# ヘッダー設定（CORS対応）
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

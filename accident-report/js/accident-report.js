@@ -3,7 +3,7 @@
 // 設定
 const config = {
     woffId: 'EownaFs9auCN-igUa84MDA', // 本番環境のWOFF ID
-    gasUrl: 'https://script.google.com/macros/s/AKfycbyaHucPNASJmzi_LLaIBuTAXtxxU-VZx4xOBeSXfbPzur_36Omq25ajThTHZ-M8Jk2lVw/exec'
+    gasUrl: 'https://script.google.com/macros/s/AKfycbxnKjMXOKWpGvx-aJvO5SVupD2_UphVyN3ITtB04HKqek7k5ULA9-3M_Xz0Ar5HABNpBQ/exec'
 };
 
 // グローバル変数

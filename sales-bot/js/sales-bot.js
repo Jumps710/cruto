@@ -2,8 +2,8 @@
 const SalesBot = {
   // 設定
   config: {
-    woffId: "YOUR_WOFF_ID", // 実際のWOFF IDに変更
-    gasUrl: "https://script.google.com/macros/s/YOUR_GAS_URL/exec" // 実際のGAS URLに変更
+    woffId: "Ilofk_65rvB6VHiOceQ0sg", // 営業支援Bot WOFF ID
+    gasUrl: "https://script.google.com/macros/s/AKfycbxnKjMXOKWpGvx-aJvO5SVupD2_UphVyN3ITtB04HKqek7k5ULA9-3M_Xz0Ar5HABNpBQ/exec" // 本番環境 GAS URL
   },
   
   // 状態管理
