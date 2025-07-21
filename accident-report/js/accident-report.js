@@ -719,10 +719,10 @@ async function submitForm() {
         
         console.log('送信データ:', formData);
         
-        // GASに送信（POST + application/x-www-form-urlencoded）
-        console.log('🚀 フォーム送信開始（POST + URLSearchParams方式）');
+        // GASに送信（GET方式 - 確実な疎通のため）
+        console.log('🚀 フォーム送信開始（GET方式）');
         
-        // URLSearchParamsで送信（過去の成功パターンに合わせる）
+        // URLSearchParamsで送信（getUserOrganizationと同じ成功パターン）
         const params = new URLSearchParams();
         params.append('action', 'submitAccidentReport');
         
@@ -752,16 +752,15 @@ async function submitForm() {
         
         let response;
         try {
-            console.log('📡 POST リクエスト送信中（URLSearchParams形式）...');
+            console.log('📡 GET リクエスト送信中...');
             
-            response = await fetch(config.gasUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept': 'application/json'
-                },
-                body: params,
-                redirect: 'follow'
+            const getUrl = `${config.gasUrl}?${params.toString()}`;
+            console.log('🌐 送信URL長:', getUrl.length);
+            
+            response = await fetch(getUrl, {
+                method: 'GET',
+                redirect: 'follow',
+                mode: 'cors'
             });
             
             console.log('📬 レスポンス受信:', {
