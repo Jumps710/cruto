@@ -73,34 +73,18 @@ async function getUserOrganization(userId) {
         let result;
         
         try {
-            console.log('🌐 GAS API呼び出し開始 - WOFFプロキシ経由');
+            console.log('🌐 GAS API呼び出し開始');
             
-            // WOFFプロキシを使用して外部APIを呼び出す
-            const proxyRequest = {
-                url: config.gasUrl,
+            // 直接fetchを使用（正しいGAS URLで）
+            response = await fetch(config.gasUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestData)
-            };
-            
-            console.log('🔄 WOFFプロキシリクエスト:', proxyRequest);
-            
-            // woff.proxyCallを使用
-            const proxyResult = await woff.proxyCall(proxyRequest);
-            console.log('✅ WOFFプロキシレスポンス:', proxyResult);
-            
-            // プロキシレスポンスを通常のレスポンス形式に変換
-            response = {
-                ok: proxyResult.status >= 200 && proxyResult.status < 300,
-                status: proxyResult.status || 200,
-                statusText: proxyResult.statusText || 'OK',
-                url: config.gasUrl,
-                headers: new Map(Object.entries(proxyResult.headers || {})),
-                text: async () => proxyResult.body,
-                json: async () => JSON.parse(proxyResult.body)
-            };
+                body: JSON.stringify(requestData),
+                redirect: 'follow',
+                mode: 'cors'
+            });
             
             console.log('📬 レスポンス受信', {
                 status: response.status,
