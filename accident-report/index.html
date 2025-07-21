@@ -264,10 +264,18 @@
 
     <script src="../common/js/woff-init.js"></script>
     <script>
-        // 動的キャッシュバスター
+        // 動的キャッシュバスター + 読み込み完了後の初期化実行
         const timestamp = Date.now();
         const script = document.createElement('script');
         script.src = 'js/accident-report.js?v=' + timestamp;
+        script.onload = function() {
+            console.log('📂 JavaScript読み込み完了 - 初期化開始');
+            // DOMContentLoadedイベントを強制発火
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                const event = new Event('DOMContentLoaded');
+                document.dispatchEvent(event);
+            }
+        };
         document.head.appendChild(script);
     </script>
 </body>
