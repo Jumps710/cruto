@@ -720,19 +720,51 @@ async function submitForm() {
         console.log('送信データ:', formData);
         
         // GASに送信
-        const response = await fetch(config.gasUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'submitAccidentReport',
-                data: formData
-            })
-        });
+        console.log('🚀 フォーム送信開始');
+        const requestData = {
+            action: 'submitAccidentReport',
+            data: formData
+        };
         
-        const result = await response.json();
-        console.log('GAS応答:', result);
+        let response;
+        try {
+            console.log('📡 POST リクエスト送信中...');
+            response = await fetch(config.gasUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+                redirect: 'follow'
+            });
+            
+            console.log('📬 レスポンス受信:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                url: response.url
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+        } catch (fetchError) {
+            console.error('📛 fetch エラー:', fetchError);
+            throw new Error('ネットワークエラー: ' + fetchError.message);
+        }
+        
+        let result;
+        try {
+            const responseText = await response.text();
+            console.log('📄 レスポンステキスト:', responseText.substring(0, 500));
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('❌ JSON解析エラー:', parseError);
+            throw new Error('レスポンス解析エラー: ' + parseError.message);
+        }
+        
+        console.log('📋 解析結果:', result);
         
         if (result.success) {
             // 成功時は結果画面へ遷移
