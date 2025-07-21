@@ -263,6 +263,12 @@
     </div>
 
     <script src="../common/js/woff-init.js"></script>
-    <script src="js/accident-report.js?v=20250121-002"></script>
+    <script>
+        // 動的キャッシュバスター
+        const timestamp = Date.now();
+        const script = document.createElement('script');
+        script.src = 'js/accident-report.js?v=' + timestamp;
+        document.head.appendChild(script);
+    </script>
 </body>
 </html>
