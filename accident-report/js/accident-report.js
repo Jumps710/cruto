@@ -75,13 +75,13 @@ async function getUserOrganization(userId) {
         try {
             console.log('🌐 GAS API呼び出し開始');
             
-            // 直接fetchを使用（正しいGAS URLで）
-            response = await fetch(config.gasUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestData),
+            // GETリクエストでパラメータとして送信（CORS回避）
+            const params = new URLSearchParams(requestData);
+            const getUrl = `${config.gasUrl}?${params.toString()}`;
+            console.log('🌐 GET URL:', getUrl);
+            
+            response = await fetch(getUrl, {
+                method: 'GET',
                 redirect: 'follow',
                 mode: 'cors'
             });
