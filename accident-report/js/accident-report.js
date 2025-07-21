@@ -3,7 +3,7 @@
 // 設定
 const config = {
     woffId: 'EownaFs9auCN-igUa84MDA', // 本番環境のWOFF ID
-    gasUrl: 'https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec'
+    gasUrl: 'https://script.google.com/macros/s/AKfycbyaHucPNASJmzi_LLaIBuTAXtxxU-VZx4xOBeSXfbPzur_36Omq25ajThTHZ-M8Jk2lVw/exec'
 };
 
 // グローバル変数
@@ -73,17 +73,34 @@ async function getUserOrganization(userId) {
         let result;
         
         try {
-            console.log('🌐 GAS API呼び出し開始');
-            // 直接fetchを使用（リダイレクト追従設定追加）
-            response = await fetch(config.gasUrl, {
+            console.log('🌐 GAS API呼び出し開始 - WOFFプロキシ経由');
+            
+            // WOFFプロキシを使用して外部APIを呼び出す
+            const proxyRequest = {
+                url: config.gasUrl,
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(requestData),
-                redirect: 'follow',  // リダイレクトを自動追従
-                mode: 'cors'         // CORS明示的設定
-            });
+                body: JSON.stringify(requestData)
+            };
+            
+            console.log('🔄 WOFFプロキシリクエスト:', proxyRequest);
+            
+            // woff.proxyCallを使用
+            const proxyResult = await woff.proxyCall(proxyRequest);
+            console.log('✅ WOFFプロキシレスポンス:', proxyResult);
+            
+            // プロキシレスポンスを通常のレスポンス形式に変換
+            response = {
+                ok: proxyResult.status >= 200 && proxyResult.status < 300,
+                status: proxyResult.status || 200,
+                statusText: proxyResult.statusText || 'OK',
+                url: config.gasUrl,
+                headers: new Map(Object.entries(proxyResult.headers || {})),
+                text: async () => proxyResult.body,
+                json: async () => JSON.parse(proxyResult.body)
+            };
             
             console.log('📬 レスポンス受信', {
                 status: response.status,
