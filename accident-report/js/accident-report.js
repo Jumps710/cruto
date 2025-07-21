@@ -719,30 +719,49 @@ async function submitForm() {
         
         console.log('送信データ:', formData);
         
-        // GASに送信（GET方式でCORS回避）
-        console.log('🚀 フォーム送信開始（GET方式）');
+        // GASに送信（POST + application/x-www-form-urlencoded）
+        console.log('🚀 フォーム送信開始（POST + URLSearchParams方式）');
         
-        // 写真データを一旦除いて基本データのみでテスト
-        const baseFormData = { ...formData };
-        delete baseFormData.photos; // 写真データを除外してテスト
+        // URLSearchParamsで送信（過去の成功パターンに合わせる）
+        const params = new URLSearchParams();
+        params.append('action', 'submitAccidentReport');
         
-        const requestData = {
-            action: 'submitAccidentReport',
-            data: JSON.stringify(baseFormData) // JSON文字列として送信
-        };
+        // フォームデータの各項目を個別に追加
+        params.append('reporter', formData.reporter || '');
+        params.append('userId', formData.userId || '');
+        params.append('department', formData.department || '');
+        params.append('office', formData.office || '');
+        params.append('incidentDate', formData.incidentDate || '');
+        params.append('incidentTime', formData.incidentTime || '');
+        params.append('accidentType', formData.accidentType || '');
+        params.append('location', formData.location || '');
+        params.append('locationCategory', formData.locationCategory || '');
+        params.append('detailLocation', formData.detailLocation || '');
+        params.append('otherLocation', formData.otherLocation || '');
+        params.append('driverName', formData.driverName || '');
+        params.append('propertyDamage', formData.propertyDamage || '');
+        params.append('propertyDetailsText', formData.propertyDetailsText || '');
+        params.append('personalInjury', formData.personalInjury || '');
+        params.append('injuryTypes', JSON.stringify(formData.injuryTypes || []));
+        params.append('injuryDetailsText', formData.injuryDetailsText || '');
+        params.append('accidentDetails', formData.accidentDetails || '');
+        params.append('timestamp', formData.timestamp || new Date().toISOString());
+        
+        // 写真データは一旦除外（後で対応）
+        // TODO: Base64写真データの追加
         
         let response;
         try {
-            console.log('📡 GET リクエスト送信中...');
-            const params = new URLSearchParams(requestData);
-            const getUrl = `${config.gasUrl}?${params.toString()}`;
+            console.log('📡 POST リクエスト送信中（URLSearchParams形式）...');
             
-            console.log('🌐 送信URL長:', getUrl.length);
-            
-            response = await fetch(getUrl, {
-                method: 'GET',
-                redirect: 'follow',
-                mode: 'cors'
+            response = await fetch(config.gasUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                },
+                body: params,
+                redirect: 'follow'
             });
             
             console.log('📬 レスポンス受信:', {
