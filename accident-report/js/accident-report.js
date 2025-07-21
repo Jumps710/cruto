@@ -719,23 +719,30 @@ async function submitForm() {
         
         console.log('送信データ:', formData);
         
-        // GASに送信
-        console.log('🚀 フォーム送信開始');
+        // GASに送信（GET方式でCORS回避）
+        console.log('🚀 フォーム送信開始（GET方式）');
+        
+        // 写真データを一旦除いて基本データのみでテスト
+        const baseFormData = { ...formData };
+        delete baseFormData.photos; // 写真データを除外してテスト
+        
         const requestData = {
             action: 'submitAccidentReport',
-            data: formData
+            data: JSON.stringify(baseFormData) // JSON文字列として送信
         };
         
         let response;
         try {
-            console.log('📡 POST リクエスト送信中...');
-            response = await fetch(config.gasUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestData),
-                redirect: 'follow'
+            console.log('📡 GET リクエスト送信中...');
+            const params = new URLSearchParams(requestData);
+            const getUrl = `${config.gasUrl}?${params.toString()}`;
+            
+            console.log('🌐 送信URL長:', getUrl.length);
+            
+            response = await fetch(getUrl, {
+                method: 'GET',
+                redirect: 'follow',
+                mode: 'cors'
             });
             
             console.log('📬 レスポンス受信:', {
