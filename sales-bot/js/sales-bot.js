@@ -3,7 +3,7 @@ const SalesBot = {
   // 設定
   config: {
     woffId: "Ilofk_65rvB6VHiOceQ0sg", // 営業支援Bot WOFF ID
-    gasUrl: "https://script.google.com/macros/s/AKfycbxTr2cBRqfuOzH3ouMvPygT-RmzgZ049uD2e4OxJnIL4RHRh20V_njpIhcLGU36zcmUUA/exec" // 本番環境 GAS URL
+    gasUrl: "https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec" // 本番環境 GAS URL
   },
   
   // 状態管理
