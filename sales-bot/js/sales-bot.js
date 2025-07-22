@@ -1,9 +1,10 @@
-// 営業支援Bot JavaScript
+// 営業支援Bot JavaScript - GPS詳細版 v20250722002
 const SalesBot = {
   // 設定
   config: {
     woffId: "Ilofk_65rvB6VHiOceQ0sg", // 営業支援Bot WOFF ID
-    gasUrl: "https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec" // 本番環境 GAS URL
+    gasUrl: "https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec", // 本番環境 GAS URL
+    googleMapsApiKey: "AIzaSyBXFx41RFCdHGEN-ZFcuCt3kmQW1UIBeS8" // Google Maps Geocoding API
   },
   
   // 状態管理
@@ -217,16 +218,223 @@ const SalesBot = {
   },
 
   async reverseGeocode(lat, lng) {
-    // 実際のプロジェクトではGoogle Geocoding APIなどを使用
-    // ここでは簡易実装
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
-      const data = await response.json();
-      return data.display_name || null;
-    } catch (error) {
-      console.error("逆ジオコーディングエラー:", error);
-      return null;
+    console.log('[GPS] 営業Bot住所取得開始:', {lat, lng});
+    
+    // Google Maps Geocoding API を優先使用（詳細住所取得）
+    if (this.config.googleMapsApiKey) {
+      try {
+        console.log('[GPS] 営業Bot Google Maps API使用');
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${this.config.googleMapsApiKey}&language=ja&result_type=street_address|premise|subpremise&location_type=ROOFTOP|RANGE_INTERPOLATED`
+        );
+        const data = await response.json();
+        
+        console.log('[GPS] 営業Bot Google API応答:', data);
+        
+        if (data.status === 'OK' && data.results.length > 0) {
+          console.log('[GPS] 営業Bot Google API全結果:', data.results);
+          
+          // より詳細な住所を優先して選択
+          let bestResult = data.results[0];
+          
+          for (const result of data.results) {
+            console.log('[GPS] 営業Bot結果タイプ:', result.types, result.formatted_address);
+            if (result.types.includes('street_address') || result.types.includes('premise')) {
+              bestResult = result;
+              break;
+            }
+          }
+          
+          // Google APIから詳細住所を構築
+          const detailedAddress = this.buildDetailedAddressFromGoogle(bestResult);
+          console.log('[GPS] 営業Bot Google詳細住所構築完了:', detailedAddress);
+          
+          return detailedAddress || bestResult.formatted_address;
+        } else {
+          console.log('⚠️ Google API: 結果なし', data.status);
+        }
+      } catch (error) {
+        console.error("❌ Google Geocoding APIエラー:", error);
+      }
     }
+    
+    // フォールバック: Nominatim (OpenStreetMap) を使用（最高詳細度）
+    console.log('[GPS] 営業Bot Nominatimにフォールバック');
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja&zoom=19&addressdetails=1&extratags=1&namedetails=1`,
+        {
+          headers: {
+            'User-Agent': 'Cruto-Sales-Bot/1.0'
+          }
+        }
+      );
+      const data = await response.json();
+      
+      console.log('[GPS] 営業Bot Nominatim API応答:', data);
+      
+      if (data && data.display_name) {
+        // 日本の住所形式に詳細整形
+        const detailedAddress = this.formatDetailedJapaneseAddress(data);
+        console.log('[GPS] 営業Bot Nominatim住所整形完了:', detailedAddress);
+        return detailedAddress;
+      }
+    } catch (error) {
+      console.error("❌ 営業Bot逆ジオコーディングエラー:", error);
+    }
+    
+    return null;
+  },
+
+  // Google Maps APIのaddress_componentsから詳細住所を構築
+  buildDetailedAddressFromGoogle(result) {
+    if (!result.address_components) return null;
+    
+    console.log('[GPS] 営業Bot Google address_components解析:', result.address_components);
+    
+    let formatted = '';
+    let streetNumber = '';
+    let route = '';
+    let sublocality = '';
+    let locality = '';
+    let administrativeArea = '';
+    let premise = '';
+    
+    // address_componentsから各要素を抽出
+    result.address_components.forEach(component => {
+      const types = component.types;
+      console.log('[GPS] 営業Botコンポーネント:', component.long_name, types);
+      
+      if (types.includes('street_number')) {
+        streetNumber = component.long_name; // 番地
+      }
+      if (types.includes('route')) {
+        route = component.long_name; // 通り名
+      }
+      if (types.includes('premise')) {
+        premise = component.long_name; // 建物名
+      }
+      if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
+        sublocality = component.long_name; // 丁目など
+      }
+      if (types.includes('locality')) {
+        locality = component.long_name; // 市区町村
+      }
+      if (types.includes('administrative_area_level_1')) {
+        administrativeArea = component.long_name; // 都道府県
+      }
+    });
+    
+    // 日本の住所形式で構築
+    if (administrativeArea) formatted += administrativeArea;
+    if (locality) formatted += locality;
+    if (sublocality) formatted += sublocality;
+    
+    // 番地情報を追加
+    if (streetNumber) {
+      formatted += streetNumber;
+      console.log('[GPS] 営業Bot番地追加:', streetNumber);
+    } else if (route && route.match(/\d+/)) {
+      const routeNumber = route.match(/\d+/)[0];
+      formatted += routeNumber;
+      console.log('[GPS] 営業Botroute番地追加:', routeNumber);
+    }
+    
+    if (premise) {
+      formatted += ' ' + premise;
+    }
+    
+    console.log('[GPS] 営業Bot Google構築結果:', formatted);
+    return formatted || null;
+  },
+
+  // 日本の住所形式に詳細整形する関数（番地まで取得）
+  formatDetailedJapaneseAddress(data) {
+    if (!data.address) return data.display_name;
+    
+    const addr = data.address;
+    let formatted = '';
+    
+    console.log('[GPS] 営業Bot住所構造解析:', addr);
+    
+    // 都道府県
+    if (addr.state || addr.province) {
+      formatted += addr.state || addr.province;
+    }
+    
+    // 市区町村
+    if (addr.city || addr.town || addr.municipality) {
+      formatted += addr.city || addr.town || addr.municipality;
+    }
+    
+    // 区・特別区
+    if (addr.city_district || addr.suburb) {
+      formatted += addr.city_district || addr.suburb;
+    }
+    
+    // 町・丁目（複数パターンに対応）
+    if (addr.quarter || addr.neighbourhood || addr.residential) {
+      formatted += addr.quarter || addr.neighbourhood || addr.residential;
+    }
+    
+    // 番地・号（詳細な住所番号）
+    let houseInfo = '';
+    
+    // house_number（番地）
+    if (addr.house_number) {
+      houseInfo += addr.house_number;
+    }
+    
+    // 番地情報がない場合、追加の方法で番地を推定
+    if (!houseInfo) {
+      // 1. road（道路名）から推定
+      if (addr.road) {
+        console.log('[GPS] 営業Bot道路名から位置推定:', addr.road);
+        const roadMatch = addr.road.match(/(\d+)/);
+        if (roadMatch) {
+          houseInfo = roadMatch[1];
+        }
+      }
+      
+      // 2. display_nameから番地を抽出
+      if (!houseInfo && data.display_name) {
+        console.log('[GPS] 営業Botdisplay_nameから番地抽出:', data.display_name);
+        const addressMatch = data.display_name.match(/(\d+(?:-\d+)?(?:番地?)?)/);
+        if (addressMatch) {
+          houseInfo = addressMatch[1];
+          console.log('[GPS] 営業Botdisplay_nameから番地発見:', houseInfo);
+        }
+      }
+      
+      // 3. より詳細な検索が必要な場合の通知
+      if (!houseInfo) {
+        console.log('[GPS] 営業Bot番地情報なし');
+      }
+    }
+    
+    if (houseInfo) {
+      formatted += houseInfo;
+    }
+    
+    // 建物名・施設名
+    if (addr.amenity || addr.building || addr.shop || addr.office) {
+      const facilityName = addr.amenity || addr.building || addr.shop || addr.office;
+      formatted += ' ' + facilityName;
+    }
+    
+    // 具体的な場所の名前（name）
+    if (data.name && data.name !== formatted) {
+      formatted += ' (' + data.name + ')';
+    }
+    
+    console.log('[GPS] 営業Bot整形結果:', formatted);
+    
+    return formatted || data.display_name;
+  },
+
+  // 互換性のため従来の関数も残す
+  formatJapaneseAddress(data) {
+    return this.formatDetailedJapaneseAddress(data);
   },
 
   useManualLocation() {

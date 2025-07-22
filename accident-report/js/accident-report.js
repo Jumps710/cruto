@@ -1,10 +1,10 @@
-// 事故報告フォーム JavaScript
+// 事故報告フォーム JavaScript - GPS詳細版 v20250722002
 
 // 設定
 const config = {
     woffId: 'EownaFs9auCN-igUa84MDA', // 本番環境のWOFF ID
     gasUrl: 'https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec',
-    googleMapsApiKey: '' // Google Maps APIキーを設定すると、より正確な住所が取得できます
+    googleMapsApiKey: 'AIzaSyBXFx41RFCdHGEN-ZFcuCt3kmQW1UIBeS8' // Google Maps Geocoding API
 };
 
 // グローバル変数
@@ -27,45 +27,26 @@ const cache = {
 
 // 初期化
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 accident-report DOMContentLoaded開始');
-    
     // まず最初にイベントリスナーを設定（フォーム操作を即座に有効化）
     setupEventListeners();
-    console.log('🎧 イベントリスナー設定完了（優先実行）');
     
     try {
-        console.log('📱 WOFF初期化開始', {woffId: config.woffId});
-        
         // WOFF初期化
         const profile = await WOFFManager.init(config.woffId);
-        console.log('✅ WOFF初期化完了', profile);
         
         // 報告者名を設定
         document.getElementById('reporter').value = profile.displayName;
-        console.log('👤 報告者名設定完了:', profile.displayName);
         
         // 今日の日付を設定（即座に実行）
         const today = new Date();
         document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
-        console.log('📅 日付設定完了:', today.toISOString().split('T')[0]);
         
         // ユーザーの組織情報を非同期で取得（ブロッキングしない）
-        console.log('🏢 ユーザー組織情報取得開始:', profile.userId);
-        getUserOrganization(profile.userId).then(() => {
-            console.log('✅ 組織情報取得完了');
-        }).catch(error => {
-            console.error('❌ 組織情報取得エラー:', error);
-        });
+        getUserOrganization(profile.userId);
         
-        console.log('✅ 基本初期化処理完了（組織情報は並行取得中）');
         
     } catch (error) {
-        console.error('❌ 初期化エラー:', error);
-        console.error('エラー詳細:', {
-            message: error.message,
-            stack: error.stack,
-            config: config
-        });
+        // 初期化エラー
         
         // WOFF初期化に失敗しても、フォームは使えるようにする
         document.getElementById('reporter').value = 'テストユーザー';
@@ -94,15 +75,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // ユーザーの組織情報を取得
 async function getUserOrganization(userId) {
-    console.log('🏢 getUserOrganization開始', {userId, gasUrl: config.gasUrl});
     
     try {
-        console.log('📡 GAS API呼び出し開始');
         const requestData = {
             action: 'getUserOrganization',
             userId: userId
         };
-        console.log('📤 送信データ:', requestData);
         
         let response;
         let result;
@@ -565,29 +543,57 @@ async function getLocation() {
 
 // 座標から住所を取得する関数
 async function getAddressFromCoordinates(lat, lng) {
-    // Google Maps Geocoding API を使用する場合（APIキーが必要）
-    const googleApiKey = config.googleMapsApiKey; // 設定にAPIキーを追加する必要があります
+    console.log('[GPS] 住所取得開始:', {lat, lng});
+    
+    // Google Maps Geocoding API を優先使用（詳細な住所情報を取得）
+    const googleApiKey = config.googleMapsApiKey;
     
     if (googleApiKey) {
-        // Google Maps Geocoding API
         try {
+            console.log('[GPS] Google Maps API使用');
+            // result_typeパラメータで詳細な住所を要求し、zoomレベル相当の精度指定
             const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleApiKey}&language=ja`
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleApiKey}&language=ja&result_type=street_address|premise|subpremise&location_type=ROOFTOP|RANGE_INTERPOLATED`
             );
             const data = await response.json();
             
+            console.log('[GPS] Google API応答:', data);
+            
             if (data.status === 'OK' && data.results.length > 0) {
-                return data.results[0].formatted_address;
+                console.log('[GPS] Google API全結果:', data.results);
+                
+                // より詳細な住所を優先して選択
+                let bestResult = data.results[0];
+                
+                // street_address タイプの結果があれば優先
+                for (const result of data.results) {
+                    console.log('[GPS] 結果タイプ:', result.types, result.formatted_address);
+                    if (result.types.includes('street_address') || result.types.includes('premise')) {
+                        bestResult = result;
+                        break;
+                    }
+                }
+                
+                // Google APIから詳細住所を構築（address_componentsを使用）
+                const detailedAddress = buildDetailedAddressFromGoogle(bestResult);
+                console.log('[GPS] Google詳細住所構築完了:', detailedAddress);
+                console.log('[GPS] 最終住所結果:', detailedAddress || bestResult.formatted_address);
+                
+                return detailedAddress || bestResult.formatted_address;
+            } else {
+                console.log('[GPS] Google API結果なし:', data.status);
             }
         } catch (error) {
-            console.error('Google Geocoding APIエラー:', error);
+            console.error('❌ Google Geocoding APIエラー:', error);
         }
     }
     
     // 無料の代替案: Nominatim (OpenStreetMap) を使用
+    console.log('[GPS] Nominatimにフォールバック');
     try {
+        // zoom=19で最高詳細度、addressdetails=1で構造化住所情報を取得
         const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja&zoom=18&addressdetails=1`,
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja&zoom=19&addressdetails=1&extratags=1&namedetails=1`,
             {
                 headers: {
                     'User-Agent': 'Cruto-Accident-Report/1.0'
@@ -596,39 +602,179 @@ async function getAddressFromCoordinates(lat, lng) {
         );
         const data = await response.json();
         
+        console.log('[GPS] Nominatim API応答:', data);
+        
         if (data && data.display_name) {
-            // 日本の住所形式に整形
-            return formatJapaneseAddress(data);
+            // 日本の住所形式に詳細整形
+            const detailedAddress = formatDetailedJapaneseAddress(data);
+            console.log('[GPS] Nominatim住所整形完了:', detailedAddress);
+            return detailedAddress;
         }
     } catch (error) {
-        console.error('Nominatim APIエラー:', error);
+        console.error('❌ Nominatim APIエラー:', error);
     }
     
     return null;
 }
 
-// 日本の住所形式に整形する関数
-function formatJapaneseAddress(data) {
+// Google Maps APIのaddress_componentsから詳細住所を構築
+function buildDetailedAddressFromGoogle(result) {
+    if (!result.address_components) return null;
+    
+    console.log('[GPS] Google address_components解析:', result.address_components);
+    
+    let formatted = '';
+    let streetNumber = '';
+    let route = '';
+    let sublocality = '';
+    let locality = '';
+    let administrativeArea = '';
+    let premise = '';
+    
+    // address_componentsから各要素を抽出
+    result.address_components.forEach(component => {
+        const types = component.types;
+        console.log('[GPS] コンポーネント:', component.long_name, types);
+        
+        if (types.includes('street_number')) {
+            streetNumber = component.long_name; // 番地
+        }
+        if (types.includes('route')) {
+            route = component.long_name; // 通り名
+        }
+        if (types.includes('premise')) {
+            premise = component.long_name; // 建物名
+        }
+        if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
+            sublocality = component.long_name; // 丁目など
+        }
+        if (types.includes('locality')) {
+            locality = component.long_name; // 市区町村
+        }
+        if (types.includes('administrative_area_level_1')) {
+            administrativeArea = component.long_name; // 都道府県
+        }
+    });
+    
+    // 日本の住所形式で構築
+    if (administrativeArea) formatted += administrativeArea;
+    if (locality) formatted += locality;
+    if (sublocality) formatted += sublocality;
+    
+    // 番地情報を追加（street_numberが最も重要）
+    if (streetNumber) {
+        formatted += streetNumber;
+        console.log('[GPS] 番地追加:', streetNumber);
+    } else if (route && route.match(/\d+/)) {
+        // routeに数字が含まれている場合は番地として使用
+        const routeNumber = route.match(/\d+/)[0];
+        formatted += routeNumber;
+        console.log('[GPS] route番地追加:', routeNumber);
+    }
+    
+    // 建物名があれば追加
+    if (premise) {
+        formatted += ' ' + premise;
+    }
+    
+    console.log('[GPS] Google構築結果:', formatted);
+    return formatted || null;
+}
+
+// 日本の住所形式に詳細整形する関数（番地まで取得）
+function formatDetailedJapaneseAddress(data) {
     if (!data.address) return data.display_name;
     
     const addr = data.address;
     let formatted = '';
     
-    // 日本の住所順序: 都道府県、市区町村、町名、番地
-    if (addr.state) formatted += addr.state;
-    if (addr.city) formatted += addr.city;
-    if (addr.town || addr.suburb || addr.neighbourhood) {
-        formatted += addr.town || addr.suburb || addr.neighbourhood;
-    }
-    if (addr.quarter) formatted += addr.quarter;
-    if (addr.house_number) formatted += addr.house_number;
+    console.log('[GPS] 住所構造解析:', addr);
     
-    // 施設名などがある場合は最後に追加
-    if (addr.amenity || addr.building) {
-        formatted += ' ' + (addr.amenity || addr.building);
+    // 都道府県
+    if (addr.state || addr.province) {
+        formatted += addr.state || addr.province;
     }
+    
+    // 市区町村
+    if (addr.city || addr.town || addr.municipality) {
+        formatted += addr.city || addr.town || addr.municipality;
+    }
+    
+    // 区・特別区
+    if (addr.city_district || addr.suburb) {
+        formatted += addr.city_district || addr.suburb;
+    }
+    
+    // 町・丁目（複数パターンに対応）
+    if (addr.quarter || addr.neighbourhood || addr.residential) {
+        formatted += addr.quarter || addr.neighbourhood || addr.residential;
+    }
+    
+    // 番地・号（詳細な住所番号）
+    let houseInfo = '';
+    
+    // house_number（番地）
+    if (addr.house_number) {
+        houseInfo += addr.house_number;
+    }
+    
+    // postcode（郵便番号）から詳細情報を推定
+    if (addr.postcode && !houseInfo) {
+        // 郵便番号がある場合、より具体的な位置を示唆
+        console.log('[GPS] 郵便番号から位置推定:', addr.postcode);
+    }
+    
+    // 番地情報がない場合、追加の方法で番地を推定
+    if (!houseInfo) {
+        // 1. road（道路名）から推定
+        if (addr.road) {
+            console.log('[GPS] 道路名から位置推定:', addr.road);
+            const roadMatch = addr.road.match(/(\d+)/);
+            if (roadMatch) {
+                houseInfo = roadMatch[1];
+            }
+        }
+        
+        // 2. display_nameから番地を抽出（例: "12-34, 国府台4丁目"）
+        if (!houseInfo && data.display_name) {
+            console.log('[GPS] display_nameから番地抽出:', data.display_name);
+            // 日本の住所パターン: "数字-数字" または "数字番地"
+            const addressMatch = data.display_name.match(/(\d+(?:-\d+)?(?:番地?)?)/);
+            if (addressMatch) {
+                houseInfo = addressMatch[1];
+                console.log('[GPS] display_nameから番地発見:', houseInfo);
+            }
+        }
+        
+        // 3. より詳細な座標で再検索（最後の手段）
+        if (!houseInfo) {
+            console.log('[GPS] 番地情報なし');
+        }
+    }
+    
+    if (houseInfo) {
+        formatted += houseInfo;
+    }
+    
+    // 建物名・施設名
+    if (addr.amenity || addr.building || addr.shop || addr.office) {
+        const facilityName = addr.amenity || addr.building || addr.shop || addr.office;
+        formatted += ' ' + facilityName;
+    }
+    
+    // 具体的な場所の名前（name）
+    if (data.name && data.name !== formatted) {
+        formatted += ' (' + data.name + ')';
+    }
+    
+    console.log('[GPS] 整形結果:', formatted);
     
     return formatted || data.display_name;
+}
+
+// 従来の関数も残す（互換性のため）
+function formatJapaneseAddress(data) {
+    return formatDetailedJapaneseAddress(data);
 }
 
 // 写真アップロード設定
