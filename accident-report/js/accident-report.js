@@ -1,4 +1,4 @@
-// 事故報告フォーム JavaScript - GPS番地修正版 v20250722003
+// 事故報告フォーム JavaScript - 事業所取得修正版 v20250722004
 
 // 設定
 const config = {
@@ -94,13 +94,6 @@ async function getUserOrganization(userId) {
                 method: 'GET',
                 redirect: 'follow',
                 mode: 'cors'
-            });
-            
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok,
-                url: response.url,
-                headers: Array.from(response.headers.entries())
             });
             
             if (!response.ok) {
@@ -247,11 +240,6 @@ async function loadOfficesFromSheet() {
         
         
         const response = await Promise.race([fetchPromise, timeoutPromise]);
-        
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok
-        });
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1079,12 +1067,6 @@ async function submitForm() {
                 method: 'GET',
                 redirect: 'follow',
                 mode: 'cors'
-            });
-            
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok,
-                url: response.url
             });
             
             if (!response.ok) {
