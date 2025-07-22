@@ -1,4 +1,4 @@
-// 営業支援Bot JavaScript - GPS詳細版 v20250722002
+// 営業支援Bot JavaScript - GPS番地修正版 v20250722003
 const SalesBot = {
   // 設定
   config: {
@@ -396,11 +396,12 @@ const SalesBot = {
         }
       }
       
-      // 2. display_nameから番地を抽出
+      // 2. display_nameから番地を抽出（郵便番号を除外）
       if (!houseInfo && data.display_name) {
         console.log('[GPS] 営業Botdisplay_nameから番地抽出:', data.display_name);
-        const addressMatch = data.display_name.match(/(\d+(?:-\d+)?(?:番地?)?)/);
-        if (addressMatch) {
+        // 郵便番号パターンを除外して番地のみ抽出
+        const addressMatch = data.display_name.match(/(?:^|[^\d])(\d{1,2}(?:-\d{1,2}){1,2})(?:[^\d]|$)/);
+        if (addressMatch && !addressMatch[1].match(/^\d{3}-\d{4}$/)) {
           houseInfo = addressMatch[1];
           console.log('[GPS] 営業Botdisplay_nameから番地発見:', houseInfo);
         }

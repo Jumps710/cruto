@@ -1,4 +1,4 @@
-// 事故報告フォーム JavaScript - GPS詳細版 v20250722002
+// 事故報告フォーム JavaScript - GPS番地修正版 v20250722003
 
 // 設定
 const config = {
@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         officeSelect.style.display = 'block';
         
-        console.log('⚠️ WOFF初期化失敗 - フォームは動作可能状態');
     }
 });
 
@@ -86,12 +85,10 @@ async function getUserOrganization(userId) {
         let result;
         
         try {
-            console.log('🌐 GAS API呼び出し開始');
             
             // GETリクエストでパラメータとして送信（CORS回避）
             const params = new URLSearchParams(requestData);
             const getUrl = `${config.gasUrl}?${params.toString()}`;
-            console.log('🌐 GET URL:', getUrl);
             
             response = await fetch(getUrl, {
                 method: 'GET',
@@ -99,7 +96,6 @@ async function getUserOrganization(userId) {
                 mode: 'cors'
             });
             
-            console.log('📬 レスポンス受信', {
                 status: response.status,
                 statusText: response.statusText,
                 ok: response.ok,
@@ -113,14 +109,11 @@ async function getUserOrganization(userId) {
             
             // レスポンステキストを先に取得してログ出力
             const responseText = await response.text();
-            console.log('📄 レスポンステキスト:', responseText.substring(0, 200));
             
             try {
                 result = JSON.parse(responseText);
             } catch (parseError) {
-                console.error('❌ JSON解析エラー:', parseError);
-                console.error('📄 完全なレスポンス:', responseText);
-                throw new Error('レスポンスのJSON解析に失敗: ' + parseError.message);
+                    throw new Error('レスポンスのJSON解析に失敗: ' + parseError.message);
             }
         } catch (fetchError) {
             console.error('📛 API呼び出しエラー:', fetchError);
@@ -133,7 +126,6 @@ async function getUserOrganization(userId) {
             throw new Error('ネットワークエラー: ' + fetchError.message);
         }
         
-        console.log('📋 パース結果:', result);
         
         if (result && result.orgUnitName) {
             userOrganization = result.orgUnitName;
@@ -195,7 +187,6 @@ async function getUserOrganization(userId) {
 
 // APIレスポンスから事業所一覧を設定
 function loadOfficesFromAPIResponse(offices) {
-    console.log('📋 loadOfficesFromAPIResponse開始');
     
     if (offices && Array.isArray(offices)) {
         availableOffices = offices;
@@ -226,7 +217,6 @@ function loadOfficesFromAPIResponse(offices) {
 
 // Sheetsから事業所一覧を取得（10秒タイムアウト付き、GET方式に変更）
 async function loadOfficesFromSheet() {
-    console.log('📋 loadOfficesFromSheet開始（最適化版）');
     
     // キャッシュチェック
     if (cache.offices && cache.officesExpiry && Date.now() < cache.officesExpiry) {
@@ -255,11 +245,9 @@ async function loadOfficesFromSheet() {
             mode: 'cors'
         });
         
-        console.log('🌐 GET URL:', getUrl);
         
         const response = await Promise.race([fetchPromise, timeoutPromise]);
         
-        console.log('📬 getOffices レスポンス受信', {
             status: response.status,
             statusText: response.statusText,
             ok: response.ok
@@ -270,7 +258,6 @@ async function loadOfficesFromSheet() {
         }
         
         const offices = await response.json();
-        console.log('📋 事業所一覧パース結果:', offices);
         
         if (offices && Array.isArray(offices)) {
             availableOffices = offices;
@@ -735,12 +722,13 @@ function formatDetailedJapaneseAddress(data) {
             }
         }
         
-        // 2. display_nameから番地を抽出（例: "12-34, 国府台4丁目"）
+        // 2. display_nameから番地を抽出（郵便番号を除外）
         if (!houseInfo && data.display_name) {
             console.log('[GPS] display_nameから番地抽出:', data.display_name);
-            // 日本の住所パターン: "数字-数字" または "数字番地"
-            const addressMatch = data.display_name.match(/(\d+(?:-\d+)?(?:番地?)?)/);
-            if (addressMatch) {
+            // 郵便番号パターンを除外: 3桁-4桁は郵便番号なので除外
+            // 番地パターン: 1-2桁の番地（例: 4-6-6, 15-23）
+            const addressMatch = data.display_name.match(/(?:^|[^\d])(\d{1,2}(?:-\d{1,2}){1,2})(?:[^\d]|$)/);
+            if (addressMatch && !addressMatch[1].match(/^\d{3}-\d{4}$/)) {
                 houseInfo = addressMatch[1];
                 console.log('[GPS] display_nameから番地発見:', houseInfo);
             }
@@ -1086,7 +1074,6 @@ async function submitForm() {
             console.log('📡 GET リクエスト送信中...');
             
             const getUrl = `${config.gasUrl}?${params.toString()}`;
-            console.log('🌐 送信URL長:', getUrl.length);
             
             response = await fetch(getUrl, {
                 method: 'GET',
@@ -1094,7 +1081,6 @@ async function submitForm() {
                 mode: 'cors'
             });
             
-            console.log('📬 レスポンス受信:', {
                 status: response.status,
                 statusText: response.statusText,
                 ok: response.ok,
@@ -1113,14 +1099,12 @@ async function submitForm() {
         let result;
         try {
             const responseText = await response.text();
-            console.log('📄 レスポンステキスト:', responseText.substring(0, 500));
             result = JSON.parse(responseText);
         } catch (parseError) {
             console.error('❌ JSON解析エラー:', parseError);
             throw new Error('レスポンス解析エラー: ' + parseError.message);
         }
         
-        console.log('📋 解析結果:', result);
         
         if (result.success) {
             // 成功時は結果画面へ遷移
