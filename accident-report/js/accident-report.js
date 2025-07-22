@@ -3,7 +3,8 @@
 // 設定
 const config = {
     woffId: 'EownaFs9auCN-igUa84MDA', // 本番環境のWOFF ID
-    gasUrl: 'https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec'
+    gasUrl: 'https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec',
+    googleMapsApiKey: '' // Google Maps APIキーを設定すると、より正確な住所が取得できます
 };
 
 // グローバル変数
@@ -516,28 +517,118 @@ function handleDetailLocationChange(e) {
 }
 
 // GPS位置情報取得
-function getLocation() {
+async function getLocation() {
     const locationInput = document.getElementById('location');
     const loading = Utils.showLoading(locationInput.parentElement, 'GPS取得中...');
     
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            function(position) {
+            async function(position) {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
-                locationInput.value = `緯度: ${lat}, 経度: ${lng}`;
+                
+                // 住所を取得
+                try {
+                    const address = await getAddressFromCoordinates(lat, lng);
+                    if (address) {
+                        locationInput.value = address;
+                        // 座標情報も保持（データ属性として）
+                        locationInput.setAttribute('data-lat', lat);
+                        locationInput.setAttribute('data-lng', lng);
+                    } else {
+                        // 住所取得に失敗した場合は座標を表示
+                        locationInput.value = `緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)}`;
+                    }
+                } catch (error) {
+                    console.error('住所取得エラー:', error);
+                    locationInput.value = `緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)}`;
+                }
+                
                 Utils.hideLoading(loading);
                 clearError(locationInput);
             },
             function(error) {
                 Utils.hideLoading(loading);
                 alert('位置情報の取得に失敗しました。手動で入力してください。');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
             }
         );
     } else {
         Utils.hideLoading(loading);
         alert('お使いのブラウザは位置情報をサポートしていません。');
     }
+}
+
+// 座標から住所を取得する関数
+async function getAddressFromCoordinates(lat, lng) {
+    // Google Maps Geocoding API を使用する場合（APIキーが必要）
+    const googleApiKey = config.googleMapsApiKey; // 設定にAPIキーを追加する必要があります
+    
+    if (googleApiKey) {
+        // Google Maps Geocoding API
+        try {
+            const response = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleApiKey}&language=ja`
+            );
+            const data = await response.json();
+            
+            if (data.status === 'OK' && data.results.length > 0) {
+                return data.results[0].formatted_address;
+            }
+        } catch (error) {
+            console.error('Google Geocoding APIエラー:', error);
+        }
+    }
+    
+    // 無料の代替案: Nominatim (OpenStreetMap) を使用
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja&zoom=18&addressdetails=1`,
+            {
+                headers: {
+                    'User-Agent': 'Cruto-Accident-Report/1.0'
+                }
+            }
+        );
+        const data = await response.json();
+        
+        if (data && data.display_name) {
+            // 日本の住所形式に整形
+            return formatJapaneseAddress(data);
+        }
+    } catch (error) {
+        console.error('Nominatim APIエラー:', error);
+    }
+    
+    return null;
+}
+
+// 日本の住所形式に整形する関数
+function formatJapaneseAddress(data) {
+    if (!data.address) return data.display_name;
+    
+    const addr = data.address;
+    let formatted = '';
+    
+    // 日本の住所順序: 都道府県、市区町村、町名、番地
+    if (addr.state) formatted += addr.state;
+    if (addr.city) formatted += addr.city;
+    if (addr.town || addr.suburb || addr.neighbourhood) {
+        formatted += addr.town || addr.suburb || addr.neighbourhood;
+    }
+    if (addr.quarter) formatted += addr.quarter;
+    if (addr.house_number) formatted += addr.house_number;
+    
+    // 施設名などがある場合は最後に追加
+    if (addr.amenity || addr.building) {
+        formatted += ' ' + (addr.amenity || addr.building);
+    }
+    
+    return formatted || data.display_name;
 }
 
 // 写真アップロード設定
