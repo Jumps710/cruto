@@ -46,6 +46,19 @@
                     <input type="time" id="incidentTime" name="incidentTime" required>
                     <span class="error-message">発生時刻を入力してください</span>
                 </div>
+
+                <div class="form-group">
+                    <label class="required">事業所</label>
+                    <div id="officeContainer">
+                        <div class="loading-message">
+                            <span class="loading-icon">⌛</span> 取得中...しばらくお待ちください
+                        </div>
+                        <select id="office" name="office" style="display: none;" required>
+                            <option value="">選択してください</option>
+                        </select>
+                    </div>
+                    <span class="error-message">事業所を選択してください</span>
+                </div>
             </div>
 
             <!-- 事故種類 -->

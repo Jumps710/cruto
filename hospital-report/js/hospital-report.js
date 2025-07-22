@@ -67,14 +67,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('reporter').value = 'テストユーザー';
         
         // デフォルトの事業所選択肢を表示
+        const officeContainer = document.getElementById('officeContainer');
         const officeSelect = document.getElementById('office');
+        
+        // ローディングメッセージを削除
+        officeContainer.innerHTML = '';
+        
+        // selectを表示
         officeSelect.innerHTML = `
             <option value="">選択してください</option>
             <option value="本社">本社</option>
             <option value="関東支店">関東支店</option>
             <option value="関西支店">関西支店</option>
         `;
-        document.querySelector('.office-display').style.display = 'none';
         officeSelect.style.display = 'block';
         
         console.log('⚠️ WOFF初期化失敗 - フォームは動作可能状態');
@@ -138,14 +143,31 @@ async function getUserOrganization(userId) {
             console.log('✅ 組織情報取得成功:', userOrganization);
             
             // 事業所フィールドを設定
-            document.getElementById('currentOffice').textContent = userOrganization;
-            document.getElementById('office').value = userOrganization;
-            console.log('🏗️ 事業所表示更新完了');
+            const officeContainer = document.getElementById('officeContainer');
+            const officeSelect = document.getElementById('office');
+            
+            console.log('🏗️ 事業所表示エリア更新開始');
+            
+            // ローディングメッセージを削除して事業所表示に切り替え
+            officeContainer.innerHTML = `
+                <div class="office-display">
+                    <span id="currentOffice">${userOrganization}</span>
+                    <button type="button" id="changeOfficeBtn" class="btn-change-office">事業所を変更</button>
+                </div>
+            `;
+            
+            // 非表示のselectも更新
+            officeSelect.innerHTML = `<option value="${userOrganization}">${userOrganization}</option>`;
+            officeSelect.value = userOrganization;
+            
+            // 事業所変更ボタンのイベントリスナー
+            document.getElementById('changeOfficeBtn').addEventListener('click', showOfficeSelector);
+            console.log('🎯 事業所表示エリア更新完了');
             
         } else if (result && Array.isArray(result)) {
             // フォールバック: 事業所一覧を取得した場合
             console.log('⚠️ フォールバック: 事業所一覧取得', result);
-            await loadOfficesFromResponse(result);
+            loadOfficesFromAPIResponse(result);
             
         } else {
             throw new Error('組織情報を取得できませんでした - result: ' + JSON.stringify(result));
@@ -162,6 +184,37 @@ async function getUserOrganization(userId) {
         // フォールバック: 手動選択
         console.log('🔄 フォールバック: 事業所一覧取得開始');
         await loadOfficesFromSheet();
+    }
+}
+
+// APIレスポンスから事業所一覧を設定
+function loadOfficesFromAPIResponse(offices) {
+    console.log('📋 loadOfficesFromAPIResponse開始');
+    
+    const officeContainer = document.getElementById('officeContainer');
+    const officeSelect = document.getElementById('office');
+    
+    if (offices && Array.isArray(offices)) {
+        availableOffices = offices;
+        console.log('✅ 事業所一覧取得成功:', offices.length + '件');
+        
+        // ローディングメッセージを削除
+        officeContainer.innerHTML = '';
+        
+        // 事業所選択肢を設定
+        officeSelect.innerHTML = '<option value="">選択してください</option>';
+        
+        offices.forEach(office => {
+            const option = document.createElement('option');
+            option.value = office.value;
+            option.textContent = office.name;
+            officeSelect.appendChild(option);
+        });
+        
+        officeSelect.style.display = 'block';
+    } else {
+        console.log('⚠️ 無効な事業所データ');
+        loadOfficesFromSheet();
     }
 }
 
@@ -209,8 +262,11 @@ async function loadOfficesFromSheet() {
             availableOffices = offices;
             console.log('✅ 事業所一覧取得成功:', offices.length + '件');
             
-            // 事業所選択肢を設定
+            // ローディングメッセージを削除して事業所選択肢を設定
+            const officeContainer = document.getElementById('officeContainer');
             const officeSelect = document.getElementById('office');
+            
+            officeContainer.innerHTML = '';
             officeSelect.innerHTML = '<option value="">選択してください</option>';
             
             offices.forEach(office => {
@@ -220,8 +276,6 @@ async function loadOfficesFromSheet() {
                 officeSelect.appendChild(option);
             });
             
-            // 表示を変更
-            document.querySelector('.office-display').style.display = 'none';
             officeSelect.style.display = 'block';
         } else {
             throw new Error('事業所データが無効な形式です');
@@ -241,7 +295,10 @@ async function loadOfficesFromSheet() {
         
         availableOffices = defaultOffices;
         
+        const officeContainer = document.getElementById('officeContainer');
         const officeSelect = document.getElementById('office');
+        
+        officeContainer.innerHTML = '';
         officeSelect.innerHTML = '<option value="">選択してください</option>';
         
         defaultOffices.forEach(office => {
@@ -251,8 +308,6 @@ async function loadOfficesFromSheet() {
             officeSelect.appendChild(option);
         });
         
-        // 表示を変更
-        document.querySelector('.office-display').style.display = 'none';
         officeSelect.style.display = 'block';
         
         // 非ブロッキング通知

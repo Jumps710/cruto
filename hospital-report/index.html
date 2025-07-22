@@ -29,13 +29,14 @@
 
                 <div class="form-group">
                     <label class="required">事業所</label>
-                    <div class="office-display">
-                        <span id="currentOffice"></span>
-                        <button type="button" id="changeOfficeBtn" class="btn-change-office">事業所を変更</button>
+                    <div id="officeContainer">
+                        <div class="loading-message">
+                            <span class="loading-icon">⌛</span> 取得中...しばらくお待ちください
+                        </div>
+                        <select id="office" name="office" style="display: none;" required>
+                            <option value="">選択してください</option>
+                        </select>
                     </div>
-                    <select id="office" name="office" style="display: none;" required>
-                        <option value="">選択してください</option>
-                    </select>
                     <span class="error-message">事業所を選択してください</span>
                 </div>
 

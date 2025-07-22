@@ -300,6 +300,26 @@ input[type="checkbox"] {
     border-radius: 4px;
 }
 
+/* ローディングメッセージ */
+.loading-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #666;
+    font-size: 14px;
+    padding: 8px 0;
+}
+
+.loading-icon {
+    font-size: 16px;
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 .office-display span {
     flex: 1;
     font-weight: bold;
