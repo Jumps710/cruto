@@ -148,20 +148,29 @@ async function getUserOrganization(userId) {
             
             console.log('🏗️ 事業所表示エリア更新開始');
             
-            // ローディングメッセージを削除して事業所表示に切り替え
-            officeContainer.innerHTML = `
-                <div class="office-display">
-                    <span id="currentOffice">${userOrganization}</span>
-                    <button type="button" id="changeOfficeBtn" class="btn-change-office">事業所を変更</button>
-                </div>
-            `;
+            // ローディングメッセージを削除
+            officeContainer.innerHTML = '';
             
-            // 非表示のselectも更新
+            // 取得した組織をデフォルトとして設定し、selectを表示
             officeSelect.innerHTML = `<option value="${userOrganization}">${userOrganization}</option>`;
             officeSelect.value = userOrganization;
+            officeSelect.style.display = 'block';
             
-            // 事業所変更ボタンのイベントリスナー
-            document.getElementById('changeOfficeBtn').addEventListener('click', showOfficeSelector);
+            // 事業所一覧を非同期で取得してプルダウンに追加
+            loadOfficesFromSheet().then(() => {
+                // 事業所一覧取得後、現在の組織が先頭に表示されるよう調整
+                if (availableOffices.length > 0) {
+                    const currentOption = `<option value="${userOrganization}" selected>${userOrganization}</option>`;
+                    const otherOptions = availableOffices
+                        .filter(office => office.value !== userOrganization)
+                        .map(office => `<option value="${office.value}">${office.name}</option>`)
+                        .join('');
+                    officeSelect.innerHTML = currentOption + otherOptions;
+                }
+            }).catch(error => {
+                console.error('事業所一覧の取得に失敗:', error);
+            });
+            
             console.log('🎯 事業所表示エリア更新完了');
             
         } else if (result && Array.isArray(result)) {
@@ -262,21 +271,24 @@ async function loadOfficesFromSheet() {
             availableOffices = offices;
             console.log('✅ 事業所一覧取得成功:', offices.length + '件');
             
-            // ローディングメッセージを削除して事業所選択肢を設定
-            const officeContainer = document.getElementById('officeContainer');
+            // 現在のofficeSelectの状態を確認
             const officeSelect = document.getElementById('office');
-            
-            officeContainer.innerHTML = '';
-            officeSelect.innerHTML = '<option value="">選択してください</option>';
-            
-            offices.forEach(office => {
-                const option = document.createElement('option');
-                option.value = office.value;
-                option.textContent = office.name;
-                officeSelect.appendChild(option);
-            });
-            
-            officeSelect.style.display = 'block';
+            if (officeSelect.style.display === 'none') {
+                // まだ表示されていない場合のみ、ローディングメッセージを削除
+                const officeContainer = document.getElementById('officeContainer');
+                officeContainer.innerHTML = '';
+                
+                officeSelect.innerHTML = '<option value="">選択してください</option>';
+                
+                offices.forEach(office => {
+                    const option = document.createElement('option');
+                    option.value = office.value;
+                    option.textContent = office.name;
+                    officeSelect.appendChild(option);
+                });
+                
+                officeSelect.style.display = 'block';
+            }
         } else {
             throw new Error('事業所データが無効な形式です');
         }
@@ -350,52 +362,7 @@ async function loadMasterData() {
     }
 }
 
-// 事業所選択ダイアログを表示
-async function showOfficeSelector() {
-    if (availableOffices.length === 0) {
-        await loadOfficesFromSheet();
-    }
-    
-    // 事業所選択モーダルを表示
-    const officeList = document.getElementById('officeList');
-    officeList.innerHTML = availableOffices.map(office => `
-        <div class="office-option" data-value="${office.value}">
-            <input type="radio" id="office_${office.value}" name="officeSelect" value="${office.value}">
-            <label for="office_${office.value}">${office.name}</label>
-        </div>
-    `).join('');
-    
-    // 現在の選択を設定
-    const currentOffice = document.getElementById('office').value || userOrganization;
-    const currentRadio = officeList.querySelector(`input[value="${currentOffice}"]`);
-    if (currentRadio) {
-        currentRadio.checked = true;
-    }
-    
-    document.getElementById('officeModal').classList.add('show');
-}
-
-// 事業所選択確定
-function confirmOfficeSelection() {
-    const selectedOffice = document.querySelector('input[name="officeSelect"]:checked');
-    if (selectedOffice) {
-        const officeValue = selectedOffice.value;
-        const officeName = selectedOffice.nextElementSibling.textContent;
-        
-        // 表示を更新
-        document.getElementById('currentOffice').textContent = officeName;
-        document.getElementById('office').value = officeValue;
-        
-        closeOfficeModal();
-    } else {
-        alert('事業所を選択してください');
-    }
-}
-
-// 事業所選択モーダルを閉じる
-function closeOfficeModal() {
-    document.getElementById('officeModal').classList.remove('show');
-}
+// 不要な関数を削除（プルダウン選択に変更したため）
 
 // イベントリスナーの設定
 function setupEventListeners() {
@@ -418,22 +385,12 @@ function setupEventListeners() {
     setupAutocomplete('userName', 'userSuggestions', users, 'name', 'reading');
     setupAutocomplete('hospitalName', 'hospitalSuggestions', hospitals, 'name', 'area');
     
-    // 事業所変更ボタン
-    const changeOfficeBtn = document.getElementById('changeOfficeBtn');
-    if (changeOfficeBtn) {
-        changeOfficeBtn.addEventListener('click', showOfficeSelector);
-    }
-    
     // 送信ボタン
     document.getElementById('submitBtn').addEventListener('click', showConfirmModal);
     
     // モーダルボタン
     document.getElementById('cancelBtn').addEventListener('click', closeModal);
     document.getElementById('confirmBtn').addEventListener('click', submitForm);
-    
-    // 事業所モーダルボタン
-    document.getElementById('cancelOfficeBtn').addEventListener('click', closeOfficeModal);
-    document.getElementById('confirmOfficeBtn').addEventListener('click', confirmOfficeSelection);
     
     // エラーメッセージのクリア
     document.querySelectorAll('input, select, textarea').forEach(element => {
