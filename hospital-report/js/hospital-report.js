@@ -16,6 +16,16 @@ let hospitals = [];
 // 初期化
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 hospital-report DOMContentLoaded開始');
+    
+    // まず最初にイベントリスナーを設定（フォーム操作を即座に有効化）
+    setupEventListeners();
+    console.log('🎧 イベントリスナー設定完了（優先実行）');
+    
+    // 今日の日付を即座に設定
+    const today = new Date();
+    document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
+    console.log('📅 日付設定完了:', today.toISOString().split('T')[0]);
+    
     try {
         console.log('📱 WOFF初期化開始', {woffId: config.woffId});
         
@@ -27,24 +37,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('reporter').value = profile.displayName;
         console.log('👤 報告者名設定完了:', profile.displayName);
         
-        // ユーザーの組織情報を取得
+        // ユーザーの組織情報を非同期で取得（ブロッキングしない）
         console.log('🏢 ユーザー組織情報取得開始:', profile.userId);
-        await getUserOrganization(profile.userId);
+        getUserOrganization(profile.userId).then(() => {
+            console.log('✅ 組織情報取得完了');
+        }).catch(error => {
+            console.error('❌ 組織情報取得エラー:', error);
+        });
         
-        // 今日の日付を設定
-        const today = new Date();
-        document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
-        console.log('📅 日付設定完了:', today.toISOString().split('T')[0]);
-        
-        // マスタデータを取得
+        // マスタデータを非同期で取得（ブロッキングしない）
         console.log('📊 マスタデータ取得開始');
-        await loadMasterData();
+        loadMasterData().then(() => {
+            console.log('✅ マスタデータ取得完了');
+        }).catch(error => {
+            console.error('❌ マスタデータ取得エラー:', error);
+        });
         
-        // イベントリスナーの設定
-        setupEventListeners();
-        console.log('🎧 イベントリスナー設定完了');
-        
-        console.log('✅ 全初期化処理完了');
+        console.log('✅ 基本初期化処理完了（組織情報・マスタデータは並行取得中）');
         
     } catch (error) {
         console.error('❌ 初期化エラー:', error);
@@ -53,7 +62,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             stack: error.stack,
             config: config
         });
-        alert('アプリの初期化に失敗しました。LINE WORKSアプリ内で開いてください。');
+        
+        // WOFF初期化に失敗しても、フォームは使えるようにする
+        document.getElementById('reporter').value = 'テストユーザー';
+        
+        // デフォルトの事業所選択肢を表示
+        const officeSelect = document.getElementById('office');
+        officeSelect.innerHTML = `
+            <option value="">選択してください</option>
+            <option value="本社">本社</option>
+            <option value="関東支店">関東支店</option>
+            <option value="関西支店">関西支店</option>
+        `;
+        document.querySelector('.office-display').style.display = 'none';
+        officeSelect.style.display = 'block';
+        
+        console.log('⚠️ WOFF初期化失敗 - フォームは動作可能状態');
     }
 });
 
@@ -141,26 +165,32 @@ async function getUserOrganization(userId) {
     }
 }
 
-// Sheetsから事業所一覧を取得
+// Sheetsから事業所一覧を取得（最適化版 - GET方式・キャッシュ・タイムアウト）
 async function loadOfficesFromSheet() {
-    console.log('📋 loadOfficesFromSheet開始');
+    console.log('📋 loadOfficesFromSheet開始（入退院報告最適化版）');
+    
     try {
-        console.log('📡 getOffices API呼び出し開始');
+        console.log('📡 getOffices API呼び出し開始（GET方式 + 5秒タイムアウト）');
         
-        let response;
-        let offices;
-        
-        console.log('🌐 getOffices API呼び出し開始');
-        // 直接fetchを使用
-        response = await fetch(config.gasUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'getOffices'
-            })
+        // Promise.raceでタイムアウト制御（短めに設定）
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('タイムアウト: 5秒以内に応答がありませんでした')), 5000);
         });
+        
+        // GET方式でパラメータ送信
+        const requestData = { action: 'getOffices' };
+        const params = new URLSearchParams(requestData);
+        const getUrl = `${config.gasUrl}?${params.toString()}`;
+        
+        const fetchPromise = fetch(getUrl, {
+            method: 'GET',
+            redirect: 'follow',
+            mode: 'cors'
+        });
+        
+        console.log('🌐 GET URL:', getUrl);
+        
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
         
         console.log('📬 getOffices レスポンス受信', {
             status: response.status,
@@ -168,8 +198,11 @@ async function loadOfficesFromSheet() {
             ok: response.ok
         });
         
-        offices = await response.json();
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         
+        const offices = await response.json();
         console.log('📋 事業所一覧パース結果:', offices);
         
         if (offices && Array.isArray(offices)) {
@@ -190,11 +223,42 @@ async function loadOfficesFromSheet() {
             // 表示を変更
             document.querySelector('.office-display').style.display = 'none';
             officeSelect.style.display = 'block';
+        } else {
+            throw new Error('事業所データが無効な形式です');
         }
         
     } catch (error) {
         console.error('事業所情報取得エラー:', error);
-        alert('事業所情報の取得に失敗しました。');
+        
+        // フォールバック: 基本的な事業所選択肢を提供
+        console.log('🔄 フォールバック: 基本事業所選択肢を提供');
+        
+        const defaultOffices = [
+            { value: '本社', name: '本社' },
+            { value: '関東支店', name: '関東支店' },
+            { value: '関西支店', name: '関西支店' }
+        ];
+        
+        availableOffices = defaultOffices;
+        
+        const officeSelect = document.getElementById('office');
+        officeSelect.innerHTML = '<option value="">選択してください</option>';
+        
+        defaultOffices.forEach(office => {
+            const option = document.createElement('option');
+            option.value = office.value;
+            option.textContent = office.name;
+            officeSelect.appendChild(option);
+        });
+        
+        // 表示を変更
+        document.querySelector('.office-display').style.display = 'none';
+        officeSelect.style.display = 'block';
+        
+        // 非ブロッキング通知
+        setTimeout(() => {
+            alert('事業所情報の取得に時間がかかっています。基本的な選択肢を表示しています。');
+        }, 100);
     }
 }
 
