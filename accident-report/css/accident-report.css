@@ -103,35 +103,53 @@ input[type="checkbox"] {
     display: block;
 }
 
-/* 写真アップロード */
+/* 写真アップロード - コンパクト版 */
 .photo-upload {
-    border: 2px dashed #9ca3af;
-    border-radius: 8px;
-    padding: 20px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 12px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+    background-color: #f9fafb;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
 }
 
 .photo-upload:hover {
     border-color: #3b82f6;
-    background-color: #f0f9ff;
+    background-color: #eff6ff;
+}
+
+.photo-upload p {
+    margin: 0;
+    font-size: 14px;
+    color: #4b5563;
+}
+
+.photo-upload .help-text {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
 }
 
 .photo-preview {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
-    margin-top: 10px;
+    margin-top: 8px;
 }
 
 .photo-preview img {
-    width: 100px;
-    height: 100px;
+    width: 60px;
+    height: 60px;
     object-fit: cover;
     border-radius: 4px;
-    border: 2px solid #e5e7eb;
+    border: 1px solid #d1d5db;
 }
 
 /* 位置情報入力 */
@@ -401,5 +419,23 @@ input[type="checkbox"] {
 
     .btn-change-office {
         width: 100%;
+    }
+
+    .photo-preview img {
+        width: 50px;
+        height: 50px;
+    }
+
+    .photo-upload {
+        padding: 10px;
+        min-height: 50px;
+    }
+
+    .photo-upload p {
+        font-size: 13px;
+    }
+
+    .photo-upload .help-text {
+        font-size: 11px;
     }
 }
