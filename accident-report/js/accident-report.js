@@ -4,7 +4,7 @@
 const config = {
     woffId: 'EownaFs9auCN-igUa84MDA', // 本番環境のWOFF ID
     gasUrl: 'https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec',
-    googleMapsApiKey: 'AIzaSyBXFx41RFCdHGEN-ZFcuCt3kmQW1UIBeS8' // Google Maps Geocoding API
+    googleMapsApiKey: 'AIzaSyCdhA4t8flujiYex2OddJCkFv4u6nWvi9w' // Google Maps Geocoding API
 };
 
 // グローバル変数

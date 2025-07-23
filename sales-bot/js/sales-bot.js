@@ -4,7 +4,7 @@ const SalesBot = {
   config: {
     woffId: "Ilofk_65rvB6VHiOceQ0sg", // 営業支援Bot WOFF ID
     gasUrl: "https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec", // 本番環境 GAS URL
-    googleMapsApiKey: "AIzaSyBXFx41RFCdHGEN-ZFcuCt3kmQW1UIBeS8" // Google Maps Geocoding API
+    googleMapsApiKey: "AIzaSyCdhA4t8flujiYex2OddJCkFv4u6nWvi9w" // Google Maps Geocoding API
   },
   
   // 状態管理
