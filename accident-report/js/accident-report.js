@@ -554,6 +554,21 @@ async function getAddressFromCoordinates(lat, lng) {
                 console.log('[GPS] Google詳細住所構築完了:', detailedAddress);
                 console.log('[GPS] 最終住所結果:', detailedAddress || bestResult.formatted_address);
                 
+                // Google Maps APIレスポンスをログに送信
+                try {
+                    await logGoogleMapsResponse({
+                        coordinates: { lat, lng },
+                        googleResponse: data,
+                        extractedAddress: {
+                            fullAddress: detailedAddress || bestResult.formatted_address,
+                            houseNumber: extractHouseNumberFromResult(bestResult)
+                        },
+                        source: 'accident-report'
+                    });
+                } catch (logError) {
+                    console.error('[GPS] ログ送信エラー:', logError);
+                }
+                
                 return detailedAddress || bestResult.formatted_address;
             } else {
                 console.log('[GPS] Google API結果なし:', data.status);
@@ -605,14 +620,28 @@ function buildDetailedAddressFromGoogle(result) {
     let locality = '';
     let administrativeArea = '';
     let premise = '';
+    let subpremise = '';
+    let postalCode = '';
     
-    // address_componentsから各要素を抽出
+    // address_componentsから各要素を抽出（郵便番号は除外）
     result.address_components.forEach(component => {
         const types = component.types;
         console.log('[GPS] コンポーネント:', component.long_name, types);
         
+        // 郵便番号は記録するが住所には含めない
+        if (types.includes('postal_code')) {
+            postalCode = component.long_name;
+            console.log('[GPS] 郵便番号検出（除外）:', postalCode);
+            return; // 郵便番号は住所構築に使用しない
+        }
+        
         if (types.includes('street_number')) {
-            streetNumber = component.long_name; // 番地
+            streetNumber = component.long_name; // 基本番地
+            console.log('[GPS] 基本番地:', streetNumber);
+        }
+        if (types.includes('subpremise')) {
+            subpremise = component.long_name; // 建物内番号
+            console.log('[GPS] 建物内番号:', subpremise);
         }
         if (types.includes('route')) {
             route = component.long_name; // 通り名
@@ -636,10 +665,24 @@ function buildDetailedAddressFromGoogle(result) {
     if (locality) formatted += locality;
     if (sublocality) formatted += sublocality;
     
-    // 番地情報を追加（street_numberが最も重要）
+    // 番地情報を構築（国府台4-6-6形式）
+    let houseNumberPart = '';
     if (streetNumber) {
-        formatted += streetNumber;
-        console.log('[GPS] 番地追加:', streetNumber);
+        houseNumberPart = streetNumber;
+        console.log('[GPS] 基本番地設定:', streetNumber);
+        
+        // subpremiseがあれば追加（例：4-6-6の-6-6部分）
+        if (subpremise) {
+            // subpremiseが既にハイフンを含んでいるかチェック
+            if (subpremise.includes('-')) {
+                houseNumberPart += '-' + subpremise;
+            } else {
+                houseNumberPart += '-' + subpremise;
+            }
+            console.log('[GPS] 詳細番地追加:', houseNumberPart);
+        }
+        
+        formatted += houseNumberPart;
     } else if (route && route.match(/\d+/)) {
         // routeに数字が含まれている場合は番地として使用
         const routeNumber = route.match(/\d+/)[0];
@@ -653,6 +696,7 @@ function buildDetailedAddressFromGoogle(result) {
     }
     
     console.log('[GPS] Google構築結果:', formatted);
+    console.log('[GPS] 除外された郵便番号:', postalCode);
     return formatted || null;
 }
 
@@ -751,6 +795,76 @@ function formatDetailedJapaneseAddress(data) {
 // 従来の関数も残す（互換性のため）
 function formatJapaneseAddress(data) {
     return formatDetailedJapaneseAddress(data);
+}
+
+/**
+ * Google Maps APIレスポンスをGASにログとして送信
+ */
+async function logGoogleMapsResponse(data) {
+    try {
+        const response = await fetch(config.gasUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'logGoogleMapsResponse',
+                ...data
+            })
+        });
+        
+        const result = await response.json();
+        console.log('[GPS] ログ送信完了:', result);
+        return result;
+    } catch (error) {
+        console.error('[GPS] ログ送信失敗:', error);
+        throw error;
+    }
+}
+
+/**
+ * Google Maps APIの結果から番地（house number）を抽出
+ */
+function extractHouseNumberFromResult(result) {
+    if (!result || !result.address_components) return '';
+    
+    let streetNumber = '';
+    let subpremise = '';
+    let postalCode = '';
+    
+    result.address_components.forEach(component => {
+        const types = component.types;
+        
+        // 郵便番号は除外（ログ用に記録のみ）
+        if (types.includes('postal_code')) {
+            postalCode = component.long_name;
+            return; // 番地構築には使用しない
+        }
+        
+        if (types.includes('street_number')) {
+            streetNumber = component.long_name;
+        }
+        if (types.includes('subpremise')) {
+            subpremise = component.long_name;
+        }
+    });
+    
+    // 番地の構築（例：4-6-6）
+    let houseNumber = '';
+    if (streetNumber) {
+        houseNumber = streetNumber;
+        if (subpremise) {
+            // 既にハイフンが含まれているかチェック
+            if (!subpremise.startsWith('-')) {
+                houseNumber += '-' + subpremise;
+            } else {
+                houseNumber += subpremise;
+            }
+        }
+    }
+    
+    console.log('[GPS] 抽出した番地:', houseNumber, '除外郵便番号:', postalCode);
+    return houseNumber;
 }
 
 // 写真アップロード設定
