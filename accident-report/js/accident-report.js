@@ -549,10 +549,10 @@ async function getAddressFromCoordinates(lat, lng) {
                     }
                 }
                 
-                // Google APIから詳細住所を構築（address_componentsを使用）
-                const detailedAddress = buildDetailedAddressFromGoogle(bestResult);
-                console.log('[GPS] Google詳細住所構築完了:', detailedAddress);
-                console.log('[GPS] 最終住所結果:', detailedAddress || bestResult.formatted_address);
+                // Google APIのformatted_addressから日本を除去して使用
+                const formattedAddress = cleanJapaneseAddress(bestResult.formatted_address);
+                console.log('[GPS] Google formatted_address:', bestResult.formatted_address);
+                console.log('[GPS] 清潔化後住所:', formattedAddress);
                 
                 // Google Maps APIレスポンスをログに送信
                 try {
@@ -560,7 +560,8 @@ async function getAddressFromCoordinates(lat, lng) {
                         coordinates: { lat, lng },
                         googleResponse: data,
                         extractedAddress: {
-                            fullAddress: detailedAddress || bestResult.formatted_address,
+                            fullAddress: formattedAddress,
+                            originalFormatted: bestResult.formatted_address,
                             houseNumber: extractHouseNumberFromResult(bestResult)
                         },
                         source: 'accident-report'
@@ -569,7 +570,7 @@ async function getAddressFromCoordinates(lat, lng) {
                     console.error('[GPS] ログ送信エラー:', logError);
                 }
                 
-                return detailedAddress || bestResult.formatted_address;
+                return formattedAddress;
             } else {
                 console.log('[GPS] Google API結果なし:', data.status);
             }
@@ -795,6 +796,32 @@ function formatDetailedJapaneseAddress(data) {
 // 従来の関数も残す（互換性のため）
 function formatJapaneseAddress(data) {
     return formatDetailedJapaneseAddress(data);
+}
+
+/**
+ * Google Maps APIのformatted_addressから不要な部分を除去
+ */
+function cleanJapaneseAddress(formattedAddress) {
+    if (!formattedAddress) return '';
+    
+    let cleanedAddress = formattedAddress;
+    
+    // 末尾の「日本」を除去
+    cleanedAddress = cleanedAddress.replace(/、?\s*日本$/, '');
+    
+    // 郵便番号パターンを除去（例：〒272-0827、272-0827）
+    cleanedAddress = cleanedAddress.replace(/〒?\d{3}-?\d{4}\s*/, '');
+    
+    // 先頭の郵便番号パターンも除去
+    cleanedAddress = cleanedAddress.replace(/^\d{3}-?\d{4}\s*/, '');
+    
+    // 余分なスペースとカンマを清潔化
+    cleanedAddress = cleanedAddress.replace(/^\s*,?\s*/, ''); // 先頭のカンマとスペース
+    cleanedAddress = cleanedAddress.replace(/\s*,?\s*$/, ''); // 末尾のカンマとスペース
+    cleanedAddress = cleanedAddress.replace(/\s+/g, ''); // 複数スペースを削除
+    
+    console.log('[GPS] 住所清潔化:', formattedAddress, '->', cleanedAddress);
+    return cleanedAddress;
 }
 
 /**

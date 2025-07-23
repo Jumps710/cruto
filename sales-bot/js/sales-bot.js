@@ -245,9 +245,10 @@ const SalesBot = {
             }
           }
           
-          // Google APIから詳細住所を構築
-          const detailedAddress = this.buildDetailedAddressFromGoogle(bestResult);
-          console.log('[GPS] 営業Bot Google詳細住所構築完了:', detailedAddress);
+          // Google APIのformatted_addressから日本を除去して使用
+          const formattedAddress = this.cleanJapaneseAddress(bestResult.formatted_address);
+          console.log('[GPS] 営業Bot Google formatted_address:', bestResult.formatted_address);
+          console.log('[GPS] 営業Bot 清潔化後住所:', formattedAddress);
           
           // Google Maps APIレスポンスをログに送信
           try {
@@ -255,7 +256,8 @@ const SalesBot = {
               coordinates: { lat, lng },
               googleResponse: data,
               extractedAddress: {
-                fullAddress: detailedAddress || bestResult.formatted_address,
+                fullAddress: formattedAddress,
+                originalFormatted: bestResult.formatted_address,
                 houseNumber: this.extractHouseNumberFromResult(bestResult)
               },
               source: 'sales-bot'
@@ -264,7 +266,7 @@ const SalesBot = {
             console.error('[GPS] 営業Botログ送信エラー:', logError);
           }
           
-          return detailedAddress || bestResult.formatted_address;
+          return formattedAddress;
         } else {
           console.log('⚠️ Google API: 結果なし', data.status);
         }
@@ -833,6 +835,32 @@ const SalesBot = {
     if (overlay) {
       overlay.remove();
     }
+  },
+
+  /**
+   * Google Maps APIのformatted_addressから不要な部分を除去
+   */
+  cleanJapaneseAddress(formattedAddress) {
+    if (!formattedAddress) return '';
+    
+    let cleanedAddress = formattedAddress;
+    
+    // 末尾の「日本」を除去
+    cleanedAddress = cleanedAddress.replace(/、?\s*日本$/, '');
+    
+    // 郵便番号パターンを除去（例：〒272-0827、272-0827）
+    cleanedAddress = cleanedAddress.replace(/〒?\d{3}-?\d{4}\s*/, '');
+    
+    // 先頭の郵便番号パターンも除去
+    cleanedAddress = cleanedAddress.replace(/^\d{3}-?\d{4}\s*/, '');
+    
+    // 余分なスペースとカンマを清潔化
+    cleanedAddress = cleanedAddress.replace(/^\s*,?\s*/, ''); // 先頭のカンマとスペース
+    cleanedAddress = cleanedAddress.replace(/\s*,?\s*$/, ''); // 末尾のカンマとスペース
+    cleanedAddress = cleanedAddress.replace(/\s+/g, ''); // 複数スペースを削除
+    
+    console.log('[GPS] 営業Bot住所清潔化:', formattedAddress, '->', cleanedAddress);
+    return cleanedAddress;
   },
 
   /**
