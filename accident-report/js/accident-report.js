@@ -799,6 +799,70 @@ function formatJapaneseAddress(data) {
 }
 
 /**
+ * 事故報告データを新しい構造に変換
+ */
+function buildReportData(formData, photoData) {
+    const baseData = {
+        // 基本情報
+        reporterName: formData.reporter,
+        reporterId: formData.userId,
+        office: formData.office,
+        incidentDate: formData.incidentDate,
+        incidentTime: formData.incidentTime,
+        accidentType: formData.accidentType,
+        location: formData.location,
+        details: formData.accidentDetails,
+        
+        // 写真データ
+        photos: {
+            scene: photoData.scene || []
+        }
+    };
+    
+    // 条件分岐データを追加
+    if (formData.accidentType === 'その他') {
+        // その他事故の項目
+        baseData.locationCategory = formData.locationCategory;
+        baseData.locationDetail = formData.detailLocation;
+        baseData.locationNote = formData.otherLocation;
+        
+    } else if (formData.accidentType === '車両事故') {
+        // 車両事故の項目
+        baseData.driverName = formData.driverName;
+        baseData.propertyDamage = formData.propertyDamage;
+        baseData.propertyDetails = formData.propertyDetailsText;
+        baseData.personalInjury = formData.personalInjury;
+        baseData.personalDetails = formData.personalInjuryText;
+        
+        // 負傷情報
+        baseData.injury = {
+            self: formData.injurySelf,
+            selfDetails: formData.injurySelfText,
+            passenger: formData.injuryPassenger,
+            passengerDetails: formData.injuryPassengerText,
+            other: formData.injuryOther,
+            otherDetails: formData.injuryOtherText
+        };
+        
+        // 車両事故の追加写真
+        if (formData.propertyDamage === 'あり') {
+            baseData.photos.property = photoData.property || [];
+        }
+        
+        if (formData.personalInjury === 'あり') {
+            baseData.photos.license = photoData.license || [];
+            baseData.photos.otherVehicle = photoData.otherVehicle || [];
+            baseData.photos.ownVehicle = photoData.ownVehicle || [];
+        }
+    }
+    
+    console.log('[データ構築] 事故種類:', formData.accidentType);
+    console.log('[データ構築] 写真数:', Object.keys(baseData.photos).map(key => `${key}: ${baseData.photos[key].length}`).join(', '));
+    
+    return baseData;
+}
+
+/**
  * Google Maps APIのformatted_addressから不要な部分を除去
  */
 function cleanJapaneseAddress(formattedAddress) {
@@ -1167,47 +1231,26 @@ async function submitForm() {
         
         console.log('送信データ:', formData);
         
-        // GASに送信（GET方式 - 確実な疎通のため）
-        console.log('🚀 フォーム送信開始（GET方式）');
+        // 新しいデータ構造で事故報告を送信（POST JSON形式）
+        console.log('🚀 事故報告送信開始（新データ構造）');
         
-        // URLSearchParamsで送信（getUserOrganizationと同じ成功パターン）
-        const params = new URLSearchParams();
-        params.append('action', 'submitAccidentReport');
-        
-        // フォームデータの各項目を個別に追加
-        params.append('reporter', formData.reporter || '');
-        params.append('userId', formData.userId || '');
-        params.append('department', formData.department || '');
-        params.append('office', formData.office || '');
-        params.append('incidentDate', formData.incidentDate || '');
-        params.append('incidentTime', formData.incidentTime || '');
-        params.append('accidentType', formData.accidentType || '');
-        params.append('location', formData.location || '');
-        params.append('locationCategory', formData.locationCategory || '');
-        params.append('detailLocation', formData.detailLocation || '');
-        params.append('otherLocation', formData.otherLocation || '');
-        params.append('driverName', formData.driverName || '');
-        params.append('propertyDamage', formData.propertyDamage || '');
-        params.append('propertyDetailsText', formData.propertyDetailsText || '');
-        params.append('personalInjury', formData.personalInjury || '');
-        params.append('injuryTypes', JSON.stringify(formData.injuryTypes || []));
-        params.append('injuryDetailsText', formData.injuryDetailsText || '');
-        params.append('accidentDetails', formData.accidentDetails || '');
-        params.append('timestamp', formData.timestamp || new Date().toISOString());
-        
-        // 写真データは一旦除外（後で対応）
-        // TODO: Base64写真データの追加
+        // 新しいデータ構造に変換
+        const reportData = buildReportData(formData, photoData);
+        console.log('📋 送信用データ構造:', reportData);
         
         let response;
         try {
-            console.log('📡 GET リクエスト送信中...');
+            console.log('📡 POST リクエスト送信中...');
             
-            const getUrl = `${config.gasUrl}?${params.toString()}`;
-            
-            response = await fetch(getUrl, {
-                method: 'GET',
-                redirect: 'follow',
-                mode: 'cors'
+            response = await fetch(config.gasUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'submitAccidentReport',
+                    data: reportData
+                })
             });
             
             if (!response.ok) {
