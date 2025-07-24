@@ -4,23 +4,21 @@ const WOFFManager = {
   
   async init(woffId) {
     try {
-      // woff SDKが存在するか確認
       if (typeof woff === 'undefined') {
         throw new Error('WOFF SDKがロードされていません');
       }
       
       await woff.init({ woffId });
-      
-      if (!woff.isInClient()) {
-        // 開発環境での実行を許可
-        // throw new Error("このアプリはLINE WORKSアプリ内でのみ使用できます。");
-      }
-      
       this.profile = await woff.getProfile();
+      
+      console.log('🔑 WOFF初期化完了:', { 
+        ユーザー名: this.profile?.displayName, 
+        ユーザーID: this.profile?.userId 
+      });
       
       return this.profile;
     } catch (err) {
-      console.error("[ERROR] WOFF初期化エラー:", err);
+      console.error('❌ WOFF初期化エラー:', err.message);
       throw err;
     }
   },

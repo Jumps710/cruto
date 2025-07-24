@@ -218,7 +218,7 @@ async function loadOfficesFromSheet() {
     }
     
     try {
-        console.log('📡 getOffices API呼び出し開始（GET方式 + タイムアウト）');
+        // 事業所情報取得開始
         
         // Promise.raceでタイムアウト制御
         const timeoutPromise = new Promise((_, reject) => {
@@ -532,17 +532,12 @@ async function getAddressFromCoordinates(lat, lng) {
             );
             const data = await response.json();
             
-            console.log('[GPS] Google API応答:', data);
-            
             if (data.status === 'OK' && data.results.length > 0) {
-                console.log('[GPS] Google API全結果:', data.results);
-                
                 // より詳細な住所を優先して選択
                 let bestResult = data.results[0];
                 
                 // street_address タイプの結果があれば優先
                 for (const result of data.results) {
-                    console.log('[GPS] 結果タイプ:', result.types, result.formatted_address);
                     if (result.types.includes('street_address') || result.types.includes('premise')) {
                         bestResult = result;
                         break;
@@ -551,8 +546,7 @@ async function getAddressFromCoordinates(lat, lng) {
                 
                 // Google APIのformatted_addressから日本を除去して使用
                 const formattedAddress = cleanJapaneseAddress(bestResult.formatted_address);
-                console.log('[GPS] Google formatted_address:', bestResult.formatted_address);
-                console.log('[GPS] 清潔化後住所:', formattedAddress);
+                console.log('📍 住所取得完了:', formattedAddress);
                 
                 // Google Maps APIレスポンスをログに送信
                 try {
@@ -567,22 +561,18 @@ async function getAddressFromCoordinates(lat, lng) {
                         source: 'accident-report'
                     });
                 } catch (logError) {
-                    console.error('[GPS] ログ送信エラー:', logError);
+                    // ログ送信エラーは表示しない
                 }
                 
                 return formattedAddress;
-            } else {
-                console.log('[GPS] Google API結果なし:', data.status);
             }
         } catch (error) {
-            console.error('❌ Google Geocoding APIエラー:', error);
+            console.error('❌ Google Maps APIエラー:', error.message);
         }
     }
     
-    // 無料の代替案: Nominatim (OpenStreetMap) を使用
-    console.log('[GPS] Nominatimにフォールバック');
+    // フォールバック: Nominatim (OpenStreetMap) を使用
     try {
-        // zoom=19で最高詳細度、addressdetails=1で構造化住所情報を取得
         const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja&zoom=19&addressdetails=1&extratags=1&namedetails=1`,
             {
@@ -593,16 +583,13 @@ async function getAddressFromCoordinates(lat, lng) {
         );
         const data = await response.json();
         
-        console.log('[GPS] Nominatim API応答:', data);
-        
         if (data && data.display_name) {
-            // 日本の住所形式に詳細整形
             const detailedAddress = formatDetailedJapaneseAddress(data);
-            console.log('[GPS] Nominatim住所整形完了:', detailedAddress);
+            console.log('📍 住所取得完了 (Nominatim):', detailedAddress);
             return detailedAddress;
         }
     } catch (error) {
-        console.error('❌ Nominatim APIエラー:', error);
+        console.error('❌ Nominatim APIエラー:', error.message);
     }
     
     return null;
@@ -856,8 +843,7 @@ function buildReportData(formData, photoData) {
         }
     }
     
-    console.log('[データ構築] 事故種類:', formData.accidentType);
-    console.log('[データ構築] 写真数:', Object.keys(baseData.photos).map(key => `${key}: ${baseData.photos[key].length}`).join(', '));
+    // データ構築完了
     
     return baseData;
 }
@@ -1229,18 +1215,15 @@ async function submitForm() {
         formData.userId = WOFFManager.getUserId();
         formData.department = WOFFManager.getDepartment();
         
-        console.log('送信データ:', formData);
-        
-        // 新しいデータ構造で事故報告を送信（POST JSON形式）
-        console.log('🚀 事故報告送信開始（新データ構造）');
-        
         // 新しいデータ構造に変換
         const reportData = buildReportData(formData, photoData);
-        console.log('📋 送信用データ構造:', reportData);
+        console.log('📝 事故報告送信開始:', { 
+            事故種類: reportData.accidentType, 
+            写真枚数: Object.values(reportData.photos).flat().length 
+        });
         
         let response;
         try {
-            console.log('📡 POST リクエスト送信中...');
             
             response = await fetch(config.gasUrl, {
                 method: 'POST',
@@ -1258,7 +1241,6 @@ async function submitForm() {
             }
             
         } catch (fetchError) {
-            console.error('📛 fetch エラー:', fetchError);
             throw new Error('ネットワークエラー: ' + fetchError.message);
         }
         
@@ -1267,13 +1249,15 @@ async function submitForm() {
             const responseText = await response.text();
             result = JSON.parse(responseText);
         } catch (parseError) {
-            console.error('❌ JSON解析エラー:', parseError);
             throw new Error('レスポンス解析エラー: ' + parseError.message);
         }
         
-        
         if (result.success) {
-            // 成功時は結果画面へ遷移
+            console.log('✅ 事故報告送信完了:', { 
+                報告ID: result.reportId, 
+                写真数: result.photoCount 
+            });
+            
             localStorage.setItem('reportResult', JSON.stringify({
                 success: true,
                 reportId: result.reportId,
@@ -1285,7 +1269,7 @@ async function submitForm() {
         }
         
     } catch (error) {
-        console.error('送信エラー:', error);
+        console.error('❌ 送信エラー:', error.message);
         alert('送信に失敗しました。もう一度お試しください。\nエラー: ' + error.message);
         submitBtn.disabled = false;
         submitBtn.textContent = '送信する';
