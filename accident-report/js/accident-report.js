@@ -1219,7 +1219,8 @@ async function submitForm() {
         const reportData = buildReportData(formData, photoData);
         console.log('📝 事故報告送信開始:', { 
             事故種類: reportData.accidentType, 
-            写真枚数: Object.values(reportData.photos).flat().length 
+            写真枚数: Object.values(reportData.photos).flat().length,
+            報告者ID: reportData.reporterId
         });
         
         let response;
