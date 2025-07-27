@@ -772,7 +772,6 @@ function buildReportData(formData, photoData) {
     const baseData = {
         // 基本情報
         reporterName: formData.reporter,
-        reporterId: formData.userId,
         office: formData.office,
         incidentDate: formData.incidentDate,
         incidentTime: formData.incidentTime,
@@ -801,14 +800,19 @@ function buildReportData(formData, photoData) {
         baseData.personalInjury = formData.personalInjury;
         baseData.personalDetails = formData.personalInjuryText;
         
-        // 負傷情報
+        // 負傷情報（チェックボックスの状態を取得）
+        const injurySelf = document.getElementById('injurySelf')?.checked ? 'あり' : '';
+        const injuryPassenger = document.getElementById('injuryPassenger')?.checked ? 'あり' : '';
+        const injuryOther = document.getElementById('injuryOther')?.checked ? 'あり' : '';
+        const injuryDetailsText = formData.injuryDetailsText || '';
+        
         baseData.injury = {
-            self: formData.injurySelf,
-            selfDetails: formData.injurySelfText,
-            passenger: formData.injuryPassenger,
-            passengerDetails: formData.injuryPassengerText,
-            other: formData.injuryOther,
-            otherDetails: formData.injuryOtherText
+            self: injurySelf,
+            selfDetails: injurySelf ? injuryDetailsText : '',
+            passenger: injuryPassenger,
+            passengerDetails: injuryPassenger ? injuryDetailsText : '',
+            other: injuryOther,
+            otherDetails: injuryOther ? injuryDetailsText : ''
         };
         
         // 車両事故の追加写真
@@ -1255,8 +1259,6 @@ async function submitForm() {
     try {
         // タイムスタンプ追加
         formData.timestamp = new Date().toISOString();
-        formData.userId = WOFFManager.getUserId();
-        formData.department = WOFFManager.getDepartment();
         
         updateProgress(); // 画像処理中...
         
@@ -1271,8 +1273,7 @@ async function submitForm() {
         console.log('📝 事故報告送信開始:', { 
             事故種類: reportData.accidentType, 
             写真枚数: totalPhotos,
-            データサイズ: `${jsonSizeKB}KB`,
-            報告者ID: reportData.reporterId
+            データサイズ: `${jsonSizeKB}KB`
         });
         
         // データサイズ制限チェック（5枚の画像でも2MB以内に収まるよう調整）
@@ -1285,7 +1286,6 @@ async function submitForm() {
         // URLSearchParams形式で送信（参考アプリ準拠）
         const formDataParams = new URLSearchParams();
         formDataParams.append('action', 'submitAccidentReport');
-        formDataParams.append('reporterId', reportData.reporterId || '');
         formDataParams.append('reporterName', reportData.reporterName || '');
         formDataParams.append('office', reportData.office || '');
         formDataParams.append('incidentDate', reportData.incidentDate || '');
