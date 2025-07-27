@@ -1,4 +1,4 @@
-// 事故報告フォーム JavaScript - 事業所取得修正版 v20250722004
+// 事故報告フォーム JavaScript - URLSearchParams + 画質改善版 v20250727009
 
 // 設定
 const config = {
@@ -24,6 +24,15 @@ const cache = {
     officesExpiry: null,
     CACHE_DURATION: 5 * 60 * 1000 // 5分間キャッシュ
 };
+
+// 強制キャッシュクリア
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+            registration.unregister();
+        }
+    });
+}
 
 // 初期化
 document.addEventListener('DOMContentLoaded', async function() {
