@@ -36,6 +36,9 @@ if ('serviceWorker' in navigator) {
 
 // 初期化
 document.addEventListener('DOMContentLoaded', async function() {
+    // バージョン確認用ログ（確認後削除）
+    console.log('🔄 Script loaded: v20250727009, cachebust=1737982800001');
+    
     // まず最初にイベントリスナーを設定（フォーム操作を即座に有効化）
     setupEventListeners();
     
