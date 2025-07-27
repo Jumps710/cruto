@@ -1232,7 +1232,12 @@ function closeModal() {
 // フォーム送信（高速化対応）
 async function submitForm() {
     const submitBtn = document.getElementById('confirmBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const sendingMessage = document.getElementById('sendingMessage');
+    
     submitBtn.disabled = true;
+    cancelBtn.disabled = true;
+    sendingMessage.style.display = 'block'; // 送信中メッセージを表示
     
     // プログレス表示用
     let progressStep = 0;
@@ -1367,6 +1372,8 @@ async function submitForm() {
         console.error('❌ 送信エラー:', error.message);
         alert('送信に失敗しました。もう一度お試しください。\nエラー: ' + error.message);
         submitBtn.disabled = false;
+        cancelBtn.disabled = false;
         submitBtn.textContent = '送信する';
+        sendingMessage.style.display = 'none'; // 送信中メッセージを非表示
     }
 }

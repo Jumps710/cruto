@@ -31,6 +31,34 @@
       margin-bottom: 32px;
     }
     
+    .report-id-display {
+      background-color: #E3F2FD;
+      border: 2px solid #2196F3;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .report-id-display h3 {
+      color: #1976D2;
+      margin-bottom: 12px;
+      font-size: 18px;
+    }
+    
+    .report-id {
+      font-size: 24px;
+      font-weight: bold;
+      color: #1565C0;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    
+    .report-id-display p {
+      color: #666;
+      font-size: 14px;
+      margin: 0;
+    }
+    
     .next-steps {
       background-color: #f8f9fa;
       padding: 20px;
@@ -122,6 +150,8 @@
         ご報告いただき、ありがとうございました。
       </p>
       
+      <div id="reportNumberDisplay"></div>
+      
       <div class="next-steps">
         <h3>今後の流れ</h3>
         <ul>
@@ -139,13 +169,33 @@
   </div>
 
   <script>
-    // URLパラメータから報告IDを取得（オプション）
-    const urlParams = new URLSearchParams(window.location.search);
-    const reportId = urlParams.get('id');
+    // localStorageから報告結果を取得
+    const reportResult = JSON.parse(localStorage.getItem('reportResult') || '{}');
     
-    if (reportId) {
-      const message = document.querySelector('.success-message');
-      message.innerHTML += `<br><small>報告ID: ${reportId}</small>`;
+    if (reportResult && reportResult.reportId) {
+      const reportNumberDisplay = document.getElementById('reportNumberDisplay');
+      reportNumberDisplay.innerHTML = `
+        <div class="report-id-display">
+          <h3>報告番号はこちらです</h3>
+          <div class="report-id">${reportResult.reportId}</div>
+          <p>この番号を控えておいてください</p>
+        </div>
+      `;
+    }
+    
+    // URLパラメータから報告IDを取得（後方互換性）
+    const urlParams = new URLSearchParams(window.location.search);
+    const reportIdFromUrl = urlParams.get('id');
+    
+    if (reportIdFromUrl && !reportResult.reportId) {
+      const reportNumberDisplay = document.getElementById('reportNumberDisplay');
+      reportNumberDisplay.innerHTML = `
+        <div class="report-id-display">
+          <h3>報告番号はこちらです</h3>
+          <div class="report-id">${reportIdFromUrl}</div>
+          <p>この番号を控えておいてください</p>
+        </div>
+      `;
     }
     
     // アプリを閉じる機能
