@@ -828,7 +828,7 @@ function buildReportData(formData, photoData) {
         baseData.propertyDamage = formData.propertyDamage;
         baseData.propertyDetails = formData.propertyDetailsText;
         baseData.personalInjury = formData.personalInjury;
-        baseData.personalDetails = formData.personalInjuryText;
+        baseData.personalDetails = formData.injuryDetailsText;
         
         // 負傷情報（チェックボックスの状態を取得）
         const injurySelf = document.getElementById('injurySelf')?.checked ? 'あり' : '';
@@ -1207,6 +1207,15 @@ function collectFormData() {
         propertyDetailsText: formData.propertyDetailsText,
         personalInjury: formData.personalInjury,
         injuryDetailsText: formData.injuryDetailsText
+    });
+    
+    // 個別の要素から直接値を取得して確認
+    console.log('🔍 DOM要素から直接取得:', {
+        driverName: document.getElementById('driverName')?.value,
+        propertyDamage: document.querySelector('input[name="propertyDamage"]:checked')?.value,
+        propertyDetailsText: document.getElementById('propertyDetailsText')?.value,
+        personalInjury: document.querySelector('input[name="personalInjury"]:checked')?.value,
+        injuryDetailsText: document.getElementById('injuryDetailsText')?.value
     });
     console.log('🔍 写真データ数:', {
         scene: photoData.scene?.length || 0,
