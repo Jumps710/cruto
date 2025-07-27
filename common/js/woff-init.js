@@ -11,14 +11,9 @@ const WOFFManager = {
       await woff.init({ woffId });
       this.profile = await woff.getProfile();
       
-      console.log('🔑 WOFF初期化完了:', { 
-        ユーザー名: this.profile?.displayName, 
-        ユーザーID: this.profile?.userId 
-      });
       
       return this.profile;
     } catch (err) {
-      console.error('❌ WOFF初期化エラー:', err.message);
       throw err;
     }
   },
