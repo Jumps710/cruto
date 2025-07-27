@@ -961,8 +961,8 @@ function setupPhotoUpload(inputId, uploadDivId, previewId, photoType) {
                 try {
                     console.log(`📷 画像処理開始: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
                     
-                    // 画像を高圧縮でBase64化（最大800px、品質0.5）
-                    const base64 = await Utils.fileToBase64(file, 800, 0.5);
+                    // 画像を圧縮（最大400px、品質0.3）
+                    const base64 = await Utils.fileToBase64(file, 400, 0.3);
                     const compressedSize = base64.length * 0.75 / 1024; // Base64サイズからおおよそのKBを計算
                     
                     console.log(`📷 圧縮完了: ${file.name} → ${compressedSize.toFixed(1)}KB`);

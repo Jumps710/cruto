@@ -84,7 +84,7 @@ const Utils = {
         // 画像を描画
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Base64に変換（JPEG、品質0.8）
+        // Base64に変換（JPEG、指定品質）
         const base64 = canvas.toDataURL('image/jpeg', quality);
         resolve(base64.split(',')[1]);
       };
