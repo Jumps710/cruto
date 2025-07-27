@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
     } catch (error) {
         // 初期化エラー
+        console.error('初期化エラー:', error);
         
         // WOFF初期化に失敗しても、フォームは使えるようにする
         document.getElementById('reporter').value = 'テストユーザー';
@@ -154,7 +155,6 @@ async function getUserOrganization(userId) {
             
         } else if (result && Array.isArray(result)) {
             // フォールバック: 事業所一覧を取得した場合
-            // フォールバック: 事業所一覧取得
             loadOfficesFromAPIResponse(result);
             
         } else {
@@ -162,25 +162,16 @@ async function getUserOrganization(userId) {
         }
         
     } catch (error) {
-        console.error('❌ 組織情報取得エラー:', error);
-        console.error('エラー詳細:', {
-            message: error.message,
-            stack: error.stack,
-            userId: userId,
-            gasUrl: config.gasUrl
-        });
+        console.error('組織情報取得エラー:', error);
         // フォールバック: 手動選択
-        console.log('🔄 フォールバック: 事業所一覧取得開始');
         await loadOfficesFromSheet();
     }
 }
 
 // APIレスポンスから事業所一覧を設定
 function loadOfficesFromAPIResponse(offices) {
-    
     if (offices && Array.isArray(offices)) {
         availableOffices = offices;
-        console.log('✅ 事業所一覧取得成功:', offices.length + '件');
         
         const officeContainer = document.getElementById('officeContainer');
         const officeSelect = document.getElementById('office');
@@ -200,23 +191,19 @@ function loadOfficesFromAPIResponse(offices) {
         
         officeSelect.style.display = 'block';
     } else {
-        console.log('⚠️ 無効な事業所データ');
         return loadOfficesFromSheet();
     }
 }
 
 // Sheetsから事業所一覧を取得（10秒タイムアウト付き、GET方式に変更）
 async function loadOfficesFromSheet() {
-    
     // キャッシュチェック
     if (cache.offices && cache.officesExpiry && Date.now() < cache.officesExpiry) {
-        console.log('📦 キャッシュから事業所データを取得');
         return loadOfficesFromCache();
     }
     
     try {
         // 事業所情報取得開始
-        
         // Promise.raceでタイムアウト制御
         const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('タイムアウト: 10秒以内に応答がありませんでした')), 10000);
@@ -279,7 +266,6 @@ async function loadOfficesFromSheet() {
         console.error('事業所情報取得エラー:', error);
         
         // フォールバック: 基本的な事業所選択肢を提供
-        console.log('🔄 フォールバック: 基本事業所選択肢を提供');
         
         const defaultOffices = [
             { value: '本社', name: '本社' },
@@ -313,8 +299,6 @@ async function loadOfficesFromSheet() {
 
 // キャッシュから事業所データを読み込み
 function loadOfficesFromCache() {
-    console.log('📦 キャッシュから事業所一覧を設定');
-    
     const offices = cache.offices;
     availableOffices = offices;
     
@@ -329,7 +313,6 @@ function loadOfficesFromCache() {
     });
     
     officeSelect.style.display = 'block';
-    console.log('✅ キャッシュから事業所一覧設定完了:', offices.length + '件');
 }
 
 // 不要な関数を削除（プルダウン選択に変更したため）
