@@ -1225,6 +1225,7 @@ async function submitForm() {
         
         let response;
         try {
+            console.log('📡 GAS APIへPOST送信開始:', config.gasUrl);
             
             response = await fetch(config.gasUrl, {
                 method: 'POST',
@@ -1237,12 +1238,50 @@ async function submitForm() {
                 })
             });
             
+            console.log('📡 レスポンス受信:', response.status, response.statusText);
+            
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
         } catch (fetchError) {
-            throw new Error('ネットワークエラー: ' + fetchError.message);
+            console.error('📡 Fetch失敗:', fetchError);
+            
+            // フォールバック: GETリクエストで送信を試行
+            console.log('📡 フォールバック: GETリクエストで送信を試行');
+            try {
+                const params = new URLSearchParams();
+                params.append('action', 'submitAccidentReport');
+                params.append('data', JSON.stringify(reportData));
+                
+                const getUrl = `${config.gasUrl}?${params.toString()}`;
+                console.log('📡 GET URL長さ:', getUrl.length);
+                
+                response = await fetch(getUrl, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                console.log('📡 GETレスポンス受信:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`GET失敗 HTTP ${response.status}`);
+                }
+                
+                // GETが成功したらresponseを使って処理を継続
+                console.log('📡 GETリクエスト成功');
+                
+            } catch (getError) {
+                console.error('📡 GETリクエストも失敗:', getError);
+                // 最終的なデバッグログ送信
+                try {
+                    const debugUrl = `${config.gasUrl}?action=logError&error=${encodeURIComponent(fetchError.message + ' | ' + getError.message)}&source=accident-report-submit`;
+                    await fetch(debugUrl);
+                } catch (debugError) {
+                    console.error('デバッグログ送信も失敗:', debugError);
+                }
+                throw new Error('ネットワークエラー（POST/GET両方失敗）: ' + fetchError.message);
+            }
         }
         
         let result;
