@@ -11,6 +11,7 @@ const config = {
 let formData = {};
 let photoData = {
     scene: [],
+    property: [],
     otherVehicle: [],
     ownVehicle: [],
     license: []
@@ -361,6 +362,7 @@ function setupEventListeners() {
     setupPhotoUpload('scenePhoto', 'scenePhotoUpload', 'scenePhotoPreview', 'scene');
     setupPhotoUpload('otherVehiclePhoto', 'otherVehiclePhotoUpload', 'otherVehiclePhotoPreview', 'otherVehicle');
     setupPhotoUpload('ownVehiclePhoto', 'ownVehiclePhotoUpload', 'ownVehiclePhotoPreview', 'ownVehicle');
+    setupPhotoUpload('propertyPhoto', 'propertyPhotoUpload', 'propertyPhotoPreview', 'property');
     setupPhotoUpload('licensePhoto', 'licensePhotoUpload', 'licensePhotoPreview', 'license');
     
     // 送信ボタン
@@ -408,10 +410,14 @@ function handleAccidentTypeChange(e) {
 // 対物選択時の処理
 function handlePropertyDamageChange(e) {
     const propertyDetails = document.getElementById('propertyDetails');
+    const propertyPhotoDiv = document.getElementById('propertyPhotoDiv');
+    
     if (e.target.value === 'yes') {
         propertyDetails.classList.add('active');
+        propertyPhotoDiv.style.display = 'block';
     } else {
         propertyDetails.classList.remove('active');
+        propertyPhotoDiv.style.display = 'none';
     }
 }
 
@@ -1191,6 +1197,24 @@ function collectFormData() {
     
     // 写真データを追加
     formData.photos = photoData;
+    
+    // デバッグ: 収集したフォームデータを確認
+    console.log('🔍 collectFormData結果:', JSON.stringify(formData, null, 2));
+    console.log('🔍 車両事故フィールド:', {
+        accidentType: formData.accidentType,
+        driverName: formData.driverName,
+        propertyDamage: formData.propertyDamage,
+        propertyDetailsText: formData.propertyDetailsText,
+        personalInjury: formData.personalInjury,
+        injuryDetailsText: formData.injuryDetailsText
+    });
+    console.log('🔍 写真データ数:', {
+        scene: photoData.scene?.length || 0,
+        property: photoData.property?.length || 0,
+        otherVehicle: photoData.otherVehicle?.length || 0,
+        ownVehicle: photoData.ownVehicle?.length || 0,
+        license: photoData.license?.length || 0
+    });
 }
 
 // 確認内容生成
@@ -1283,6 +1307,17 @@ async function submitForm() {
         
         // 新しいデータ構造に変換
         const reportData = buildReportData(formData, photoData);
+        
+        // デバッグ: 送信データを確認
+        console.log('📤 送信するreportData:', JSON.stringify(reportData, null, 2));
+        console.log('📤 元のformData:', JSON.stringify(formData, null, 2));
+        console.log('📤 写真データ:', {
+            scene: photoData.scene?.length || 0,
+            property: photoData.property?.length || 0,
+            otherVehicle: photoData.otherVehicle?.length || 0,
+            ownVehicle: photoData.ownVehicle?.length || 0,
+            license: photoData.license?.length || 0
+        });
         
         // データサイズチェック
         const jsonSize = JSON.stringify(reportData).length;
