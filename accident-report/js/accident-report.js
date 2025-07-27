@@ -86,7 +86,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // ユーザーの組織情報を取得
 async function getUserOrganization(userId) {
-    
     try {
         const requestData = {
             action: 'getUserOrganization',
@@ -97,7 +96,6 @@ async function getUserOrganization(userId) {
         let result;
         
         try {
-            
             // GETリクエストでパラメータとして送信（CORS回避）
             const params = new URLSearchParams(requestData);
             const getUrl = `${config.gasUrl}?${params.toString()}`;
@@ -121,26 +119,15 @@ async function getUserOrganization(userId) {
                     throw new Error('レスポンスのJSON解析に失敗: ' + parseError.message);
             }
         } catch (fetchError) {
-            console.error('📛 API呼び出しエラー:', fetchError);
-            console.error('エラー詳細:', {
-                name: fetchError.name,
-                message: fetchError.message,
-                stack: fetchError.stack,
-                gasUrl: config.gasUrl
-            });
             throw new Error('ネットワークエラー: ' + fetchError.message);
         }
         
-        
         if (result && result.orgUnitName) {
             userOrganization = result.orgUnitName;
-            console.log('✅ 組織情報取得成功:', userOrganization);
             
             // 事業所フィールドを設定
             const officeContainer = document.getElementById('officeContainer');
             const officeSelect = document.getElementById('office');
-            
-            console.log('🏗️ 事業所表示エリア更新開始');
             
             // ローディングメッセージを削除
             officeContainer.innerHTML = '';
@@ -165,11 +152,9 @@ async function getUserOrganization(userId) {
                 console.error('事業所一覧の取得に失敗:', error);
             });
             
-            console.log('🎯 事業所表示エリア更新完了');
-            
         } else if (result && Array.isArray(result)) {
             // フォールバック: 事業所一覧を取得した場合
-            console.log('⚠️ フォールバック: 事業所一覧取得', result);
+            // フォールバック: 事業所一覧取得
             loadOfficesFromAPIResponse(result);
             
         } else {
@@ -1310,36 +1295,36 @@ async function submitForm() {
         updateProgress(); // 送信中...
         
         // URLSearchParams形式で送信（参考アプリ準拠）
-        const formData = new URLSearchParams();
-        formData.append('action', 'submitAccidentReport');
-        formData.append('reporterId', reportData.reporterId || '');
-        formData.append('reporterName', reportData.reporterName || '');
-        formData.append('office', reportData.office || '');
-        formData.append('incidentDate', reportData.incidentDate || '');
-        formData.append('incidentTime', reportData.incidentTime || '');
-        formData.append('accidentType', reportData.accidentType || '');
-        formData.append('location', reportData.location || '');
-        formData.append('details', reportData.details || '');
+        const formDataParams = new URLSearchParams();
+        formDataParams.append('action', 'submitAccidentReport');
+        formDataParams.append('reporterId', reportData.reporterId || '');
+        formDataParams.append('reporterName', reportData.reporterName || '');
+        formDataParams.append('office', reportData.office || '');
+        formDataParams.append('incidentDate', reportData.incidentDate || '');
+        formDataParams.append('incidentTime', reportData.incidentTime || '');
+        formDataParams.append('accidentType', reportData.accidentType || '');
+        formDataParams.append('location', reportData.location || '');
+        formDataParams.append('details', reportData.details || '');
         
         // 車両事故の場合の追加フィールド
         if (reportData.accidentType === '車両事故') {
-            formData.append('driverName', reportData.driverName || '');
-            formData.append('propertyDamage', reportData.propertyDamage || '');
-            formData.append('propertyDetails', reportData.propertyDetails || '');
-            formData.append('personalInjury', reportData.personalInjury || '');
-            formData.append('personalDetails', reportData.personalDetails || '');
+            formDataParams.append('driverName', reportData.driverName || '');
+            formDataParams.append('propertyDamage', reportData.propertyDamage || '');
+            formDataParams.append('propertyDetails', reportData.propertyDetails || '');
+            formDataParams.append('personalInjury', reportData.personalInjury || '');
+            formDataParams.append('personalDetails', reportData.personalDetails || '');
             if (reportData.injury) {
-                formData.append('injurySelf', reportData.injury.self || '');
-                formData.append('injurySelfDetails', reportData.injury.selfDetails || '');
-                formData.append('injuryPassenger', reportData.injury.passenger || '');
-                formData.append('injuryPassengerDetails', reportData.injury.passengerDetails || '');
-                formData.append('injuryOther', reportData.injury.other || '');
-                formData.append('injuryOtherDetails', reportData.injury.otherDetails || '');
+                formDataParams.append('injurySelf', reportData.injury.self || '');
+                formDataParams.append('injurySelfDetails', reportData.injury.selfDetails || '');
+                formDataParams.append('injuryPassenger', reportData.injury.passenger || '');
+                formDataParams.append('injuryPassengerDetails', reportData.injury.passengerDetails || '');
+                formDataParams.append('injuryOther', reportData.injury.other || '');
+                formDataParams.append('injuryOtherDetails', reportData.injury.otherDetails || '');
             }
         } else {
-            formData.append('locationCategory', reportData.locationCategory || '');
-            formData.append('locationDetail', reportData.locationDetail || '');
-            formData.append('locationNote', reportData.locationNote || '');
+            formDataParams.append('locationCategory', reportData.locationCategory || '');
+            formDataParams.append('locationDetail', reportData.locationDetail || '');
+            formDataParams.append('locationNote', reportData.locationNote || '');
         }
         
         // 写真データを個別に追加
@@ -1347,10 +1332,16 @@ async function submitForm() {
         Object.keys(photos).forEach(photoType => {
             if (photos[photoType] && photos[photoType].length > 0) {
                 photos[photoType].forEach((photo, index) => {
-                    formData.append(`photo_${photoType}_${index}`, photo.data);
-                    formData.append(`photoName_${photoType}_${index}`, photo.name);
+                    formDataParams.append(`photo_${photoType}_${index}`, photo.data);
+                    formDataParams.append(`photoName_${photoType}_${index}`, photo.name);
                 });
             }
+        });
+        
+        console.log('📤 送信データサイズ:', {
+            写真枚数: totalPhotos,
+            データサイズKB: jsonSizeKB,
+            URLSearchParams文字数: formDataParams.toString().length
         });
         
         const response = await fetch(config.gasUrl, {
@@ -1358,7 +1349,7 @@ async function submitForm() {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: formData
+            body: formDataParams
         });
         
         if (!response.ok) {
@@ -1381,7 +1372,7 @@ async function submitForm() {
                 localStorage.setItem('reportResult', JSON.stringify({
                     success: true,
                     reportId: result.reportId,
-                    timestamp: formData.timestamp
+                    timestamp: reportData.timestamp
                 }));
                 window.location.href = 'result.html';
             }, 500);

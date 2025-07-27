@@ -11,7 +11,6 @@ const WOFFManager = {
       await woff.init({ woffId });
       this.profile = await woff.getProfile();
       
-      
       return this.profile;
     } catch (err) {
       throw err;
