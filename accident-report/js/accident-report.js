@@ -41,9 +41,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     try {
         // まず最初にイベントリスナーを設定（フォーム操作を即座に有効化）
-        console.log('🔧 Setting up event listeners...');
         setupEventListeners();
-        console.log('✅ Event listeners set up successfully');
     } catch (eventError) {
         console.error('❌ Event listener setup failed:', eventError);
         return;
@@ -326,26 +324,18 @@ function loadOfficesFromCache() {
 
 // イベントリスナーの設定
 function setupEventListeners() {
-    console.log('🔧 Starting individual event listener setup...');
-    
     // 事故種類の選択による表示切替
-    const accidentTypeRadios = document.querySelectorAll('input[name="accidentType"]');
-    console.log('Found accident type radios:', accidentTypeRadios.length);
-    accidentTypeRadios.forEach(radio => {
+    document.querySelectorAll('input[name="accidentType"]').forEach(radio => {
         radio.addEventListener('change', handleAccidentTypeChange);
     });
     
     // 対物ありの場合の詳細表示
-    const propertyDamageRadios = document.querySelectorAll('input[name="propertyDamage"]');
-    console.log('Found property damage radios:', propertyDamageRadios.length);
-    propertyDamageRadios.forEach(radio => {
+    document.querySelectorAll('input[name="propertyDamage"]').forEach(radio => {
         radio.addEventListener('change', handlePropertyDamageChange);
     });
     
     // 対人ありの場合の詳細表示
-    const personalInjuryRadios = document.querySelectorAll('input[name="personalInjury"]');
-    console.log('Found personal injury radios:', personalInjuryRadios.length);
-    personalInjuryRadios.forEach(radio => {
+    document.querySelectorAll('input[name="personalInjury"]').forEach(radio => {
         radio.addEventListener('change', handlePersonalInjuryChange);
     });
     
@@ -353,44 +343,30 @@ function setupEventListeners() {
     const locationCategory = document.getElementById('locationCategory');
     if (locationCategory) {
         locationCategory.addEventListener('change', handleLocationCategoryChange);
-        console.log('✅ Location category listener added');
-    } else {
-        console.error('❌ locationCategory element not found');
     }
     
     // 詳細場所でその他を選択した場合
     const detailLocation = document.getElementById('detailLocation');
     if (detailLocation) {
         detailLocation.addEventListener('change', handleDetailLocationChange);
-        console.log('✅ Detail location listener added');
-    } else {
-        console.error('❌ detailLocation element not found');
     }
     
     // GPS取得ボタン
     const getLocationBtn = document.getElementById('getLocationBtn');
     if (getLocationBtn) {
         getLocationBtn.addEventListener('click', getLocation);
-        console.log('✅ GPS button listener added');
-    } else {
-        console.error('❌ getLocationBtn element not found');
     }
     
     // 写真アップロード
-    console.log('🔧 Setting up photo uploads...');
     setupPhotoUpload('scenePhoto', 'scenePhotoUpload', 'scenePhotoPreview', 'scene');
     setupPhotoUpload('otherVehiclePhoto', 'otherVehiclePhotoUpload', 'otherVehiclePhotoPreview', 'otherVehicle');
     setupPhotoUpload('ownVehiclePhoto', 'ownVehiclePhotoUpload', 'ownVehiclePhotoPreview', 'ownVehicle');
     setupPhotoUpload('licensePhoto', 'licensePhotoUpload', 'licensePhotoPreview', 'license');
-    console.log('✅ Photo uploads set up');
     
     // 送信ボタン
     const submitBtn = document.getElementById('submitBtn');
     if (submitBtn) {
         submitBtn.addEventListener('click', showConfirmModal);
-        console.log('✅ Submit button listener added');
-    } else {
-        console.error('❌ submitBtn element not found');
     }
     
     // モーダルボタン
@@ -399,15 +375,10 @@ function setupEventListeners() {
     if (cancelBtn && confirmBtn) {
         cancelBtn.addEventListener('click', closeModal);
         confirmBtn.addEventListener('click', submitForm);
-        console.log('✅ Modal button listeners added');
-    } else {
-        console.error('❌ Modal button elements not found:', {cancelBtn: !!cancelBtn, confirmBtn: !!confirmBtn});
     }
     
     // エラーメッセージのクリア
-    const formElements = document.querySelectorAll('input, select, textarea');
-    console.log('Found form elements for error clearing:', formElements.length);
-    formElements.forEach(element => {
+    document.querySelectorAll('input, select, textarea').forEach(element => {
         element.addEventListener('input', function() {
             clearError(this);
         });
@@ -415,8 +386,6 @@ function setupEventListeners() {
             clearError(this);
         });
     });
-    
-    console.log('✅ All event listeners set up successfully');
 }
 
 // 事故種類変更時の処理
@@ -821,13 +790,16 @@ function formatJapaneseAddress(data) {
  * 事故報告データを新しい構造に変換
  */
 function buildReportData(formData, photoData) {
+    // 事故種類を日本語に変換
+    const accidentTypeJp = formData.accidentType === 'vehicle' ? '車両事故' : 'その他';
+    
     const baseData = {
         // 基本情報
         reporterName: formData.reporter,
         office: formData.office,
         incidentDate: formData.incidentDate,
         incidentTime: formData.incidentTime,
-        accidentType: formData.accidentType,
+        accidentType: accidentTypeJp,
         location: formData.location,
         details: formData.accidentDetails,
         
@@ -838,13 +810,13 @@ function buildReportData(formData, photoData) {
     };
     
     // 条件分岐データを追加
-    if (formData.accidentType === 'その他') {
+    if (formData.accidentType === 'other') {
         // その他事故の項目
         baseData.locationCategory = formData.locationCategory;
         baseData.locationDetail = formData.detailLocation;
         baseData.locationNote = formData.otherLocation;
         
-    } else if (formData.accidentType === '車両事故') {
+    } else if (formData.accidentType === 'vehicle') {
         // 車両事故の項目
         baseData.driverName = formData.driverName;
         baseData.propertyDamage = formData.propertyDamage;
@@ -867,16 +839,11 @@ function buildReportData(formData, photoData) {
             otherDetails: injuryOther ? injuryDetailsText : ''
         };
         
-        // 車両事故の追加写真
-        if (formData.propertyDamage === 'あり') {
-            baseData.photos.property = photoData.property || [];
-        }
-        
-        if (formData.personalInjury === 'あり') {
-            baseData.photos.license = photoData.license || [];
-            baseData.photos.otherVehicle = photoData.otherVehicle || [];
-            baseData.photos.ownVehicle = photoData.ownVehicle || [];
-        }
+        // 車両事故の追加写真（条件に関係なく全て追加）
+        baseData.photos.property = photoData.property || [];
+        baseData.photos.otherVehicle = photoData.otherVehicle || [];
+        baseData.photos.ownVehicle = photoData.ownVehicle || [];
+        baseData.photos.license = photoData.license || [];
     }
     
     // データ構築完了
