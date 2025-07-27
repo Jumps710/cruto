@@ -952,8 +952,8 @@ async function compressImageDirect(file) {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement("canvas");
-                const maxWidth = 400;
-                const maxHeight = 300;
+                const maxWidth = 600;
+                const maxHeight = 450;
                 let width = img.width;
                 let height = img.height;
 
@@ -970,7 +970,7 @@ async function compressImageDirect(file) {
                 canvas.height = height;
                 const ctx = canvas.getContext("2d");
                 ctx.drawImage(img, 0, 0, width, height);
-                const compressed = canvas.toDataURL("image/jpeg", 0.3);
+                const compressed = canvas.toDataURL("image/jpeg", 0.5);
                 resolve(compressed.split(",")[1]);
             };
             img.onerror = reject;
@@ -1341,32 +1341,20 @@ async function submitForm() {
             }
         });
         
-        let response;
-        try {
-            response = await fetch(config.gasUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: formData
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-        } catch (fetchError) {
-            console.error('📡 送信失敗:', fetchError);
-            throw new Error('送信に失敗しました: ' + fetchError.message);
+        const response = await fetch(config.gasUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        let result;
-        try {
-            const responseText = await response.text();
-            result = JSON.parse(responseText);
-        } catch (parseError) {
-            throw new Error('レスポンス解析エラー: ' + parseError.message);
-        }
+        const responseText = await response.text();
+        const result = JSON.parse(responseText);
         
         if (result.success) {
             updateProgress(); // 保存中...
