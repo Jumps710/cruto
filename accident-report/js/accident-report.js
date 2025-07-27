@@ -944,6 +944,43 @@ function extractHouseNumberFromResult(result) {
     return houseNumber;
 }
 
+// 画像圧縮（参考アプリと完全同一）
+async function compressImageDirect(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const maxWidth = 400;
+                const maxHeight = 300;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = Math.round((width * maxHeight) / height);
+                    height = maxHeight;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+                const compressed = canvas.toDataURL("image/jpeg", 0.3);
+                resolve(compressed.split(",")[1]);
+            };
+            img.onerror = reject;
+            img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 // 写真アップロード設定
 function setupPhotoUpload(inputId, uploadDivId, previewId, photoType) {
     const input = document.getElementById(inputId);
@@ -961,8 +998,8 @@ function setupPhotoUpload(inputId, uploadDivId, previewId, photoType) {
                 try {
                     console.log(`📷 画像処理開始: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
                     
-                    // 画像を圧縮（最大400px、品質0.3）
-                    const base64 = await Utils.fileToBase64(file, 400, 0.3);
+                    // 画像を直接圧縮（参考アプリ準拠）
+                    const base64 = await compressImageDirect(file);
                     const compressedSize = base64.length * 0.75 / 1024; // Base64サイズからおおよそのKBを計算
                     
                     console.log(`📷 圧縮完了: ${file.name} → ${compressedSize.toFixed(1)}KB`);
@@ -1260,71 +1297,67 @@ async function submitForm() {
         
         updateProgress(); // 送信中...
         
+        // URLSearchParams形式で送信（参考アプリ準拠）
+        const formData = new URLSearchParams();
+        formData.append('action', 'submitAccidentReport');
+        formData.append('reporterId', reportData.reporterId || '');
+        formData.append('reporterName', reportData.reporterName || '');
+        formData.append('office', reportData.office || '');
+        formData.append('incidentDate', reportData.incidentDate || '');
+        formData.append('incidentTime', reportData.incidentTime || '');
+        formData.append('accidentType', reportData.accidentType || '');
+        formData.append('location', reportData.location || '');
+        formData.append('details', reportData.details || '');
+        
+        // 車両事故の場合の追加フィールド
+        if (reportData.accidentType === '車両事故') {
+            formData.append('driverName', reportData.driverName || '');
+            formData.append('propertyDamage', reportData.propertyDamage || '');
+            formData.append('propertyDetails', reportData.propertyDetails || '');
+            formData.append('personalInjury', reportData.personalInjury || '');
+            formData.append('personalDetails', reportData.personalDetails || '');
+            if (reportData.injury) {
+                formData.append('injurySelf', reportData.injury.self || '');
+                formData.append('injurySelfDetails', reportData.injury.selfDetails || '');
+                formData.append('injuryPassenger', reportData.injury.passenger || '');
+                formData.append('injuryPassengerDetails', reportData.injury.passengerDetails || '');
+                formData.append('injuryOther', reportData.injury.other || '');
+                formData.append('injuryOtherDetails', reportData.injury.otherDetails || '');
+            }
+        } else {
+            formData.append('locationCategory', reportData.locationCategory || '');
+            formData.append('locationDetail', reportData.locationDetail || '');
+            formData.append('locationNote', reportData.locationNote || '');
+        }
+        
+        // 写真データを個別に追加
+        const photos = reportData.photos || {};
+        Object.keys(photos).forEach(photoType => {
+            if (photos[photoType] && photos[photoType].length > 0) {
+                photos[photoType].forEach((photo, index) => {
+                    formData.append(`photo_${photoType}_${index}`, photo.data);
+                    formData.append(`photoName_${photoType}_${index}`, photo.name);
+                });
+            }
+        });
+        
         let response;
         try {
-            console.log('📡 GAS APIへPOST送信開始:', config.gasUrl);
-            
             response = await fetch(config.gasUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: JSON.stringify({
-                    action: 'submitAccidentReport',
-                    data: reportData
-                })
+                body: formData
             });
-            
-            console.log('📡 レスポンス受信:', response.status, response.statusText);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
         } catch (fetchError) {
-            console.error('📡 Fetch失敗:', fetchError);
-            
-            // フォールバック: GETリクエストで送信を試行
-            console.log('📡 フォールバック: GETリクエストで送信を試行');
-            try {
-                const params = new URLSearchParams();
-                params.append('action', 'submitAccidentReport');
-                params.append('data', JSON.stringify(reportData));
-                
-                const getUrl = `${config.gasUrl}?${params.toString()}`;
-                const urlLength = getUrl.length;
-                console.log('📡 GET URL長さ:', urlLength);
-                
-                // URL長さ制限チェック（8KBを超える場合は失敗）
-                if (urlLength > 8000) {
-                    throw new Error(`URL長すぎ (${urlLength}文字) - データを圧縮してください`);
-                }
-                
-                response = await fetch(getUrl, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                console.log('📡 GETレスポンス受信:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`GET失敗 HTTP ${response.status}`);
-                }
-                
-                // GETが成功したらresponseを使って処理を継続
-                console.log('📡 GETリクエスト成功');
-                
-            } catch (getError) {
-                console.error('📡 GETリクエストも失敗:', getError);
-                // 最終的なデバッグログ送信
-                try {
-                    const debugUrl = `${config.gasUrl}?action=logError&error=${encodeURIComponent(fetchError.message + ' | ' + getError.message)}&source=accident-report-submit`;
-                    await fetch(debugUrl);
-                } catch (debugError) {
-                    console.error('デバッグログ送信も失敗:', debugError);
-                }
-                throw new Error('ネットワークエラー（POST/GET両方失敗）: ' + fetchError.message);
-            }
+            console.error('📡 送信失敗:', fetchError);
+            throw new Error('送信に失敗しました: ' + fetchError.message);
         }
         
         let result;
