@@ -60,8 +60,8 @@ const Utils = {
     return `${h}時${m}分`;
   },
   
-  // Base64画像処理（圧縮機能付き）
-  async fileToBase64(file, maxWidth = 1200, quality = 0.8) {
+  // Base64画像処理（高圧縮設定）
+  async fileToBase64(file, maxWidth = 800, quality = 0.6) {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');

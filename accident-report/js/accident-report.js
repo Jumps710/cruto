@@ -961,8 +961,8 @@ function setupPhotoUpload(inputId, uploadDivId, previewId, photoType) {
                 try {
                     console.log(`📷 画像処理開始: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
                     
-                    // 画像を圧縮してBase64化
-                    const base64 = await Utils.fileToBase64(file, 1200, 0.7);
+                    // 画像を高圧縮でBase64化（最大800px、品質0.5）
+                    const base64 = await Utils.fileToBase64(file, 800, 0.5);
                     const compressedSize = base64.length * 0.75 / 1024; // Base64サイズからおおよそのKBを計算
                     
                     console.log(`📷 圧縮完了: ${file.name} → ${compressedSize.toFixed(1)}KB`);
@@ -1212,17 +1212,31 @@ function closeModal() {
     document.getElementById('confirmModal').classList.remove('show');
 }
 
-// フォーム送信
+// フォーム送信（高速化対応）
 async function submitForm() {
     const submitBtn = document.getElementById('confirmBtn');
     submitBtn.disabled = true;
-    submitBtn.textContent = '送信中...';
+    
+    // プログレス表示用
+    let progressStep = 0;
+    const progressSteps = ['データ準備中...', '画像処理中...', '送信中...', '保存中...'];
+    
+    const updateProgress = () => {
+        if (progressStep < progressSteps.length) {
+            submitBtn.textContent = progressSteps[progressStep];
+            progressStep++;
+        }
+    };
+    
+    updateProgress(); // データ準備中...
     
     try {
         // タイムスタンプ追加
         formData.timestamp = new Date().toISOString();
         formData.userId = WOFFManager.getUserId();
         formData.department = WOFFManager.getDepartment();
+        
+        updateProgress(); // 画像処理中...
         
         // 新しいデータ構造に変換
         const reportData = buildReportData(formData, photoData);
@@ -1239,10 +1253,12 @@ async function submitForm() {
             報告者ID: reportData.reporterId
         });
         
-        // データサイズが大きすぎる場合の警告
-        if (jsonSize > 5 * 1024 * 1024) { // 5MB以上
-            console.warn('⚠️ データサイズが大きすぎます:', `${jsonSizeKB}KB`);
+        // データサイズ制限チェック（5枚の画像でも2MB以内に収まるよう調整）
+        if (jsonSize > 2 * 1024 * 1024) { // 2MB以上
+            throw new Error(`データサイズが大きすぎます (${jsonSizeKB}KB)。画像を減らすか、より小さい画像を使用してください。`);
         }
+        
+        updateProgress(); // 送信中...
         
         let response;
         try {
@@ -1320,17 +1336,22 @@ async function submitForm() {
         }
         
         if (result.success) {
+            updateProgress(); // 保存中...
+            
             console.log('✅ 事故報告送信完了:', { 
                 報告ID: result.reportId, 
                 写真数: result.photoCount 
             });
             
-            localStorage.setItem('reportResult', JSON.stringify({
-                success: true,
-                reportId: result.reportId,
-                timestamp: formData.timestamp
-            }));
-            window.location.href = 'result.html';
+            // 少し待ってから画面遷移（ユーザーに保存完了を視覚的に伝える）
+            setTimeout(() => {
+                localStorage.setItem('reportResult', JSON.stringify({
+                    success: true,
+                    reportId: result.reportId,
+                    timestamp: formData.timestamp
+                }));
+                window.location.href = 'result.html';
+            }, 500);
         } else {
             throw new Error(result.error || '送信に失敗しました');
         }
