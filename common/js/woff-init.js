@@ -60,11 +60,42 @@ const Utils = {
     return `${h}時${m}分`;
   },
   
-  // Base64画像処理
-  async fileToBase64(file) {
+  // Base64画像処理（圧縮機能付き）
+  async fileToBase64(file, maxWidth = 1200, quality = 0.8) {
     return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // 元画像のサイズを取得
+        let { width, height } = img;
+        
+        // 最大幅を超える場合は縮小
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        // Canvasサイズを設定
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 画像を描画
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Base64に変換（JPEG、品質0.8）
+        const base64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(base64.split(',')[1]);
+      };
+      
+      img.onerror = reject;
+      
+      // ファイルからData URLを作成
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+      reader.onload = (e) => {
+        img.src = e.target.result;
+      };
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });

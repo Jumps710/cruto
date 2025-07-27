@@ -959,10 +959,19 @@ function setupPhotoUpload(inputId, uploadDivId, previewId, photoType) {
         for (const file of Array.from(e.target.files)) {
             if (file.type.startsWith('image/')) {
                 try {
-                    const base64 = await Utils.fileToBase64(file);
+                    console.log(`📷 画像処理開始: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+                    
+                    // 画像を圧縮してBase64化
+                    const base64 = await Utils.fileToBase64(file, 1200, 0.7);
+                    const compressedSize = base64.length * 0.75 / 1024; // Base64サイズからおおよそのKBを計算
+                    
+                    console.log(`📷 圧縮完了: ${file.name} → ${compressedSize.toFixed(1)}KB`);
+                    
                     photoData[photoType].push({
                         name: file.name,
-                        data: base64
+                        data: base64,
+                        originalSize: file.size,
+                        compressedSize: base64.length
                     });
                     
                     // プレビュー表示
@@ -1217,11 +1226,23 @@ async function submitForm() {
         
         // 新しいデータ構造に変換
         const reportData = buildReportData(formData, photoData);
+        
+        // データサイズチェック
+        const jsonSize = JSON.stringify(reportData).length;
+        const jsonSizeKB = (jsonSize / 1024).toFixed(1);
+        const totalPhotos = Object.values(reportData.photos).flat().length;
+        
         console.log('📝 事故報告送信開始:', { 
             事故種類: reportData.accidentType, 
-            写真枚数: Object.values(reportData.photos).flat().length,
+            写真枚数: totalPhotos,
+            データサイズ: `${jsonSizeKB}KB`,
             報告者ID: reportData.reporterId
         });
+        
+        // データサイズが大きすぎる場合の警告
+        if (jsonSize > 5 * 1024 * 1024) { // 5MB以上
+            console.warn('⚠️ データサイズが大きすぎます:', `${jsonSizeKB}KB`);
+        }
         
         let response;
         try {
@@ -1255,7 +1276,13 @@ async function submitForm() {
                 params.append('data', JSON.stringify(reportData));
                 
                 const getUrl = `${config.gasUrl}?${params.toString()}`;
-                console.log('📡 GET URL長さ:', getUrl.length);
+                const urlLength = getUrl.length;
+                console.log('📡 GET URL長さ:', urlLength);
+                
+                // URL長さ制限チェック（8KBを超える場合は失敗）
+                if (urlLength > 8000) {
+                    throw new Error(`URL長すぎ (${urlLength}文字) - データを圧縮してください`);
+                }
                 
                 response = await fetch(getUrl, {
                     method: 'GET',
