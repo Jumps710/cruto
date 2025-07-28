@@ -1397,7 +1397,8 @@ async function submitForm() {
                 formDataParams.append('injuryOther', reportData.injury.other || '');
                 formDataParams.append('injuryOtherDetails', reportData.injury.otherDetails || '');
             }
-        } else {
+        } else if (reportData.accidentType === 'その他') {
+            // その他事故の場合の追加フィールド
             formDataParams.append('locationCategory', reportData.locationCategory || '');
             formDataParams.append('locationDetail', reportData.locationDetail || '');
             formDataParams.append('locationNote', reportData.locationNote || '');

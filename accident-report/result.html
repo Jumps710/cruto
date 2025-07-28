@@ -89,7 +89,18 @@
       flex-direction: column;
       gap: 12px;
       max-width: 300px;
-      margin: 0 auto;
+      margin: 0 auto 20px auto;
+    }
+    
+    .close-instruction {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      border-left: 4px solid #17a2b8;
     }
     
     .btn-close {
@@ -163,8 +174,11 @@
       </div>
       
       <div class="action-buttons">
-        <button class="btn-close" onclick="closeApp()">アプリを閉じる</button>
         <a href="index.html" class="btn-new-report">新しい報告を作成</a>
+      </div>
+      
+      <div class="close-instruction">
+        画面右上の✕ボタンで閉じてください
       </div>
     </div>
   </div>
@@ -199,16 +213,6 @@
       `;
     }
     
-    // アプリを閉じる機能
-    function closeApp() {
-      // LINE WORKSアプリの場合は閉じる
-      if (typeof woff !== 'undefined' && woff.isInClient()) {
-        woff.closeWindow();
-      } else {
-        // ブラウザの場合は前のページに戻る
-        window.history.back();
-      }
-    }
     
   </script>
 </body>
