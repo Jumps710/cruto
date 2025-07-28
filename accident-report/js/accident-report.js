@@ -1,4 +1,4 @@
-// 事故報告フォーム JavaScript - URLSearchParams + 画質改善版 v20250727009
+// 事故報告フォーム JavaScript - URLSearchParams + 画質改善版 v20250728001
 
 // 設定
 const config = {
@@ -953,16 +953,38 @@ function extractHouseNumberFromResult(result) {
     return houseNumber;
 }
 
-// 画像圧縮（参考アプリと完全同一）
+// 画像圧縮設定
+const imageConfig = {
+    // 高画質設定（より大きいサイズと高品質）
+    maxWidth: 1200,    // 600 → 1200
+    maxHeight: 900,    // 450 → 900
+    quality: 0.85,     // 0.5 → 0.85 (85%品質)
+    enableCompression: true  // falseで圧縮無効化可能
+};
+
+// 画像圧縮（高画質対応版）
 async function compressImageDirect(file) {
+    // 圧縮が無効化されている場合は元画像をそのまま返す
+    if (!imageConfig.enableCompression) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const base64 = event.target.result.split(",")[1];
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+    
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (event) => {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement("canvas");
-                const maxWidth = 600;
-                const maxHeight = 450;
+                const maxWidth = imageConfig.maxWidth;
+                const maxHeight = imageConfig.maxHeight;
                 let width = img.width;
                 let height = img.height;
 
@@ -979,7 +1001,7 @@ async function compressImageDirect(file) {
                 canvas.height = height;
                 const ctx = canvas.getContext("2d");
                 ctx.drawImage(img, 0, 0, width, height);
-                const compressed = canvas.toDataURL("image/jpeg", 0.5);
+                const compressed = canvas.toDataURL("image/jpeg", imageConfig.quality);
                 resolve(compressed.split(",")[1]);
             };
             img.onerror = reject;
