@@ -179,7 +179,7 @@
         <div class="report-id-display">
           <h3>報告番号はこちらです</h3>
           <div class="report-id">${reportResult.reportId}</div>
-          <p>この番号を控えておいてください</p>
+          <p>画面のスクリーンショットを撮っておいてください</p>
         </div>
       `;
     }
@@ -194,7 +194,7 @@
         <div class="report-id-display">
           <h3>報告番号はこちらです</h3>
           <div class="report-id">${reportIdFromUrl}</div>
-          <p>この番号を控えておいてください</p>
+          <p>画面のスクリーンショットを撮っておいてください</p>
         </div>
       `;
     }
@@ -210,14 +210,6 @@
       }
     }
     
-    // 自動閉じる機能（オプション）
-    // 30秒後に自動的にアプリを閉じる
-    setTimeout(() => {
-      const autoClose = confirm('30秒が経過しました。アプリを閉じますか？');
-      if (autoClose) {
-        closeApp();
-      }
-    }, 30000);
   </script>
 </body>
 </html>

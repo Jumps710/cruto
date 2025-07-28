@@ -868,6 +868,9 @@ function cleanJapaneseAddress(formattedAddress) {
     // 末尾の「日本」を除去
     cleanedAddress = cleanedAddress.replace(/、?\s*日本$/, '');
     
+    // 先頭の「日本、」も除去
+    cleanedAddress = cleanedAddress.replace(/^日本、\s*/, '');
+    
     // 郵便番号パターンを除去（例：〒272-0827、272-0827）
     cleanedAddress = cleanedAddress.replace(/〒?\d{3}-?\d{4}\s*/, '');
     
