@@ -10,11 +10,11 @@
 }
 
 .form-section h2 {
-    color: #1e3a8a;
+    color: #E65100;
     font-size: 18px;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom: 2px solid #FFE0B2;
 }
 
 /* フォームグループ */
@@ -54,8 +54,8 @@ input[type="time"]:focus,
 select:focus,
 textarea:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: #FF8F00;
+    box-shadow: 0 0 0 3px rgba(255, 143, 0, 0.1);
 }
 
 input[readonly] {
@@ -92,11 +92,11 @@ input[type="checkbox"] {
 /* 条件付きセクション */
 .conditional-section {
     display: none;
-    background-color: #f9fafb;
+    background-color: #FFF3E0;
     padding: 15px;
     border-radius: 4px;
     margin-top: 15px;
-    border-left: 4px solid #3b82f6;
+    border-left: 4px solid #FF8F00;
 }
 
 .conditional-section.active {
@@ -121,8 +121,8 @@ input[type="checkbox"] {
 }
 
 .photo-upload:hover {
-    border-color: #3b82f6;
-    background-color: #eff6ff;
+    border-color: #FF8F00;
+    background-color: #FFF3E0;
 }
 
 .photo-upload p {
@@ -164,7 +164,7 @@ input[type="checkbox"] {
 }
 
 .btn-location {
-    background-color: #10b981;
+    background-color: #FF8F00;
     color: white;
     border: none;
     padding: 10px 15px;
@@ -175,7 +175,7 @@ input[type="checkbox"] {
 }
 
 .btn-location:hover {
-    background-color: #059669;
+    background-color: #E67E00;
 }
 
 /* 送信セクション */
@@ -194,7 +194,7 @@ input[type="checkbox"] {
     max-width: 600px;
     margin: 0 auto;
     display: block;
-    background-color: #1e3a8a;
+    background-color: #FF8F00;
     color: white;
     border: none;
     padding: 15px;
@@ -206,7 +206,7 @@ input[type="checkbox"] {
 }
 
 .btn-submit:hover {
-    background-color: #1e40af;
+    background-color: #E67E00;
 }
 
 .btn-submit:disabled {
@@ -261,7 +261,7 @@ input[type="checkbox"] {
 
 .modal h3 {
     margin-bottom: 20px;
-    color: #1e3a8a;
+    color: #E65100;
 }
 
 .modal-buttons {
@@ -289,12 +289,12 @@ input[type="checkbox"] {
 }
 
 .btn-confirm {
-    background-color: #1e3a8a;
+    background-color: #FF8F00;
     color: white;
 }
 
 .btn-confirm:hover {
-    background-color: #1e40af;
+    background-color: #E67E00;
 }
 
 /* 確認内容表示 */
@@ -304,7 +304,7 @@ input[type="checkbox"] {
 }
 
 #confirmContent strong {
-    color: #1e3a8a;
+    color: #E65100;
 }
 
 /* 事業所表示 */
@@ -345,7 +345,7 @@ input[type="checkbox"] {
 }
 
 .btn-change-office {
-    background-color: #6b7280;
+    background-color: #F57C00;
     color: white;
     border: none;
     padding: 5px 10px;
@@ -355,7 +355,7 @@ input[type="checkbox"] {
 }
 
 .btn-change-office:hover {
-    background-color: #4b5563;
+    background-color: #E65100;
 }
 
 /* 事業所選択モーダル */

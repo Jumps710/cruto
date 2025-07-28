@@ -1,7 +1,7 @@
 /* 営業支援Bot専用スタイル */
 
 body {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF8F00 0%, #F57C00 100%);
   min-height: 100vh;
 }
 
@@ -15,7 +15,7 @@ body {
 
 /* チャットヘッダー */
 .chat-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF8F00 0%, #F57C00 100%);
   color: white;
   padding: 20px 24px;
   text-align: center;
@@ -80,7 +80,7 @@ body {
 }
 
 .bot-message .message-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF8F00 0%, #F57C00 100%);
   color: white;
 }
 
@@ -89,7 +89,7 @@ body {
 }
 
 .user-message .message-avatar {
-  background: #4CAF50;
+  background: #E65100;
   color: white;
   margin-left: 12px;
   margin-right: 0;
@@ -160,14 +160,14 @@ body {
 }
 
 .strategy-btn:hover {
-  border-color: #667eea;
+  border-color: #FF8F00;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 4px 12px rgba(255, 143, 0, 0.2);
 }
 
 .strategy-btn.selected {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #FF8F00;
+  background: linear-gradient(135deg, #FF8F00 0%, #F57C00 100%);
   color: white;
 }
 
@@ -190,7 +190,7 @@ body {
 
 /* 位置情報 */
 .location-btn {
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+  background: linear-gradient(135deg, #FF8F00 0%, #E67E00 100%);
   color: white;
   border: none;
   padding: 16px 24px;
@@ -205,7 +205,7 @@ body {
 
 .location-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 143, 0, 0.3);
 }
 
 .location-btn:disabled {
@@ -263,11 +263,11 @@ body {
 }
 
 .checkbox-option:hover {
-  border-color: #667eea;
+  border-color: #FF8F00;
 }
 
 .checkbox-option input:checked + span {
-  color: #667eea;
+  color: #FF8F00;
   font-weight: 600;
 }
 
@@ -293,7 +293,7 @@ body {
 
 /* 生成ボタン */
 .generate-btn {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  background: linear-gradient(135deg, #FF8F00 0%, #E67E00 100%);
   color: white;
   border: none;
   padding: 16px 32px;
@@ -307,7 +307,7 @@ body {
 
 .generate-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 143, 0, 0.3);
 }
 
 /* ルートモーダル */
@@ -364,7 +364,7 @@ body {
 }
 
 .route-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF8F00 0%, #F57C00 100%);
   color: white;
   padding: 12px 16px;
   display: flex;
@@ -459,7 +459,7 @@ body {
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  background: linear-gradient(135deg, #FF8F00 0%, #E67E00 100%);
   color: white;
 }
 
@@ -513,7 +513,7 @@ body {
 .analytics-value {
   font-size: 24px;
   font-weight: bold;
-  color: #667eea;
+  color: #FF8F00;
   display: block;
   margin-bottom: 8px;
 }

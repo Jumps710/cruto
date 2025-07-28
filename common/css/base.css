@@ -59,10 +59,10 @@ select {
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: #4CAF50;
+  border-color: #FF8F00;
   outline: none;
   background-color: #fff;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+  box-shadow: 0 0 0 2px rgba(255, 143, 0, 0.2);
 }
 
 textarea {
@@ -93,12 +93,12 @@ button:disabled {
 }
 
 .button-primary {
-  background-color: #4CAF50;
+  background-color: #FF8F00;
   color: white;
 }
 
 .button-secondary {
-  background-color: #f44336;
+  background-color: #F57C00;
   color: white;
 }
 
@@ -118,7 +118,7 @@ button:disabled {
 }
 
 .custom-file-label {
-  background-color: #2196F3;
+  background-color: #FF8F00;
   color: white;
   padding: 10px 16px;
   border-radius: 6px;
@@ -129,7 +129,7 @@ button:disabled {
 }
 
 .custom-file-label:hover {
-  background-color: #1976D2;
+  background-color: #E67E00;
 }
 
 .file-name {
@@ -202,7 +202,7 @@ button:disabled {
   width: 20px;
   height: 20px;
   border: 3px solid #f3f3f3;
-  border-top: 3px solid #4CAF50;
+  border-top: 3px solid #FF8F00;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-left: 10px;
