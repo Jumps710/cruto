@@ -38,11 +38,29 @@ if ('serviceWorker' in navigator) {
 // 初期化
 document.addEventListener('DOMContentLoaded', async function() {
     // バージョン確認用ログ（確認後削除）
-    console.log('🔄 Script loaded: v20250727009, cachebust=1737982800001');
+    console.log('🔄 Script loaded: v20250728001, DOMContentLoaded fired');
+    
+    // フォーム要素の存在確認
+    const form = document.getElementById('accidentReportForm');
+    const reporter = document.getElementById('reporter');
+    const officeContainer = document.getElementById('officeContainer');
+    
+    console.log('📋 Elements check:', {
+        form: !!form,
+        reporter: !!reporter,
+        officeContainer: !!officeContainer
+    });
+    
+    if (!form) {
+        console.error('❌ フォーム要素が見つかりません');
+        return;
+    }
     
     try {
         // まず最初にイベントリスナーを設定（フォーム操作を即座に有効化）
+        console.log('⚙️ Setting up event listeners...');
         setupEventListeners();
+        console.log('✅ Event listeners setup complete');
     } catch (eventError) {
         console.error('❌ Event listener setup failed:', eventError);
         return;
@@ -50,16 +68,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     try {
         // WOFF初期化
+        console.log('🔄 Starting WOFF initialization...');
         const profile = await WOFFManager.init(config.woffId);
+        console.log('✅ WOFF initialization successful:', profile);
         
         // 報告者名を設定
         document.getElementById('reporter').value = profile.displayName;
+        console.log('👤 Reporter name set:', profile.displayName);
         
         // 今日の日付を設定（即座に実行）
         const today = new Date();
         document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
+        console.log('📅 Date set:', today.toISOString().split('T')[0]);
         
         // ユーザーの組織情報を非同期で取得（ブロッキングしない）
+        console.log('🏢 Getting user organization...');
         getUserOrganization(profile.userId);
         
         
