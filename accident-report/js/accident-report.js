@@ -468,9 +468,9 @@ function handleLocationCategoryChange(e) {
     detailLocation.innerHTML = '<option value="">選択してください</option>';
     
     const locationOptions = {
-        visit: ['利用者宅', '移動中', 'その他'],
-        child: ['送迎中', '訓練中', 'その他'],
-        facility: ['施設内', '施設外', 'その他']
+        '訪看': ['ご利用者宅', 'その他'],
+        '小児': ['活動スペース', 'トイレ', '屋外', 'その他'],
+        '施設': ['居室', '共有スペース', 'トイレ', '浴室', '中庭', '玄関前', '駐車場', '階段', 'その他']
     };
     
     if (e.target.value && locationOptions[e.target.value]) {
