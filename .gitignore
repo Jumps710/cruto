@@ -3,9 +3,9 @@ CLAUDE.md
 claude.md
 
 # GAS関連ファイル - 本番環境で別管理
-gas/
-*.gs
-appsscript.json
+# gas/
+# *.gs
+# appsscript.json
 
 # Node.js関連
 node_modules/
