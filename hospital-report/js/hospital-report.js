@@ -422,6 +422,32 @@ function setupEventListeners() {
         
         setupHospitalAutocomplete();
         console.log('[DEBUG] 医療機関オートコンプリート初期化完了');
+        
+        // テスト: searchUsers APIを直接呼び出し
+        console.log('[TEST] searchUsers API直接テスト開始');
+        const testParams = new URLSearchParams({
+            action: 'searchUsers',
+            query: '山田'
+        });
+        const testUrl = `${config.gasUrl}?${testParams.toString()}`;
+        console.log('[TEST] テストURL:', testUrl);
+        
+        fetch(testUrl, {
+            method: 'GET',
+            mode: 'cors'
+        }).then(response => {
+            console.log('[TEST] searchUsers テストレスポンス:', {
+                status: response.status,
+                ok: response.ok,
+                statusText: response.statusText
+            });
+            return response.json();
+        }).then(data => {
+            console.log('[TEST] searchUsers テスト結果:', data);
+        }).catch(error => {
+            console.error('[TEST] searchUsers テストエラー:', error);
+        });
+        
     } catch (autocompleteError) {
         console.error('[ERROR] オートコンプリート初期化エラー:', autocompleteError);
     }
