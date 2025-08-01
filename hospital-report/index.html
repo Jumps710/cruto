@@ -4,13 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>入退院報告フォーム</title>
-    <link rel="stylesheet" href="../common/css/base.css?v=20250801006">
-    <link rel="stylesheet" href="css/hospital-report.css?v=20250801006">
+    <!-- CSS will be loaded dynamically with cache busters -->
     <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.7.1/woff.js"></script>
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
         var vConsole = new VConsole();
-        console.log('[SYSTEM] vConsole初期化完了 - 入退院報告 詳細デバッグ版 20250801006');
+        console.log('[SYSTEM] vConsole初期化完了 - 入退院報告 動的キャッシュバスター版', Date.now());
         
         // 強制キャッシュクリア
         if ('caches' in window) {
@@ -218,7 +217,44 @@
         </div>
     </div>
 
-    <script src="../common/js/woff-init.js?v=20250801006"></script>
-    <script src="js/hospital-report.js?v=20250801006"></script>
+    <!-- JS will be loaded dynamically with cache busters -->
+    <script>
+        // 動的キャッシュバスター: 毎回新しいタイムスタンプを生成
+        const timestamp = Date.now();
+        console.log('[CACHE-BUSTER] タイムスタンプ生成:', timestamp);
+        
+        // CSS動的読み込み
+        const baseCSS = document.createElement('link');
+        baseCSS.rel = 'stylesheet';
+        baseCSS.href = `../common/css/base.css?v=${timestamp}`;
+        document.head.appendChild(baseCSS);
+        
+        const hospitalCSS = document.createElement('link');
+        hospitalCSS.rel = 'stylesheet';
+        hospitalCSS.href = `css/hospital-report.css?v=${timestamp}`;
+        document.head.appendChild(hospitalCSS);
+        
+        // JS動的読み込み
+        const woffJS = document.createElement('script');
+        woffJS.src = `../common/js/woff-init.js?v=${timestamp}`;
+        woffJS.onload = function() {
+            console.log('[CACHE-BUSTER] woff-init.js 読み込み完了');
+            
+            // woff-init.js読み込み後にhospital-report.jsを読み込み
+            const hospitalJS = document.createElement('script');
+            hospitalJS.src = `js/hospital-report.js?v=${timestamp}`;
+            hospitalJS.onload = function() {
+                console.log('[CACHE-BUSTER] hospital-report.js 読み込み完了');
+            };
+            document.head.appendChild(hospitalJS);
+        };
+        document.head.appendChild(woffJS);
+        
+        console.log('[CACHE-BUSTER] 全ファイル動的読み込み開始:', {
+            baseCSS: baseCSS.href,
+            hospitalCSS: hospitalCSS.href,
+            woffJS: woffJS.src
+        });
+    </script>
 </body>
 </html>
