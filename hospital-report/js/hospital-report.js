@@ -450,11 +450,19 @@ function setupEventListeners() {
             console.log('[TEST] searchUsers テストレスポンス:', {
                 status: response.status,
                 ok: response.ok,
-                statusText: response.statusText
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries())
             });
-            return response.json();
-        }).then(data => {
-            console.log('[TEST] searchUsers テスト結果:', data);
+            return response.text();
+        }).then(responseText => {
+            console.log('[TEST] searchUsers レスポンステキスト:', responseText);
+            try {
+                const data = JSON.parse(responseText);
+                console.log('[TEST] searchUsers テスト結果:', data);
+            } catch (parseError) {
+                console.error('[TEST] JSON parse エラー:', parseError);
+                console.log('[TEST] Raw response:', responseText);
+            }
         }).catch(error => {
             console.error('[TEST] searchUsers テストエラー:', error);
         });
