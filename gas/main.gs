@@ -252,14 +252,66 @@ function doGet(e) {
       // 入退院報告系のGETアクション
       case 'searchUsers':
         const query = e.parameter.query;
-        // hospital-report.gsのsearchUsers関数を明示的に呼び出し
-        const usersSearchResult = searchUsers(query);
-        return createSuccessResponse(usersSearchResult);
+        try {
+          // hospital-report.gsのsearchUsers関数を呼び出し
+          const usersSearchResult = searchUsers(query);
+          logSheet.appendRow([
+            new Date(),
+            "doGet",
+            "searchUsers成功",
+            query,
+            "",
+            `結果件数: ${usersSearchResult ? usersSearchResult.length : 'null'}`,
+            "",
+            "",
+            ""
+          ]);
+          return createSuccessResponse(usersSearchResult);
+        } catch (searchError) {
+          logSheet.appendRow([
+            new Date(),
+            "doGet", 
+            "searchUsers失敗",
+            query,
+            "",
+            `エラー: ${searchError.toString()}`,
+            "",
+            "",
+            ""
+          ]);
+          return createErrorResponse('searchUsers実行エラー: ' + searchError.toString());
+        }
         
       case 'searchHospitals':
         const hospitalQuery = e.parameter.query;
-        const hospitalsSearchResult = searchHospitals(hospitalQuery);
-        return createSuccessResponse(hospitalsSearchResult);
+        try {
+          const hospitalsSearchResult = searchHospitals(hospitalQuery);
+          logSheet.appendRow([
+            new Date(),
+            "doGet",
+            "searchHospitals成功", 
+            hospitalQuery,
+            "",
+            `結果件数: ${hospitalsSearchResult ? hospitalsSearchResult.length : 'null'}`,
+            "",
+            "",
+            ""
+          ]);
+          return createSuccessResponse(hospitalsSearchResult);
+        } catch (searchError) {
+          logSheet.appendRow([
+            new Date(),
+            "doGet",
+            "searchHospitals失敗",
+            hospitalQuery, 
+            "",
+            `エラー: ${searchError.toString()}`,
+            "",
+            "",
+            ""
+          ]);
+          return createErrorResponse('searchHospitals実行エラー: ' + searchError.toString());
+        }
         
       case 'getUsers':
         const usersResult = getUsers();
