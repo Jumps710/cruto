@@ -137,19 +137,51 @@ async function getUserOrganization(userId) {
         if (result && result.orgUnitName) {
             userOrganization = result.orgUnitName;
             
+            console.log('[DEBUG] 組織情報取得成功:', {
+                orgUnitName: result.orgUnitName,
+                userOrganization: userOrganization
+            });
+            
             // 事業所フィールドを設定
             const officeContainer = document.getElementById('officeContainer');
             const officeSelect = document.getElementById('office');
             
+            console.log('[DEBUG] DOM要素取得:', {
+                officeContainer: !!officeContainer,
+                officeSelect: !!officeSelect,
+                officeContainerHTML: officeContainer ? officeContainer.innerHTML : 'null',
+                officeSelectStyle: officeSelect ? officeSelect.style.display : 'null'
+            });
+            
+            if (!officeContainer || !officeSelect) {
+                console.error('[ERROR] 事業所DOM要素が見つかりません:', {
+                    officeContainer: !!officeContainer,
+                    officeSelect: !!officeSelect
+                });
+                return;
+            }
+            
             console.log('🏗️ 事業所表示エリア更新開始');
             
             // ローディングメッセージを削除
+            console.log('[DEBUG] ローディングメッセージ削除前:', officeContainer.innerHTML);
             officeContainer.innerHTML = '';
+            console.log('[DEBUG] ローディングメッセージ削除後:', officeContainer.innerHTML);
             
             // 取得した組織をデフォルトとして設定し、selectを表示
-            officeSelect.innerHTML = `<option value="${userOrganization}">${userOrganization}</option>`;
+            const optionHTML = `<option value="${userOrganization}">${userOrganization}</option>`;
+            console.log('[DEBUG] 設定するオプションHTML:', optionHTML);
+            
+            officeSelect.innerHTML = optionHTML;
             officeSelect.value = userOrganization;
             officeSelect.style.display = 'block';
+            
+            console.log('[DEBUG] 事業所設定完了:', {
+                innerHTML: officeSelect.innerHTML,
+                value: officeSelect.value,
+                display: officeSelect.style.display,
+                selectedIndex: officeSelect.selectedIndex
+            });
             
             // 事業所一覧を非同期で取得してプルダウンに追加
             loadOfficesFromSheet().then(() => {
@@ -379,8 +411,16 @@ function setupEventListeners() {
     });
     
     // リアルタイム検索機能
-    setupUserAutocomplete();
-    setupHospitalAutocomplete();
+    console.log('[DEBUG] オートコンプリート機能初期化開始');
+    try {
+        setupUserAutocomplete();
+        console.log('[DEBUG] 利用者オートコンプリート初期化完了');
+        
+        setupHospitalAutocomplete();
+        console.log('[DEBUG] 医療機関オートコンプリート初期化完了');
+    } catch (autocompleteError) {
+        console.error('[ERROR] オートコンプリート初期化エラー:', autocompleteError);
+    }
     
     // 送信ボタン
     document.getElementById('submitBtn').addEventListener('click', showConfirmModal);
@@ -505,15 +545,42 @@ function setupUserAutocomplete() {
     let selectedIndex = -1;
     let searchTimeout = null;
     
+    console.log('[DEBUG] setupUserAutocomplete 実行開始');
+    console.log('[DEBUG] DOM要素確認:', {
+        input: !!input,
+        suggestions: !!suggestions,
+        inputId: input ? input.id : 'null',
+        suggestionsId: suggestions ? suggestions.id : 'null'
+    });
+    
+    if (!input || !suggestions) {
+        console.error('[ERROR] 利用者検索用DOM要素が見つかりません:', {
+            input: !!input,
+            suggestions: !!suggestions
+        });
+        return;
+    }
+    
     input.addEventListener('input', function() {
         const query = this.value.trim();
+        console.log('[DEBUG] 利用者検索入力イベント:', {
+            query: query,
+            length: query.length
+        });
+        
         suggestions.innerHTML = '';
         selectedIndex = -1;
         
         if (query.length < 1) {
             suggestions.classList.remove('show');
+            console.log('[DEBUG] クエリが短すぎるため検索をスキップ');
             return;
         }
+        
+        console.log('[DEBUG] 検索リクエスト準備:', {
+            query: query,
+            gasUrl: config.gasUrl
+        });
         
         // 検索リクエストを遅延実行（300ms）
         clearTimeout(searchTimeout);
@@ -524,26 +591,54 @@ function setupUserAutocomplete() {
                     query: query
                 });
                 
-                const response = await fetch(`${config.gasUrl}?${params.toString()}`, {
+                const requestUrl = `${config.gasUrl}?${params.toString()}`;
+                console.log('[DEBUG] 利用者検索API呼び出し:', {
+                    url: requestUrl,
+                    query: query
+                });
+                
+                const response = await fetch(requestUrl, {
                     method: 'GET',
                     mode: 'cors'
                 });
                 
+                console.log('[DEBUG] 利用者検索APIレスポンス:', {
+                    status: response.status,
+                    ok: response.ok,
+                    statusText: response.statusText
+                });
+                
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const results = await response.json();
+                console.log('[DEBUG] 利用者検索結果:', {
+                    results: results,
+                    length: results ? results.length : 0
+                });
                 
                 if (results && results.length > 0) {
-                    suggestions.innerHTML = results.map((user, index) => `
+                    const suggestionsHTML = results.map((user, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${user.name}">
                             <div class="suggestion-name">${user.name}</div>
                             ${user.status ? `<div class="suggestion-reading">${user.status}</div>` : ''}
                         </div>
                     `).join('');
                     
+                    console.log('[DEBUG] サジェスト表示:', {
+                        suggestionsHTML: suggestionsHTML,
+                        resultCount: results.length
+                    });
+                    
+                    suggestions.innerHTML = suggestionsHTML;
                     suggestions.classList.add('show');
+                    
+                    console.log('[DEBUG] サジェスト表示完了:', {
+                        innerHTML: suggestions.innerHTML,
+                        classList: suggestions.classList.toString(),
+                        display: suggestions.style.display
+                    });
                     
                     // クリックイベント
                     suggestions.querySelectorAll('.suggestion-item').forEach(item => {
@@ -557,7 +652,12 @@ function setupUserAutocomplete() {
                     suggestions.classList.remove('show');
                 }
             } catch (error) {
-                console.error('利用者検索エラー:', error);
+                console.error('[ERROR] 利用者検索エラー:', {
+                    error: error.message,
+                    stack: error.stack,
+                    query: query,
+                    gasUrl: config.gasUrl
+                });
                 suggestions.classList.remove('show');
             }
         }, 300);
@@ -574,15 +674,42 @@ function setupHospitalAutocomplete() {
     let selectedIndex = -1;
     let searchTimeout = null;
     
+    console.log('[DEBUG] setupHospitalAutocomplete 実行開始');
+    console.log('[DEBUG] DOM要素確認:', {
+        input: !!input,
+        suggestions: !!suggestions,
+        inputId: input ? input.id : 'null',
+        suggestionsId: suggestions ? suggestions.id : 'null'
+    });
+    
+    if (!input || !suggestions) {
+        console.error('[ERROR] 医療機関検索用DOM要素が見つかりません:', {
+            input: !!input,
+            suggestions: !!suggestions
+        });
+        return;
+    }
+    
     input.addEventListener('input', function() {
         const query = this.value.trim();
+        console.log('[DEBUG] 医療機関検索入力イベント:', {
+            query: query,
+            length: query.length
+        });
+        
         suggestions.innerHTML = '';
         selectedIndex = -1;
         
         if (query.length < 1) {
             suggestions.classList.remove('show');
+            console.log('[DEBUG] クエリが短すぎるため検索をスキップ');
             return;
         }
+        
+        console.log('[DEBUG] 医療機関検索リクエスト準備:', {
+            query: query,
+            gasUrl: config.gasUrl
+        });
         
         // 検索リクエストを遅延実行（300ms）
         clearTimeout(searchTimeout);
@@ -593,26 +720,54 @@ function setupHospitalAutocomplete() {
                     query: query
                 });
                 
-                const response = await fetch(`${config.gasUrl}?${params.toString()}`, {
+                const requestUrl = `${config.gasUrl}?${params.toString()}`;
+                console.log('[DEBUG] 医療機関検索API呼び出し:', {
+                    url: requestUrl,
+                    query: query
+                });
+                
+                const response = await fetch(requestUrl, {
                     method: 'GET',
                     mode: 'cors'
                 });
                 
+                console.log('[DEBUG] 医療機関検索APIレスポンス:', {
+                    status: response.status,
+                    ok: response.ok,
+                    statusText: response.statusText
+                });
+                
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const results = await response.json();
+                console.log('[DEBUG] 医療機関検索結果:', {
+                    results: results,
+                    length: results ? results.length : 0
+                });
                 
                 if (results && results.length > 0) {
-                    suggestions.innerHTML = results.map((hospital, index) => `
+                    const suggestionsHTML = results.map((hospital, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${hospital.name}">
                             <div class="suggestion-name">${hospital.name}</div>
                             ${hospital.area ? `<div class="suggestion-reading">${hospital.area}</div>` : ''}
                         </div>
                     `).join('');
                     
+                    console.log('[DEBUG] 医療機関サジェスト表示:', {
+                        suggestionsHTML: suggestionsHTML,
+                        resultCount: results.length
+                    });
+                    
+                    suggestions.innerHTML = suggestionsHTML;
                     suggestions.classList.add('show');
+                    
+                    console.log('[DEBUG] 医療機関サジェスト表示完了:', {
+                        innerHTML: suggestions.innerHTML,
+                        classList: suggestions.classList.toString(),
+                        display: suggestions.style.display
+                    });
                     
                     // クリックイベント
                     suggestions.querySelectorAll('.suggestion-item').forEach(item => {
@@ -626,7 +781,12 @@ function setupHospitalAutocomplete() {
                     suggestions.classList.remove('show');
                 }
             } catch (error) {
-                console.error('医療機関検索エラー:', error);
+                console.error('[ERROR] 医療機関検索エラー:', {
+                    error: error.message,
+                    stack: error.stack,
+                    query: query,
+                    gasUrl: config.gasUrl
+                });
                 suggestions.classList.remove('show');
             }
         }, 300);
