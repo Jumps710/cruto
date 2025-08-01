@@ -677,16 +677,26 @@ function setupUserAutocomplete() {
                     
                     console.log('[DEBUG] サジェスト表示:', {
                         suggestionsHTML: suggestionsHTML,
-                        resultCount: results.length
+                        resultCount: results.length,
+                        suggestionsElement: suggestions,
+                        suggestionsVisible: suggestions.offsetParent !== null,
+                        suggestionsRect: suggestions.getBoundingClientRect()
                     });
                     
                     suggestions.innerHTML = suggestionsHTML;
                     suggestions.classList.add('show');
                     
+                    // 強制的に表示
+                    suggestions.style.display = 'block';
+                    suggestions.style.visibility = 'visible';
+                    suggestions.style.opacity = '1';
+                    
                     console.log('[DEBUG] サジェスト表示完了:', {
                         innerHTML: suggestions.innerHTML,
                         classList: suggestions.classList.toString(),
-                        display: suggestions.style.display
+                        computedStyle: window.getComputedStyle(suggestions),
+                        offsetParent: suggestions.offsetParent,
+                        clientRect: suggestions.getBoundingClientRect()
                     });
                     
                     // クリックイベント

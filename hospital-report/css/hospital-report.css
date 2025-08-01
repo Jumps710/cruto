@@ -124,7 +124,10 @@ input[type="checkbox"] {
 }
 
 .suggestions-list.show {
-    display: block;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 9999 !important;
 }
 
 .suggestion-item {
