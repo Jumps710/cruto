@@ -635,9 +635,16 @@ function setupUserAutocomplete() {
         
         if (query.length < 1) {
             suggestions.classList.remove('show');
+            suggestions.style.display = 'none';
+            suggestions.innerHTML = '';
             console.log('[DEBUG] クエリが短すぎるため検索をスキップ');
             return;
         }
+        
+        // ローディング表示
+        suggestions.innerHTML = '<div class="suggestion-loading">🔍 検索中...</div>';
+        suggestions.classList.add('show');
+        suggestions.style.display = 'block';
         
         console.log('[DEBUG] 検索リクエスト準備:', {
             query: query,
@@ -721,9 +728,13 @@ function setupUserAutocomplete() {
                     // クリックイベント
                     suggestions.querySelectorAll('.suggestion-item').forEach(item => {
                         item.addEventListener('click', function() {
+                            console.log('[DEBUG] 利用者サジェストクリック:', this.dataset.value);
                             input.value = this.dataset.value;
                             suggestions.classList.remove('show');
+                            suggestions.style.display = 'none';
+                            suggestions.innerHTML = '';
                             clearError(input);
+                            console.log('[DEBUG] 利用者サジェスト非表示完了');
                         });
                     });
                 } else {
@@ -760,10 +771,21 @@ function setupHospitalAutocomplete() {
         suggestionsId: suggestions ? suggestions.id : 'null'
     });
     
+    console.log('[DEBUG] setupHospitalAutocomplete DOM要素確認:', {
+        input: !!input,
+        suggestions: !!suggestions,
+        inputId: input ? input.id : 'null',
+        suggestionsId: suggestions ? suggestions.id : 'null'
+    });
+    
     if (!input || !suggestions) {
         console.error('[ERROR] 医療機関検索用DOM要素が見つかりません:', {
             input: !!input,
-            suggestions: !!suggestions
+            suggestions: !!suggestions,
+            inputElement: input,
+            suggestionsElement: suggestions,
+            allHospitalNameElements: document.querySelectorAll('#hospitalName'),
+            allHospitalSuggestionsElements: document.querySelectorAll('#hospitalSuggestions')
         });
         return;
     }
@@ -850,9 +872,13 @@ function setupHospitalAutocomplete() {
                     // クリックイベント
                     suggestions.querySelectorAll('.suggestion-item').forEach(item => {
                         item.addEventListener('click', function() {
+                            console.log('[DEBUG] 利用者サジェストクリック:', this.dataset.value);
                             input.value = this.dataset.value;
                             suggestions.classList.remove('show');
+                            suggestions.style.display = 'none';
+                            suggestions.innerHTML = '';
                             clearError(input);
+                            console.log('[DEBUG] 利用者サジェスト非表示完了');
                         });
                     });
                 } else {

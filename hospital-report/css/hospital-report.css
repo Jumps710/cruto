@@ -157,6 +157,23 @@ input[type="checkbox"] {
     margin-top: 2px;
 }
 
+.suggestion-loading,
+.suggestion-no-results,
+.suggestion-error {
+    padding: 10px;
+    text-align: center;
+    font-style: italic;
+    color: #6b7280;
+}
+
+.suggestion-loading {
+    color: #3b82f6;
+}
+
+.suggestion-error {
+    color: #dc2626;
+}
+
 /* 事業所表示 */
 .office-display {
     display: flex;
