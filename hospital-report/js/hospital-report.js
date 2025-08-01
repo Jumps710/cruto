@@ -164,13 +164,10 @@ async function getUserOrganization(userId) {
             
             console.log('🏗️ 事業所表示エリア更新開始');
             
-            // ローディングメッセージのみを削除（select要素は残す）
-            const loadingMessage = officeContainer.querySelector('.loading-message');
-            console.log('[DEBUG] ローディングメッセージ要素:', loadingMessage);
-            if (loadingMessage) {
-                loadingMessage.remove();
-                console.log('[DEBUG] ローディングメッセージ削除完了');
-            }
+            // ローディングメッセージを削除
+            console.log('[DEBUG] ローディングメッセージ削除前:', officeContainer.innerHTML);
+            officeContainer.innerHTML = '';
+            console.log('[DEBUG] ローディングメッセージ削除後:', officeContainer.innerHTML);
             
             // 取得した組織をデフォルトとして設定し、selectを表示
             const optionHTML = `<option value="${userOrganization}">${userOrganization}</option>`;
