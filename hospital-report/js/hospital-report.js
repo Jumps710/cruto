@@ -423,7 +423,18 @@ function setupEventListeners() {
         setupHospitalAutocomplete();
         console.log('[DEBUG] 医療機関オートコンプリート初期化完了');
         
-        // テスト: searchUsers APIを直接呼び出し
+        // テスト1: 基本API接続テスト
+        console.log('[TEST] 基本API接続テスト開始');
+        fetch(config.gasUrl, { method: 'GET' })
+            .then(response => response.json())
+            .then(data => {
+                console.log('[TEST] 基本API接続結果:', data);
+            })
+            .catch(error => {
+                console.error('[TEST] 基本API接続エラー:', error);
+            });
+        
+        // テスト2: searchUsers APIを直接呼び出し
         console.log('[TEST] searchUsers API直接テスト開始');
         const testParams = new URLSearchParams({
             action: 'searchUsers',
