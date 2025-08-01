@@ -68,8 +68,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const officeContainer = document.getElementById('officeContainer');
         const officeSelect = document.getElementById('office');
         
-        // ローディングメッセージを削除
-        officeContainer.innerHTML = '';
+        // ローディングメッセージのみを削除
+        const loadingMsg = officeContainer.querySelector('.loading-message');
+        if (loadingMsg) loadingMsg.remove();
         
         // selectを表示
         officeSelect.innerHTML = `
@@ -163,10 +164,13 @@ async function getUserOrganization(userId) {
             
             console.log('🏗️ 事業所表示エリア更新開始');
             
-            // ローディングメッセージを削除
-            console.log('[DEBUG] ローディングメッセージ削除前:', officeContainer.innerHTML);
-            officeContainer.innerHTML = '';
-            console.log('[DEBUG] ローディングメッセージ削除後:', officeContainer.innerHTML);
+            // ローディングメッセージのみを削除（select要素は残す）
+            const loadingMessage = officeContainer.querySelector('.loading-message');
+            console.log('[DEBUG] ローディングメッセージ要素:', loadingMessage);
+            if (loadingMessage) {
+                loadingMessage.remove();
+                console.log('[DEBUG] ローディングメッセージ削除完了');
+            }
             
             // 取得した組織をデフォルトとして設定し、selectを表示
             const optionHTML = `<option value="${userOrganization}">${userOrganization}</option>`;
@@ -234,8 +238,9 @@ function loadOfficesFromAPIResponse(offices) {
         availableOffices = offices;
         console.log('✅ 事業所一覧取得成功:', offices.length + '件');
         
-        // ローディングメッセージを削除
-        officeContainer.innerHTML = '';
+        // ローディングメッセージのみを削除
+        const loadingMsg = officeContainer.querySelector('.loading-message');
+        if (loadingMsg) loadingMsg.remove();
         
         // 事業所選択肢を設定
         officeSelect.innerHTML = '<option value="">選択してください</option>';
@@ -341,8 +346,9 @@ function loadOfficesFromCache() {
         const officeContainer = document.getElementById('officeContainer');
         const officeSelect = document.getElementById('office');
         
-        // ローディングメッセージを削除
-        officeContainer.innerHTML = '';
+        // ローディングメッセージのみを削除
+        const loadingMsg = officeContainer.querySelector('.loading-message');
+        if (loadingMsg) loadingMsg.remove();
         
         // 事業所選択肢を設定
         officeSelect.innerHTML = '<option value="">選択してください</option>';
@@ -373,8 +379,9 @@ function loadDefaultOffices() {
     const officeContainer = document.getElementById('officeContainer');
     const officeSelect = document.getElementById('office');
     
-    // ローディングメッセージを削除
-    officeContainer.innerHTML = '';
+    // ローディングメッセージのみを削除
+    const loadingMsg = officeContainer.querySelector('.loading-message');
+    if (loadingMsg) loadingMsg.remove();
     
     // 事業所選択肢を設定
     officeSelect.innerHTML = '<option value="">選択してください</option>';

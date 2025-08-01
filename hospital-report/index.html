@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>入退院報告フォーム</title>
-    <link rel="stylesheet" href="../common/css/base.css">
-    <link rel="stylesheet" href="css/hospital-report.css">
+    <script>
+        // タイムスタンプを先に生成
+        window.cacheTimestamp = Date.now();
+    </script>
+    <link rel="stylesheet" href="../common/css/base.css?v=202501280407">
+    <link rel="stylesheet" href="css/hospital-report.css?v=202501280407">
     <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.7.1/woff.js"></script>
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
@@ -218,31 +222,7 @@
         </div>
     </div>
 
-    <script>
-        // 強制キャッシュバスター: URLパラメータで無効化
-        const timestamp = Date.now();
-        console.log('[CACHE-BUSTER] 強制キャッシュバスター適用:', timestamp);
-        
-        // 既存のCSS/JSにキャッシュバスターを追加
-        document.addEventListener('DOMContentLoaded', function() {
-            const links = document.querySelectorAll('link[rel="stylesheet"]');
-            links.forEach(link => {
-                const originalHref = link.href;
-                link.href = originalHref + '?v=' + timestamp;
-                console.log('[CACHE-BUSTER] CSS更新:', link.href);
-            });
-            
-            const scripts = document.querySelectorAll('script[src]');
-            scripts.forEach(script => {
-                if (script.src.includes('woff-init.js') || script.src.includes('hospital-report.js')) {
-                    const originalSrc = script.src;
-                    script.src = originalSrc + '?v=' + timestamp;
-                    console.log('[CACHE-BUSTER] JS更新:', script.src);
-                }
-            });
-        });
-    </script>
-    <script src="../common/js/woff-init.js"></script>
-    <script src="js/hospital-report.js"></script>
+    <script src="../common/js/woff-init.js?v=202501280407"></script>
+    <script src="js/hospital-report.js?v=202501280407"></script>
 </body>
 </html>
