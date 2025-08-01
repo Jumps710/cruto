@@ -10,8 +10,6 @@ const config = {
 let formData = {};
 let userOrganization = '';
 let availableOffices = [];
-let users = [];
-let hospitals = [];
 
 // キャッシュ機能
 const cache = {
@@ -51,15 +49,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('❌ 組織情報取得エラー:', error);
         });
         
-        // マスタデータを非同期で取得（ブロッキングしない）
-        console.log('📊 マスタデータ取得開始');
-        loadMasterData().then(() => {
-            console.log('✅ マスタデータ取得完了');
-        }).catch(error => {
-            console.error('❌ マスタデータ取得エラー:', error);
-        });
+        // リアルタイム検索を使用するため、マスタデータの事前取得は不要
         
-        console.log('✅ 基本初期化処理完了（組織情報・マスタデータは並行取得中）');
+        console.log('✅ 基本初期化処理完了（組織情報は並行取得中）');
         
     } catch (error) {
         console.error('❌ 初期化エラー:', error);
@@ -365,38 +357,7 @@ function loadDefaultOffices() {
     officeSelect.style.display = 'block';
 }
 
-// マスタデータ取得
-async function loadMasterData() {
-    try {
-        // 利用者マスタと医療機関マスタを並行で取得
-        const [usersResponse, hospitalsResponse] = await Promise.all([
-            fetch(config.gasUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'getUsers' })
-            }),
-            fetch(config.gasUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'getHospitals' })
-            })
-        ]);
-        
-        const usersData = await usersResponse.json();
-        const hospitalsData = await hospitalsResponse.json();
-        
-        if (usersData && Array.isArray(usersData)) {
-            users = usersData;
-        }
-        
-        if (hospitalsData && Array.isArray(hospitalsData)) {
-            hospitals = hospitalsData;
-        }
-        
-    } catch (error) {
-        console.error('マスタデータ取得エラー:', error);
-    }
-}
+// マスタデータはリアルタイム検索で取得するため、事前取得関数は不要
 
 // 不要な関数を削除（プルダウン選択に変更したため）
 
