@@ -1,5 +1,6 @@
-# CLAUDE.md - ローカル保存のみ
+# CLAUDE.md - ローカル保存のみ（機密情報含む）
 CLAUDE.md
+claude.md
 
 # GAS関連ファイル - 本番環境で別管理
 gas/

@@ -88,25 +88,19 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // ユーザーの組織情報を取得
 async function getUserOrganization(userId) {
-    console.log('🏢 getUserOrganization開始', {userId, gasUrl: config.gasUrl});
-    
     try {
-        console.log('📡 GAS API呼び出し開始');
         const requestData = {
             action: 'getUserOrganization',
             userId: userId
         };
-        console.log('📤 送信データ:', requestData);
         
         let response;
         let result;
         
         try {
-            console.log('🌐 GAS API呼び出し開始');
             // GETリクエストでパラメータとして送信（CORS回避）
             const params = new URLSearchParams(requestData);
             const getUrl = `${config.gasUrl}?${params.toString()}`;
-            console.log('🌐 GET URL:', getUrl);
             
             response = await fetch(getUrl, {
                 method: 'GET',
@@ -114,33 +108,24 @@ async function getUserOrganization(userId) {
                 mode: 'cors'
             });
             
-            console.log('📬 レスポンス受信', {
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok
-            });
-            
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
-            result = await response.json();
+            // レスポンステキストを先に取得してログ出力
+            const responseText = await response.text();
+            
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                throw new Error('レスポンスのJSON解析に失敗: ' + parseError.message);
+            }
         } catch (fetchError) {
-            console.error('📛 API呼び出しエラー:', fetchError);
-            console.error('エラー詳細:', {
-                name: fetchError.name,
-                message: fetchError.message,
-                stack: fetchError.stack,
-                gasUrl: config.gasUrl
-            });
             throw new Error('ネットワークエラー: ' + fetchError.message);
         }
         
-        console.log('📋 パース結果:', result);
-        
         if (result && result.orgUnitName) {
             userOrganization = result.orgUnitName;
-            console.log('✅ 組織情報取得成功:', userOrganization);
             
             // 事業所フィールドを設定
             const officeContainer = document.getElementById('officeContainer');
@@ -381,9 +366,9 @@ function setupEventListeners() {
         }
     });
     
-    // 自動補完機能
-    setupAutocomplete('userName', 'userSuggestions', users, 'name', 'reading');
-    setupAutocomplete('hospitalName', 'hospitalSuggestions', hospitals, 'name', 'area');
+    // リアルタイム検索機能
+    setupUserAutocomplete();
+    setupHospitalAutocomplete();
     
     // 送信ボタン
     document.getElementById('submitBtn').addEventListener('click', showConfirmModal);
@@ -499,6 +484,187 @@ function setupAutocomplete(inputId, suggestionsId, dataArray, nameField, subFiel
             suggestions.classList.remove('show');
         }, 200);
     });
+}
+
+// 利用者検索オートコンプリート
+function setupUserAutocomplete() {
+    const input = document.getElementById('userName');
+    const suggestions = document.getElementById('userSuggestions');
+    let selectedIndex = -1;
+    let searchTimeout = null;
+    
+    input.addEventListener('input', function() {
+        const query = this.value.trim();
+        suggestions.innerHTML = '';
+        selectedIndex = -1;
+        
+        if (query.length < 1) {
+            suggestions.classList.remove('show');
+            return;
+        }
+        
+        // 検索リクエストを遅延実行（300ms）
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            try {
+                const params = new URLSearchParams({
+                    action: 'searchUsers',
+                    query: query
+                });
+                
+                const response = await fetch(`${config.gasUrl}?${params.toString()}`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const results = await response.json();
+                
+                if (results && results.length > 0) {
+                    suggestions.innerHTML = results.map((user, index) => `
+                        <div class="suggestion-item" data-index="${index}" data-value="${user.name}">
+                            <div class="suggestion-name">${user.name}</div>
+                            ${user.status ? `<div class="suggestion-reading">${user.status}</div>` : ''}
+                        </div>
+                    `).join('');
+                    
+                    suggestions.classList.add('show');
+                    
+                    // クリックイベント
+                    suggestions.querySelectorAll('.suggestion-item').forEach(item => {
+                        item.addEventListener('click', function() {
+                            input.value = this.dataset.value;
+                            suggestions.classList.remove('show');
+                            clearError(input);
+                        });
+                    });
+                } else {
+                    suggestions.classList.remove('show');
+                }
+            } catch (error) {
+                console.error('利用者検索エラー:', error);
+                suggestions.classList.remove('show');
+            }
+        }, 300);
+    });
+    
+    // キーボード操作は既存の実装を使用
+    setupKeyboardNavigation(input, suggestions);
+}
+
+// 医療機関検索オートコンプリート
+function setupHospitalAutocomplete() {
+    const input = document.getElementById('hospitalName');
+    const suggestions = document.getElementById('hospitalSuggestions');
+    let selectedIndex = -1;
+    let searchTimeout = null;
+    
+    input.addEventListener('input', function() {
+        const query = this.value.trim();
+        suggestions.innerHTML = '';
+        selectedIndex = -1;
+        
+        if (query.length < 1) {
+            suggestions.classList.remove('show');
+            return;
+        }
+        
+        // 検索リクエストを遅延実行（300ms）
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            try {
+                const params = new URLSearchParams({
+                    action: 'searchHospitals',
+                    query: query
+                });
+                
+                const response = await fetch(`${config.gasUrl}?${params.toString()}`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const results = await response.json();
+                
+                if (results && results.length > 0) {
+                    suggestions.innerHTML = results.map((hospital, index) => `
+                        <div class="suggestion-item" data-index="${index}" data-value="${hospital.name}">
+                            <div class="suggestion-name">${hospital.name}</div>
+                            ${hospital.area ? `<div class="suggestion-reading">${hospital.area}</div>` : ''}
+                        </div>
+                    `).join('');
+                    
+                    suggestions.classList.add('show');
+                    
+                    // クリックイベント
+                    suggestions.querySelectorAll('.suggestion-item').forEach(item => {
+                        item.addEventListener('click', function() {
+                            input.value = this.dataset.value;
+                            suggestions.classList.remove('show');
+                            clearError(input);
+                        });
+                    });
+                } else {
+                    suggestions.classList.remove('show');
+                }
+            } catch (error) {
+                console.error('医療機関検索エラー:', error);
+                suggestions.classList.remove('show');
+            }
+        }, 300);
+    });
+    
+    // キーボード操作は既存の実装を使用
+    setupKeyboardNavigation(input, suggestions);
+}
+
+// キーボードナビゲーション共通機能
+function setupKeyboardNavigation(input, suggestions) {
+    let selectedIndex = -1;
+    
+    input.addEventListener('keydown', function(e) {
+        const items = suggestions.querySelectorAll('.suggestion-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            updateSelection(items, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, -1);
+            updateSelection(items, selectedIndex);
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+            e.preventDefault();
+            input.value = items[selectedIndex].dataset.value;
+            suggestions.classList.remove('show');
+            clearError(input);
+        } else if (e.key === 'Escape') {
+            suggestions.classList.remove('show');
+        }
+    });
+    
+    // フォーカスを失った時に候補を非表示
+    input.addEventListener('blur', function() {
+        setTimeout(() => {
+            suggestions.classList.remove('show');
+        }, 200);
+    });
+    
+    function updateSelection(items, selectedIndex) {
+        items.forEach((item, index) => {
+            if (index === selectedIndex) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
 }
 
 // エラー表示クリア
