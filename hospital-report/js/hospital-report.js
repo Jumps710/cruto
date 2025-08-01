@@ -13,6 +13,12 @@ let availableOffices = [];
 let users = [];
 let hospitals = [];
 
+// キャッシュ機能
+const cache = {
+    offices: null,
+    officesExpiry: null
+};
+
 // 初期化
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 hospital-report DOMContentLoaded開始');
@@ -212,20 +218,24 @@ function loadOfficesFromAPIResponse(offices) {
     }
 }
 
-// Sheetsから事業所一覧を取得（最適化版 - GET方式・キャッシュ・タイムアウト）
+// Sheetsから事業所一覧を取得（事故報告アプリと同じ成功パターン）
 async function loadOfficesFromSheet() {
-    console.log('📋 loadOfficesFromSheet開始（入退院報告最適化版）');
+    // キャッシュチェック
+    if (cache.offices && cache.officesExpiry && Date.now() < cache.officesExpiry) {
+        return loadOfficesFromCache();
+    }
     
     try {
-        console.log('📡 getOffices API呼び出し開始（GET方式 + 5秒タイムアウト）');
-        
-        // Promise.raceでタイムアウト制御（短めに設定）
+        // 事業所情報取得開始
+        // Promise.raceでタイムアウト制御
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('タイムアウト: 5秒以内に応答がありませんでした')), 5000);
+            setTimeout(() => reject(new Error('タイムアウト: 10秒以内に応答がありませんでした')), 10000);
         });
         
-        // GET方式でパラメータ送信
-        const requestData = { action: 'getOffices' };
+        // GET方式でパラメータ送信（getUserOrganizationと同じ成功パターン）
+        const requestData = {
+            action: 'getOffices'
+        };
         const params = new URLSearchParams(requestData);
         const getUrl = `${config.gasUrl}?${params.toString()}`;
         
@@ -235,70 +245,65 @@ async function loadOfficesFromSheet() {
             mode: 'cors'
         });
         
-        console.log('🌐 GET URL:', getUrl);
-        
         const response = await Promise.race([fetchPromise, timeoutPromise]);
-        
-        console.log('📬 getOffices レスポンス受信', {
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok
-        });
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const offices = await response.json();
-        console.log('📋 事業所一覧パース結果:', offices);
         
         if (offices && Array.isArray(offices)) {
-            availableOffices = offices;
-            console.log('✅ 事業所一覧取得成功:', offices.length + '件');
+            // キャッシュに保存（5分間有効）
+            cache.offices = offices;
+            cache.officesExpiry = Date.now() + (5 * 60 * 1000);
             
-            // 現在のofficeSelectの状態を確認
+            availableOffices = offices;
+            
+            const officeContainer = document.getElementById('officeContainer');
             const officeSelect = document.getElementById('office');
-            if (officeSelect.style.display === 'none') {
-                // まだ表示されていない場合のみ、ローディングメッセージを削除
-                const officeContainer = document.getElementById('officeContainer');
-                officeContainer.innerHTML = '';
-                
-                officeSelect.innerHTML = '<option value="">選択してください</option>';
-                
-                offices.forEach(office => {
-                    const option = document.createElement('option');
-                    option.value = office.value;
-                    option.textContent = office.name;
-                    officeSelect.appendChild(option);
-                });
-                
-                officeSelect.style.display = 'block';
-            }
+            
+            // ローディングメッセージを削除
+            officeContainer.innerHTML = '';
+            
+            // 事業所選択肢を設定
+            officeSelect.innerHTML = '<option value="">選択してください</option>';
+            
+            offices.forEach(office => {
+                const option = document.createElement('option');
+                option.value = office.value;
+                option.textContent = office.name;
+                officeSelect.appendChild(option);
+            });
+            
+            officeSelect.style.display = 'block';
+            
         } else {
-            throw new Error('事業所データが無効な形式です');
+            throw new Error('無効な事業所データ');
         }
         
     } catch (error) {
         console.error('事業所情報取得エラー:', error);
-        
-        // フォールバック: 基本的な事業所選択肢を提供
-        console.log('🔄 フォールバック: 基本事業所選択肢を提供');
-        
-        const defaultOffices = [
-            { value: '本社', name: '本社' },
-            { value: '関東支店', name: '関東支店' },
-            { value: '関西支店', name: '関西支店' }
-        ];
-        
-        availableOffices = defaultOffices;
+        // フォールバック: デフォルト事業所
+        loadDefaultOffices();
+    }
+}
+
+// キャッシュから事業所一覧を読み込み
+function loadOfficesFromCache() {
+    if (cache.offices && Array.isArray(cache.offices)) {
+        availableOffices = cache.offices;
         
         const officeContainer = document.getElementById('officeContainer');
         const officeSelect = document.getElementById('office');
         
+        // ローディングメッセージを削除
         officeContainer.innerHTML = '';
+        
+        // 事業所選択肢を設定
         officeSelect.innerHTML = '<option value="">選択してください</option>';
         
-        defaultOffices.forEach(office => {
+        cache.offices.forEach(office => {
             const option = document.createElement('option');
             option.value = office.value;
             option.textContent = office.name;
@@ -306,12 +311,38 @@ async function loadOfficesFromSheet() {
         });
         
         officeSelect.style.display = 'block';
-        
-        // 非ブロッキング通知
-        setTimeout(() => {
-            alert('事業所情報の取得に時間がかかっています。基本的な選択肢を表示しています。');
-        }, 100);
+    } else {
+        loadDefaultOffices();
     }
+}
+
+// デフォルト事業所の設定
+function loadDefaultOffices() {
+    const defaultOffices = [
+        { value: '本社', name: '本社' },
+        { value: '関東支店', name: '関東支店' },
+        { value: '関西支店', name: '関西支店' }
+    ];
+    
+    availableOffices = defaultOffices;
+    
+    const officeContainer = document.getElementById('officeContainer');
+    const officeSelect = document.getElementById('office');
+    
+    // ローディングメッセージを削除
+    officeContainer.innerHTML = '';
+    
+    // 事業所選択肢を設定
+    officeSelect.innerHTML = '<option value="">選択してください</option>';
+    
+    defaultOffices.forEach(office => {
+        const option = document.createElement('option');
+        option.value = office.value;
+        option.textContent = office.name;
+        officeSelect.appendChild(option);
+    });
+    
+    officeSelect.style.display = 'block';
 }
 
 // マスタデータ取得
