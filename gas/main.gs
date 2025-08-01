@@ -229,6 +229,18 @@ function doGet(e) {
     ]);
     
     // アクション別ルーティング（doPost と同じ）
+    logSheet.appendRow([
+      new Date(),
+      "doGet",
+      "switch文開始",
+      action,
+      "",
+      `switch文に入ります: action="${action}"`,
+      "",
+      "",
+      ""
+    ]);
+    
     switch(action) {
       case 'getUserOrganization':
         const orgResult = getAccidentUserOrganization(userId);
@@ -322,8 +334,7 @@ function doGet(e) {
         return createSuccessResponse(hospitalsResult);
         
       case 'logError':
-        // エラーログ記録用
-        const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+        // エラーログ記録用（logSheetは既に宣言済み）
         const errorMsg = e.parameter.error || 'Unknown error';
         const source = e.parameter.source || 'Unknown source';
         logSheet.appendRow([
@@ -340,6 +351,17 @@ function doGet(e) {
         return createSuccessResponse({ logged: true });
         
       default:
+        logSheet.appendRow([
+          new Date(),
+          "doGet",
+          "default到達",
+          action,
+          "",
+          `無効なアクション: ${action} - defaultケースに到達しました`,
+          "",
+          "",
+          ""
+        ]);
         return createErrorResponse('無効なアクション: ' + action);
     }
     
