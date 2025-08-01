@@ -108,10 +108,22 @@ async function getUserOrganization(userId) {
             const params = new URLSearchParams(requestData);
             const getUrl = `${config.gasUrl}?${params.toString()}`;
             
+            console.log('[DEBUG] getUserOrganization リクエスト送信:', {
+                url: getUrl,
+                userId: requestData.userId,
+                gasUrl: config.gasUrl
+            });
+            
             response = await fetch(getUrl, {
                 method: 'GET',
                 redirect: 'follow',
                 mode: 'cors'
+            });
+            
+            console.log('[DEBUG] getUserOrganization レスポンス受信:', {
+                status: response.status,
+                ok: response.ok,
+                statusText: response.statusText
             });
             
             if (!response.ok) {
@@ -239,11 +251,19 @@ async function loadOfficesFromSheet() {
         const params = new URLSearchParams(requestData);
         const getUrl = `${config.gasUrl}?${params.toString()}`;
         
+        console.log('[DEBUG] getOffices リクエスト送信:', {
+            url: getUrl,
+            action: requestData.action,
+            gasUrl: config.gasUrl
+        });
+        
         const fetchPromise = fetch(getUrl, {
             method: 'GET',
             redirect: 'follow',
             mode: 'cors'
         });
+        
+        console.log('[DEBUG] fetchPromise作成完了、レスポンス待機中...');
         
         const response = await Promise.race([fetchPromise, timeoutPromise]);
         
