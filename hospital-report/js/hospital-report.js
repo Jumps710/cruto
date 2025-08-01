@@ -605,10 +605,23 @@ function setupUserAutocomplete() {
     if (!input || !suggestions) {
         console.error('[ERROR] 利用者検索用DOM要素が見つかりません:', {
             input: !!input,
-            suggestions: !!suggestions
+            suggestions: !!suggestions,
+            inputElement: input,
+            suggestionsElement: suggestions,
+            allUserNameElements: document.querySelectorAll('#userName'),
+            allUserSuggestionsElements: document.querySelectorAll('#userSuggestions')
         });
         return;
     }
+    
+    console.log('[DEBUG] DOM要素初期状態:', {
+        input: input,
+        suggestions: suggestions,
+        inputParent: input.parentElement,
+        suggestionsParent: suggestions.parentElement,
+        suggestionsDisplay: window.getComputedStyle(suggestions).display,
+        suggestionsPosition: window.getComputedStyle(suggestions).position
+    });
     
     input.addEventListener('input', function() {
         const query = this.value.trim();
@@ -675,13 +688,19 @@ function setupUserAutocomplete() {
                         </div>
                     `).join('');
                     
-                    console.log('[DEBUG] サジェスト表示:', {
-                        suggestionsHTML: suggestionsHTML,
-                        resultCount: results.length,
-                        suggestionsElement: suggestions,
-                        suggestionsVisible: suggestions.offsetParent !== null,
-                        suggestionsRect: suggestions.getBoundingClientRect()
-                    });
+                    try {
+                        console.log('[DEBUG] サジェスト表示:', {
+                            suggestionsHTML: suggestionsHTML,
+                            resultCount: results.length,
+                            suggestionsElement: suggestions,
+                            suggestionsVisible: suggestions.offsetParent !== null,
+                            suggestionsRect: suggestions.getBoundingClientRect(),
+                            suggestionsId: suggestions.id,
+                            suggestionsClassName: suggestions.className
+                        });
+                    } catch (debugError) {
+                        console.error('[ERROR] サジェスト表示デバッグエラー:', debugError);
+                    }
                     
                     suggestions.innerHTML = suggestionsHTML;
                     suggestions.classList.add('show');
