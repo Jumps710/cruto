@@ -544,6 +544,8 @@ function setupUserAutocomplete() {
     const suggestions = document.getElementById('userSuggestions');
     let selectedIndex = -1;
     let searchTimeout = null;
+    let currentSearchQuery = '';
+    let isSearching = false;
     
     if (!input || !suggestions) {
         console.error('利用者検索用DOM要素が見つかりません');
@@ -553,6 +555,9 @@ function setupUserAutocomplete() {
     input.addEventListener('input', function() {
         const query = this.value.trim();
         
+        // 前回の検索をキャンセル
+        clearTimeout(searchTimeout);
+        
         suggestions.innerHTML = '';
         selectedIndex = -1;
         
@@ -561,18 +566,32 @@ function setupUserAutocomplete() {
             suggestions.classList.remove('show');
             suggestions.style.display = 'none';
             suggestions.innerHTML = '';
+            currentSearchQuery = '';
+            isSearching = false;
             return;
         }
+        
+        // 同じクエリの場合は重複検索を防ぐ
+        if (query === currentSearchQuery && isSearching) {
+            return;
+        }
+        
+        currentSearchQuery = query;
+        isSearching = true;
         
         // ローディング表示
         suggestions.innerHTML = '<div class="suggestion-loading">🔍 検索中...</div>';
         suggestions.classList.add('show');
         suggestions.style.display = 'block';
         
-        
-        // 検索リクエストを遅延実行（300ms）
-        clearTimeout(searchTimeout);
+        // 検索リクエストを遅延実行（200msに短縮）
         searchTimeout = setTimeout(async () => {
+            // 検索開始時にクエリが変更されていないか確認
+            if (input.value.trim() !== currentSearchQuery) {
+                isSearching = false;
+                return;
+            }
+            
             console.log('利用者検索開始:', query);
             try {
                 const params = new URLSearchParams({
@@ -593,12 +612,20 @@ function setupUserAutocomplete() {
                 }
                 
                 const results = await response.json();
+                
+                // レスポンス受信時にクエリが変更されていないか確認
+                if (input.value.trim() !== currentSearchQuery) {
+                    isSearching = false;
+                    return;
+                }
+                
                 console.log('検索結果:', results);
                 console.log('結果の型:', typeof results);
                 console.log('配列かどうか:', Array.isArray(results));
                 console.log('件数:', results ? results.length : 'null');
                 
-                if (results && results.length > 0) {
+                // 検索結果の確実な判定
+                if (Array.isArray(results) && results.length > 0) {
                     console.log('結果あり - サジェスト表示');
                     const suggestionsHTML = results.map((user, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${user.name}">
@@ -617,21 +644,31 @@ function setupUserAutocomplete() {
                             suggestions.classList.remove('show');
                             suggestions.style.display = 'none';
                             suggestions.innerHTML = '';
+                            currentSearchQuery = '';
+                            isSearching = false;
                             clearError(input);
                         });
                     });
-                } else {
-                    // 検索結果が0件の場合は「見つかりませんでした」を表示
-                    console.log('利用者検索: 結果なし - 見つかりませんでした表示');
+                } else if (Array.isArray(results) && results.length === 0) {
+                    // 検索が正常に完了し、結果が0件の場合のみ「見つかりませんでした」を表示
+                    console.log('利用者検索: 検索完了、結果0件 - 見つかりませんでした表示');
                     suggestions.innerHTML = '<div class="suggestion-no-results">見つかりませんでした</div>';
                     suggestions.classList.add('show');
                     suggestions.style.display = 'block';
+                } else {
+                    // 不正なレスポンスの場合はエラーとして扱う
+                    console.log('利用者検索: 不正なレスポンス形式 - 候補非表示');
+                    suggestions.classList.remove('show');
+                    suggestions.style.display = 'none';
                 }
+                
+                isSearching = false;
             } catch (error) {
                 console.error('利用者検索エラー:', error.message);
                 suggestions.classList.remove('show');
+                isSearching = false;
             }
-        }, 300);
+        }, 200);
     });
     
     // キーボード操作は既存の実装を使用
@@ -644,6 +681,8 @@ function setupHospitalAutocomplete() {
     const suggestions = document.getElementById('hospitalSuggestions');
     let selectedIndex = -1;
     let searchTimeout = null;
+    let currentSearchQuery = '';
+    let isSearching = false;
     
     if (!input || !suggestions) {
         console.error('医療機関検索用DOM要素が見つかりません');
@@ -656,6 +695,9 @@ function setupHospitalAutocomplete() {
     input.addEventListener('input', function() {
         const query = this.value.trim();
         
+        // 前回の検索をキャンセル
+        clearTimeout(searchTimeout);
+        
         suggestions.innerHTML = '';
         selectedIndex = -1;
         
@@ -664,18 +706,31 @@ function setupHospitalAutocomplete() {
             suggestions.classList.remove('show');
             suggestions.style.display = 'none';
             suggestions.innerHTML = '';
+            currentSearchQuery = '';
+            isSearching = false;
             return;
         }
+        
+        // 同じクエリの場合は重複検索を防ぐ
+        if (query === currentSearchQuery && isSearching) {
+            return;
+        }
+        
+        currentSearchQuery = query;
+        isSearching = true;
         
         // ローディング表示
         suggestions.innerHTML = '<div class="suggestion-loading">🔍 検索中...</div>';
         suggestions.classList.add('show');
         suggestions.style.display = 'block';
         
-        
-        // 検索リクエストを遅延実行（300ms）
-        clearTimeout(searchTimeout);
+        // 検索リクエストを遅延実行（200msに短縮）
         searchTimeout = setTimeout(async () => {
+            // 検索開始時にクエリが変更されていないか確認
+            if (input.value.trim() !== currentSearchQuery) {
+                isSearching = false;
+                return;
+            }
             try {
                 const params = new URLSearchParams({
                     action: 'searchHospitals',
@@ -696,7 +751,14 @@ function setupHospitalAutocomplete() {
                 
                 const results = await response.json();
                 
-                if (results && results.length > 0) {
+                // レスポンス受信時にクエリが変更されていないか確認
+                if (input.value.trim() !== currentSearchQuery) {
+                    isSearching = false;
+                    return;
+                }
+                
+                // 検索結果の確実な判定
+                if (Array.isArray(results) && results.length > 0) {
                     const suggestionsHTML = results.map((hospital, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${hospital.name}">
                             <div class="suggestion-name">${hospital.name}</div>
@@ -715,20 +777,29 @@ function setupHospitalAutocomplete() {
                             suggestions.classList.remove('show');
                             suggestions.style.display = 'none';
                             suggestions.innerHTML = '';
+                            currentSearchQuery = '';
+                            isSearching = false;
                             clearError(input);
                         });
                     });
-                } else {
-                    // 検索結果が0件の場合は「見つかりませんでした」を表示
+                } else if (Array.isArray(results) && results.length === 0) {
+                    // 検索が正常に完了し、結果が0件の場合のみ「見つかりませんでした」を表示
                     suggestions.innerHTML = '<div class="suggestion-no-results">見つかりませんでした</div>';
                     suggestions.classList.add('show');
                     suggestions.style.display = 'block';
+                } else {
+                    // 不正なレスポンスの場合はエラーとして扱う
+                    suggestions.classList.remove('show');
+                    suggestions.style.display = 'none';
                 }
+                
+                isSearching = false;
             } catch (error) {
                 console.error('医療機関検索エラー:', error.message);
                 suggestions.classList.remove('show');
+                isSearching = false;
             }
-        }, 300);
+        }, 200);
     });
     
     // キーボード操作は既存の実装を使用
