@@ -764,11 +764,8 @@ function getPrivateKeyFromFile() {
 // 利用者検索機能（改良版：2文字以上、部分一致、漢字のみ対応）
 function searchUsers(query) {
   try {
-    console.log("利用者検索開始:", query);
-    
     // 2文字未満の場合は検索しない
     if (!query || query.trim().length < 2) {
-      console.log("クエリが短すぎるため検索をスキップ:", query);
       return [];
     }
     
@@ -777,32 +774,16 @@ function searchUsers(query) {
     const data = sheet.getDataRange().getValues();
     const results = [];
     
-    // ヘッダー行の確認（デバッグ用）
-    if (data.length > 0) {
-      console.log("ヘッダー行:", data[0]);
-      console.log("データ行数:", data.length);
-      if (data.length > 1) {
-        console.log("最初のデータ行サンプル:", data[1]);
-      }
-    }
-    
     // C列（利用者名）から検索
-    let matchCount = 0;
     for (let i = 1; i < data.length; i++) {
       if (data[i][2] && data[i][2].toString().trim() !== '') {
         const userName = data[i][2].toString().trim(); // C列：利用者名（漢字）
         const userReading = data[i][3] ? data[i][3].toString().trim() : ''; // D列：フリガナ（もしあれば）
         
-        // デバッグ: 最初の5件のデータを表示
-        if (i <= 5) {
-          console.log(`行${i}: 名前="${userName}", クエリ="${cleanQuery}", 含まれる？=${userName.toLowerCase().includes(cleanQuery.toLowerCase())}`);
-        }
-        
         // 漢字のみで部分一致検索（大文字小文字を区別しない）
         const nameMatch = userName.toLowerCase().includes(cleanQuery.toLowerCase());
         
         if (nameMatch) {
-          matchCount++;
           // 重複を除去
           if (!results.find(r => r.name === userName)) {
             results.push({
@@ -817,7 +798,6 @@ function searchUsers(query) {
       }
     }
     
-    console.log(`利用者検索完了: "${cleanQuery}" -> ${results.length}件 (マッチ数: ${matchCount})`);
     return results;
     
   } catch (error) {
@@ -826,41 +806,10 @@ function searchUsers(query) {
   }
 }
 
-// テスト関数（デバッグ用）
-function testSearchUsers() {
-  console.log("=== searchUsers テスト開始 ===");
-  
-  // 入退院管理シートの確認
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("入退院管理");
-  const data = sheet.getDataRange().getValues();
-  
-  console.log("シート名:", sheet.getName());
-  console.log("データ行数:", data.length);
-  console.log("データ列数:", data[0] ? data[0].length : 0);
-  
-  if (data.length > 0) {
-    console.log("ヘッダー行:", data[0]);
-  }
-  
-  if (data.length > 1) {
-    console.log("1行目のデータ:", data[1]);
-    console.log("C列（利用者名）の値:", data[1][2]);
-  }
-  
-  // テスト検索
-  const testQuery = "山田";
-  console.log(`\nテスト検索: "${testQuery}"`);
-  const results = searchUsers(testQuery);
-  console.log("検索結果:", results);
-  
-  console.log("=== テスト終了 ===");
-  return results;
-}
 
 // 医療機関検索機能（改良版：2文字以上、部分一致対応）
 function searchHospitals(query) {
   try {
-    console.log("医療機関検索開始:", query);
     
     // 2文字未満の場合は検索しない
     if (!query || query.trim().length < 2) {
@@ -893,7 +842,6 @@ function searchHospitals(query) {
       }
     }
     
-    console.log(`医療機関検索完了: "${cleanQuery}" -> ${results.length}件`);
     return results;
     
   } catch (error) {
