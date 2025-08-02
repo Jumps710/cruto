@@ -420,6 +420,17 @@ function setupEventListeners() {
         setupUserAutocomplete();
         console.log('[DEBUG] 利用者オートコンプリート初期化完了');
         
+        // 医療機関検索の初期化前にDOM要素の存在確認
+        const hospitalNameInput = document.getElementById('hospitalName');
+        const hospitalSuggestionsDiv = document.getElementById('hospitalSuggestions');
+        console.log('[DEBUG] 医療機関検索DOM確認:', {
+            hospitalNameInput: !!hospitalNameInput,
+            hospitalSuggestionsDiv: !!hospitalSuggestionsDiv,
+            hospitalNameInputId: hospitalNameInput?.id,
+            hospitalNameInputParent: hospitalNameInput?.parentElement?.className,
+            hospitalSectionDisplay: document.getElementById('hospitalSection')?.style.display
+        });
+        
         setupHospitalAutocomplete();
         console.log('[DEBUG] 医療機関オートコンプリート初期化完了');
         
@@ -467,6 +478,36 @@ function setupEventListeners() {
             console.error('[TEST] searchUsers テストエラー:', error);
         });
         
+        // テスト3: searchHospitals APIを直接呼び出し
+        console.log('[TEST] searchHospitals API直接テスト開始');
+        const testHospitalParams = new URLSearchParams({
+            action: 'searchHospitals',
+            query: '東京'
+        });
+        const testHospitalUrl = `${config.gasUrl}?${testHospitalParams.toString()}`;
+        console.log('[TEST] 医療機関テストURL:', testHospitalUrl);
+        
+        fetch(testHospitalUrl, {
+            method: 'GET',
+            mode: 'cors'
+        }).then(response => {
+            console.log('[TEST] searchHospitals テストレスポンス:', {
+                status: response.status,
+                ok: response.ok
+            });
+            return response.text();
+        }).then(responseText => {
+            console.log('[TEST] searchHospitals レスポンステキスト:', responseText);
+            try {
+                const data = JSON.parse(responseText);
+                console.log('[TEST] searchHospitals テスト結果:', data);
+            } catch (parseError) {
+                console.error('[TEST] JSON parse エラー:', parseError);
+            }
+        }).catch(error => {
+            console.error('[TEST] searchHospitals テストエラー:', error);
+        });
+        
     } catch (autocompleteError) {
         console.error('[ERROR] オートコンプリート初期化エラー:', autocompleteError);
     }
@@ -497,6 +538,16 @@ function handleReasonChange(e) {
     if (e.target.value === 'hospital') {
         hospitalSection.classList.add('active');
         stopSection.classList.remove('active');
+        
+        // 医療機関検索の動作確認ログ
+        const hospitalInput = document.getElementById('hospitalName');
+        const hospitalSuggestions = document.getElementById('hospitalSuggestions');
+        console.log('[DEBUG] 入院選択時の医療機関検索要素:', {
+            hospitalInput: !!hospitalInput,
+            hospitalSuggestions: !!hospitalSuggestions,
+            inputId: hospitalInput ? hospitalInput.id : 'null',
+            eventListeners: hospitalInput ? hospitalInput.hasAttribute('data-listener-attached') : false
+        });
     } else {
         hospitalSection.classList.remove('active');
         stopSection.classList.add('active');
@@ -692,7 +743,6 @@ function setupUserAutocomplete() {
                     const suggestionsHTML = results.map((user, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${user.name}">
                             <div class="suggestion-name">${user.name}</div>
-                            ${user.reading ? `<div class="suggestion-reading">${user.reading}</div>` : ''}
                         </div>
                     `).join('');
                     
@@ -748,18 +798,15 @@ function setupHospitalAutocomplete() {
     let searchTimeout = null;
     
     console.log('[DEBUG] setupHospitalAutocomplete 実行開始');
-    console.log('[DEBUG] DOM要素確認:', {
+    console.log('[DEBUG] DOM要素詳細確認:', {
         input: !!input,
         suggestions: !!suggestions,
         inputId: input ? input.id : 'null',
-        suggestionsId: suggestions ? suggestions.id : 'null'
-    });
-    
-    console.log('[DEBUG] setupHospitalAutocomplete DOM要素確認:', {
-        input: !!input,
-        suggestions: !!suggestions,
-        inputId: input ? input.id : 'null',
-        suggestionsId: suggestions ? suggestions.id : 'null'
+        suggestionsId: suggestions ? suggestions.id : 'null',
+        inputValue: input ? input.value : 'null',
+        inputType: input ? input.type : 'null',
+        parentSection: input ? input.closest('.conditional-section') : 'null',
+        isSectionActive: input && input.closest('.conditional-section') ? input.closest('.conditional-section').classList.contains('active') : false
     });
     
     if (!input || !suggestions) {
@@ -773,6 +820,9 @@ function setupHospitalAutocomplete() {
         });
         return;
     }
+    
+    // イベントリスナーがアタッチされたことを示すマーカー
+    input.setAttribute('data-listener-attached', 'true');
     
     input.addEventListener('input', function() {
         const query = this.value.trim();
@@ -800,7 +850,10 @@ function setupHospitalAutocomplete() {
         
         console.log('[DEBUG] 医療機関検索リクエスト準備:', {
             query: query,
-            gasUrl: config.gasUrl
+            gasUrl: config.gasUrl,
+            suggestionsDisplay: suggestions.style.display,
+            suggestionsClassList: suggestions.classList.toString(),
+            parentSectionActive: input.closest('.conditional-section').classList.contains('active')
         });
         
         // 検索リクエストを遅延実行（300ms）

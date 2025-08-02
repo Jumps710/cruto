@@ -782,11 +782,10 @@ function searchUsers(query) {
         const userName = data[i][1].toString().trim(); // B列：利用者名（漢字）
         const userReading = data[i][2] ? data[i][2].toString().trim() : ''; // C列：フリガナ
         
-        // 完全一致検索（大文字小文字を区別しない）
-        const nameMatch = userName.toLowerCase() === cleanQuery.toLowerCase();
-        const readingMatch = userReading && userReading.toLowerCase() === cleanQuery.toLowerCase();
+        // 漢字のみで部分一致検索（大文字小文字を区別しない）
+        const nameMatch = userName.toLowerCase().includes(cleanQuery.toLowerCase());
         
-        if (nameMatch || readingMatch) {
+        if (nameMatch) {
           // 重複を除去
           if (!results.find(r => r.name === userName)) {
             results.push({
@@ -830,8 +829,8 @@ function searchHospitals(query) {
       if (data[i][0] && data[i][0].toString().trim() !== '') {
         const hospitalName = data[i][0].toString().trim();
         
-        // 完全一致検索（大文字小文字を区別しない）
-        if (hospitalName.toLowerCase() === cleanQuery.toLowerCase()) {
+        // 部分一致検索（大文字小文字を区別しない）
+        if (hospitalName.toLowerCase().includes(cleanQuery.toLowerCase())) {
           // 重複を除去
           if (!results.find(r => r.name === hospitalName)) {
             results.push({

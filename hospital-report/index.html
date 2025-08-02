@@ -8,8 +8,11 @@
         // タイムスタンプを先に生成
         window.cacheTimestamp = Date.now();
     </script>
-    <link rel="stylesheet" href="../common/css/base.css?v=202501280410">
-    <link rel="stylesheet" href="css/hospital-report.css?v=202501280410">
+    <script>
+        // 動的にCSSを読み込む
+        document.write('<link rel="stylesheet" href="../common/css/base.css?v=' + window.cacheTimestamp + '">');
+        document.write('<link rel="stylesheet" href="css/hospital-report.css?v=' + window.cacheTimestamp + '">');
+    </script>
     <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.7.1/woff.js"></script>
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
@@ -76,7 +79,7 @@
                         <input type="text" id="userName" name="userName" placeholder="利用者名を入力..." required autocomplete="off">
                         <div id="userSuggestions" class="suggestions-list"></div>
                     </div>
-                    <span class="help-text">名前またはフリガナで検索できます</span>
+                    <span class="help-text">漢字で入力してください</span>
                     <span class="error-message">利用者名を入力してください</span>
                 </div>
             </div>
@@ -222,7 +225,10 @@
         </div>
     </div>
 
-    <script src="../common/js/woff-init.js?v=202501282230"></script>
-    <script src="js/hospital-report.js?v=202501282230"></script>
+    <script>
+        // 動的にキャッシュバスターを追加
+        document.write('<script src="../common/js/woff-init.js?v=' + window.cacheTimestamp + '"><\/script>');
+        document.write('<script src="js/hospital-report.js?v=' + window.cacheTimestamp + '"><\/script>');
+    </script>
 </body>
 </html>
