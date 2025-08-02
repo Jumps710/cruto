@@ -546,6 +546,7 @@ function setupUserAutocomplete() {
     let searchTimeout = null;
     let currentSearchQuery = '';
     let isSearching = false;
+    let searchSequence = 0; // 検索リクエストの順序管理
     
     if (!input || !suggestions) {
         console.error('利用者検索用DOM要素が見つかりません');
@@ -579,6 +580,10 @@ function setupUserAutocomplete() {
         currentSearchQuery = query;
         isSearching = true;
         
+        // 検索シーケンス番号をインクリメント
+        searchSequence++;
+        const currentSequence = searchSequence;
+        
         // ローディング表示
         suggestions.innerHTML = '<div class="suggestion-loading">🔍 検索中...</div>';
         suggestions.classList.add('show');
@@ -592,7 +597,7 @@ function setupUserAutocomplete() {
                 return;
             }
             
-            console.log('利用者検索開始:', query);
+            console.log('利用者検索開始:', query, 'シーケンス:', currentSequence);
             try {
                 const params = new URLSearchParams({
                     action: 'searchUsers',
@@ -613,13 +618,19 @@ function setupUserAutocomplete() {
                 
                 const results = await response.json();
                 
+                // レスポンス受信時にシーケンス番号を確認（最新の検索結果のみ処理）
+                if (currentSequence !== searchSequence) {
+                    console.log('古い検索結果を無視:', currentSequence, '現在:', searchSequence);
+                    return;
+                }
+                
                 // レスポンス受信時にクエリが変更されていないか確認
                 if (input.value.trim() !== currentSearchQuery) {
                     isSearching = false;
                     return;
                 }
                 
-                console.log('検索結果:', results);
+                console.log('検索結果:', results, 'シーケンス:', currentSequence);
                 console.log('結果の型:', typeof results);
                 console.log('配列かどうか:', Array.isArray(results));
                 console.log('件数:', results ? results.length : 'null');
@@ -683,6 +694,7 @@ function setupHospitalAutocomplete() {
     let searchTimeout = null;
     let currentSearchQuery = '';
     let isSearching = false;
+    let searchSequence = 0; // 検索リクエストの順序管理
     
     if (!input || !suggestions) {
         console.error('医療機関検索用DOM要素が見つかりません');
@@ -719,6 +731,10 @@ function setupHospitalAutocomplete() {
         currentSearchQuery = query;
         isSearching = true;
         
+        // 検索シーケンス番号をインクリメント
+        searchSequence++;
+        const currentSequence = searchSequence;
+        
         // ローディング表示
         suggestions.innerHTML = '<div class="suggestion-loading">🔍 検索中...</div>';
         suggestions.classList.add('show');
@@ -750,6 +766,12 @@ function setupHospitalAutocomplete() {
                 }
                 
                 const results = await response.json();
+                
+                // レスポンス受信時にシーケンス番号を確認（最新の検索結果のみ処理）
+                if (currentSequence !== searchSequence) {
+                    console.log('古い医療機関検索結果を無視:', currentSequence, '現在:', searchSequence);
+                    return;
+                }
                 
                 // レスポンス受信時にクエリが変更されていないか確認
                 if (input.value.trim() !== currentSearchQuery) {
