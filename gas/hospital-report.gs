@@ -761,44 +761,48 @@ function getPrivateKeyFromFile() {
   }
 }
 
-// 利用者検索機能
+// 利用者検索機能（改良版：2文字、完全一致、漢字・読み仮名対応）
 function searchUsers(query) {
   try {
     console.log("利用者検索開始:", query);
     
-    if (!query || query.trim().length < 1) {
+    // 2文字未満の場合は検索しない
+    if (!query || query.trim().length < 2) {
       return [];
     }
     
+    const cleanQuery = query.trim();
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("入退院管理");
     const data = sheet.getDataRange().getValues();
     const results = [];
     
-    // C列（利用者名）から検索
+    // B列（利用者名）とC列（フリガナ）から完全一致検索
     for (let i = 1; i < data.length; i++) {
-      if (data[i][2] && data[i][2].toString().trim() !== '') {
-        const userName = data[i][2].toString().trim();
+      if (data[i][1] && data[i][1].toString().trim() !== '') {
+        const userName = data[i][1].toString().trim(); // B列：利用者名（漢字）
+        const userReading = data[i][2] ? data[i][2].toString().trim() : ''; // C列：フリガナ
         
-        // 部分一致検索（大文字小文字を区別しない）
-        if (userName.toLowerCase().includes(query.toLowerCase())) {
+        // 完全一致検索（大文字小文字を区別しない）
+        const nameMatch = userName.toLowerCase() === cleanQuery.toLowerCase();
+        const readingMatch = userReading && userReading.toLowerCase() === cleanQuery.toLowerCase();
+        
+        if (nameMatch || readingMatch) {
           // 重複を除去
           if (!results.find(r => r.name === userName)) {
             results.push({
               name: userName,
               value: userName,
-              id: data[i][0] || '', // ID
-              status: data[i][1] || '' // 状文
+              reading: userReading,
+              id: data[i][0] || '', // A列：ID
+              status: data[i][3] || '' // D列：状態
             });
           }
         }
       }
     }
     
-    // 最大10件に制限
-    const limitedResults = results.slice(0, 10);
-    
-    console.log(`利用者検索完了: "${query}" -> ${limitedResults.length}件`);
-    return limitedResults;
+    console.log(`利用者検索完了: "${cleanQuery}" -> ${results.length}件`);
+    return results;
     
   } catch (error) {
     console.error("利用者検索エラー:", error);
@@ -806,42 +810,44 @@ function searchUsers(query) {
   }
 }
 
-// 医療機関検索機能
+// 医療機関検索機能（改良版：2文字、完全一致対応）
 function searchHospitals(query) {
   try {
     console.log("医療機関検索開始:", query);
     
-    if (!query || query.trim().length < 1) {
+    // 2文字未満の場合は検索しない
+    if (!query || query.trim().length < 2) {
       return [];
     }
     
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("医療マスタ");
+    const cleanQuery = query.trim();
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("医療機関マスタ");
     const data = sheet.getDataRange().getValues();
     const results = [];
     
-    // A列から医療機関名を検索
+    // A列から医療機関名を完全一致検索
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] && data[i][0].toString().trim() !== '') {
         const hospitalName = data[i][0].toString().trim();
         
-        // 部分一致検索（大文字小文字を区別しない）
-        if (hospitalName.toLowerCase().includes(query.toLowerCase())) {
-          results.push({
-            name: hospitalName,
-            value: hospitalName,
-            area: data[i][1] || '', // B列: エリア
-            address: data[i][2] || '', // C列: 住所
-            phone: data[i][3] || '' // D列: 電話番号
-          });
+        // 完全一致検索（大文字小文字を区別しない）
+        if (hospitalName.toLowerCase() === cleanQuery.toLowerCase()) {
+          // 重複を除去
+          if (!results.find(r => r.name === hospitalName)) {
+            results.push({
+              name: hospitalName,
+              value: hospitalName,
+              area: data[i][1] || '', // B列: エリア
+              address: data[i][2] || '', // C列: 住所
+              phone: data[i][3] || '' // D列: 電話番号
+            });
+          }
         }
       }
     }
     
-    // 最大15件に制限
-    const limitedResults = results.slice(0, 15);
-    
-    console.log(`医療機関検索完了: "${query}" -> ${limitedResults.length}件`);
-    return limitedResults;
+    console.log(`医療機関検索完了: "${cleanQuery}" -> ${results.length}件`);
+    return results;
     
   } catch (error) {
     console.error("医療機関検索エラー:", error);

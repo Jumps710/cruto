@@ -633,11 +633,12 @@ function setupUserAutocomplete() {
         suggestions.innerHTML = '';
         selectedIndex = -1;
         
-        if (query.length < 1) {
+        // テキストが削除された場合は検索結果をクリア
+        if (query.length < 2) {
             suggestions.classList.remove('show');
             suggestions.style.display = 'none';
             suggestions.innerHTML = '';
-            console.log('[DEBUG] クエリが短すぎるため検索をスキップ');
+            console.log('[DEBUG] 2文字未満のため検索をスキップ（検索結果クリア）');
             return;
         }
         
@@ -691,38 +692,17 @@ function setupUserAutocomplete() {
                     const suggestionsHTML = results.map((user, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${user.name}">
                             <div class="suggestion-name">${user.name}</div>
-                            ${user.status ? `<div class="suggestion-reading">${user.status}</div>` : ''}
+                            ${user.reading ? `<div class="suggestion-reading">${user.reading}</div>` : ''}
                         </div>
                     `).join('');
                     
-                    try {
-                        console.log('[DEBUG] サジェスト表示:', {
-                            suggestionsHTML: suggestionsHTML,
-                            resultCount: results.length,
-                            suggestionsElement: suggestions,
-                            suggestionsVisible: suggestions.offsetParent !== null,
-                            suggestionsRect: suggestions.getBoundingClientRect(),
-                            suggestionsId: suggestions.id,
-                            suggestionsClassName: suggestions.className
-                        });
-                    } catch (debugError) {
-                        console.error('[ERROR] サジェスト表示デバッグエラー:', debugError);
-                    }
-                    
                     suggestions.innerHTML = suggestionsHTML;
                     suggestions.classList.add('show');
-                    
-                    // 強制的に表示
                     suggestions.style.display = 'block';
-                    suggestions.style.visibility = 'visible';
-                    suggestions.style.opacity = '1';
                     
-                    console.log('[DEBUG] サジェスト表示完了:', {
-                        innerHTML: suggestions.innerHTML,
-                        classList: suggestions.classList.toString(),
-                        computedStyle: window.getComputedStyle(suggestions),
-                        offsetParent: suggestions.offsetParent,
-                        clientRect: suggestions.getBoundingClientRect()
+                    console.log('[DEBUG] 利用者サジェスト表示完了:', {
+                        resultCount: results.length,
+                        innerHTML: suggestions.innerHTML
                     });
                     
                     // クリックイベント
@@ -738,7 +718,11 @@ function setupUserAutocomplete() {
                         });
                     });
                 } else {
-                    suggestions.classList.remove('show');
+                    // 検索結果が0件の場合は「見つかりませんでした」を表示
+                    suggestions.innerHTML = '<div class="suggestion-no-results">見つかりませんでした</div>';
+                    suggestions.classList.add('show');
+                    suggestions.style.display = 'block';
+                    console.log('[DEBUG] 利用者検索結果なし:', query);
                 }
             } catch (error) {
                 console.error('[ERROR] 利用者検索エラー:', {
@@ -800,11 +784,19 @@ function setupHospitalAutocomplete() {
         suggestions.innerHTML = '';
         selectedIndex = -1;
         
-        if (query.length < 1) {
+        // テキストが削除された場合は検索結果をクリア
+        if (query.length < 2) {
             suggestions.classList.remove('show');
-            console.log('[DEBUG] クエリが短すぎるため検索をスキップ');
+            suggestions.style.display = 'none';
+            suggestions.innerHTML = '';
+            console.log('[DEBUG] 2文字未満のため検索をスキップ（検索結果クリア）');
             return;
         }
+        
+        // ローディング表示
+        suggestions.innerHTML = '<div class="suggestion-loading">🔍 検索中...</div>';
+        suggestions.classList.add('show');
+        suggestions.style.display = 'block';
         
         console.log('[DEBUG] 医療機関検索リクエスト準備:', {
             query: query,
@@ -855,34 +847,33 @@ function setupHospitalAutocomplete() {
                         </div>
                     `).join('');
                     
-                    console.log('[DEBUG] 医療機関サジェスト表示:', {
-                        suggestionsHTML: suggestionsHTML,
-                        resultCount: results.length
-                    });
-                    
                     suggestions.innerHTML = suggestionsHTML;
                     suggestions.classList.add('show');
+                    suggestions.style.display = 'block';
                     
                     console.log('[DEBUG] 医療機関サジェスト表示完了:', {
-                        innerHTML: suggestions.innerHTML,
-                        classList: suggestions.classList.toString(),
-                        display: suggestions.style.display
+                        resultCount: results.length,
+                        innerHTML: suggestions.innerHTML
                     });
                     
                     // クリックイベント
                     suggestions.querySelectorAll('.suggestion-item').forEach(item => {
                         item.addEventListener('click', function() {
-                            console.log('[DEBUG] 利用者サジェストクリック:', this.dataset.value);
+                            console.log('[DEBUG] 医療機関サジェストクリック:', this.dataset.value);
                             input.value = this.dataset.value;
                             suggestions.classList.remove('show');
                             suggestions.style.display = 'none';
                             suggestions.innerHTML = '';
                             clearError(input);
-                            console.log('[DEBUG] 利用者サジェスト非表示完了');
+                            console.log('[DEBUG] 医療機関サジェスト非表示完了');
                         });
                     });
                 } else {
-                    suggestions.classList.remove('show');
+                    // 検索結果が0件の場合は「見つかりませんでした」を表示
+                    suggestions.innerHTML = '<div class="suggestion-no-results">見つかりませんでした</div>';
+                    suggestions.classList.add('show');
+                    suggestions.style.display = 'block';
+                    console.log('[DEBUG] 医療機関検索結果なし:', query);
                 }
             } catch (error) {
                 console.error('[ERROR] 医療機関検索エラー:', {
