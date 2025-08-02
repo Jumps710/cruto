@@ -106,20 +106,57 @@ function doPost(e) {
         
       // 入退院報告系アクション
       case 'submitHospitalReport':
-        // フォーム送信開始ログ（トラブルシューティング用）
-        logSheet.appendRow([
-          new Date(),
-          "入退院報告",
-          "フォーム送信開始",
-          requestData.data?.reporterId || "",
-          "",
-          `入退院報告フォーム送信開始: ${requestData.data?.reasonType || "不明"}`,
-          "",
-          "",
-          ""
-        ]);
-        const hospitalResult = handleHospitalReport(requestData.data);
-        return createSuccessResponse(hospitalResult);
+        try {
+          // フォーム送信開始ログ（詳細データ付き）
+          logSheet.appendRow([
+            new Date(),
+            "入退院報告",
+            "フォーム送信開始",
+            requestData.data?.reporter || requestData.data?.reporterId || "",
+            "",
+            `入退院報告フォーム送信開始`,
+            JSON.stringify(requestData.data || {}),
+            "",
+            ""
+          ]);
+          
+          if (!requestData.data) {
+            throw new Error('フォームデータが送信されていません');
+          }
+          
+          console.log('入退院報告データ受信:', JSON.stringify(requestData.data));
+          const hospitalResult = handleHospitalReport(requestData.data);
+          
+          // 成功ログ
+          logSheet.appendRow([
+            new Date(),
+            "入退院報告",
+            "フォーム送信成功",
+            requestData.data?.reporter || "",
+            "",
+            `入退院報告フォーム送信成功: ID=${hospitalResult.reportId || '不明'}`,
+            "",
+            "",
+            ""
+          ]);
+          
+          return createSuccessResponse(hospitalResult);
+        } catch (hospitalError) {
+          // エラーログ（詳細）
+          logSheet.appendRow([
+            new Date(),
+            "入退院報告",
+            "フォーム送信エラー",
+            requestData.data?.reporter || "",
+            "",
+            `入退院報告エラー: ${hospitalError.message}`,
+            JSON.stringify(requestData || {}),
+            hospitalError.stack || "",
+            ""
+          ]);
+          console.error('入退院報告エラー:', hospitalError);
+          throw hospitalError;
+        }
         
       case 'getUsers':
         const usersResult = getUsers();

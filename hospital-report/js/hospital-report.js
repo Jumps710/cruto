@@ -27,8 +27,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // 今日の日付を即座に設定
     const today = new Date();
-    document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
-    console.log('📅 日付設定完了:', today.toISOString().split('T')[0]);
+    document.getElementById('reportDate').value = today.toISOString().split('T')[0];
+    console.log('📅 報告日設定完了:', today.toISOString().split('T')[0]);
     
     try {
         console.log('📱 WOFF初期化開始', {woffId: config.woffId});
@@ -892,7 +892,7 @@ function validateForm() {
     let isValid = true;
     
     // 必須項目のチェック
-    const requiredFields = ['incidentDate', 'incidentTime', 'userName'];
+    const requiredFields = ['reportDate', 'userName'];
     requiredFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (!field.value) {
@@ -990,8 +990,7 @@ function generateConfirmContent() {
     let html = `
         <p><strong>報告者:</strong> ${formData.reporter}</p>
         <p><strong>事業所:</strong> ${office}</p>
-        <p><strong>発生日付:</strong> ${Utils.formatDate(formData.incidentDate)}</p>
-        <p><strong>発生時間:</strong> ${Utils.formatTime(formData.incidentTime)}</p>
+        <p><strong>報告日:</strong> ${Utils.formatDate(formData.reportDate)}</p>
         <p><strong>利用者名:</strong> ${formData.userName}</p>
         <p><strong>脱落理由:</strong> ${reason}</p>
     `;

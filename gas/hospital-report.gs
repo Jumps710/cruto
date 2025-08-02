@@ -47,45 +47,42 @@ function handleHospitalReport(data) {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("入退院管理");
     const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
     
-    const timestamp = new Date();
-    const reportId = 'HR' + timestamp.getTime();
-
-    // 入退院管理シートに記録（スクリーンショット構造に合わせて修正）
-    const statusText = data.reason === 'hospital' ? '入院中' : '中止';
+    if (!sheet) {
+      throw new Error('入退院管理シートが見つかりません');
+    }
     
-    const row = [
-      reportId,                           // A: ID
-      statusText,                         // B: 状文
-      data.userName,                      // C: 利用者名
-      data.reporter,                      // D: 報告者
-      data.incidentDate,                  // E: 報告日
-      data.hospitalName || '',            // F: 入院先
-      data.reason === 'hospital' ? data.hospitalDate : data.stopDate, // G: 入院日
-      data.reason === 'hospital' ? 
-        (data.hospitalDiagnosis === 'その他' ? data.hospitalOtherDiagnosisText : data.hospitalDiagnosis) : 
-        data.stopDiagnosis,               // H: 診断名
-      '',                                 // I: 当番（プライマリー）
-      '',                                 // J: 転院先
-      '',                                 // K: 脱落となるアウトライン
-      new Date().toISOString().split('T')[0], // L: 今日の日付
-      data.contractEnd ? '契約終了' : '', // M: 契約終了
-      data.resumeDate || '',              // N: 通院日（退院日・再開日）
-      '',                                 // O: 報告日の変更
-      '',                                 // P: 退院までの日数順
-      ''                                  // Q: 漏れての入り込み
-    ];
-
-    sheet.appendRow(row);
-
-    // 契約終了処理
-    if (data.contractEnd) {
-      updateContractEndStatus(data.userName, data.resumeDate);
+    const timestamp = new Date();
+    
+    // 利用者名で既存レコードを検索
+    const userName = data.userName;
+    if (!userName) {
+      throw new Error('利用者名が指定されていません');
     }
-
-    // N列の更新（退院日・再開日がある場合）
-    if (data.resumeDate) {
-      updateResumeDate(data.userName, data.resumeDate);
+    
+    // シート全体のデータを取得
+    const allData = sheet.getDataRange().getValues();
+    let targetRow = -1;
+    
+    // C列（利用者名）で一致するレコードを検索
+    for (let i = 1; i < allData.length; i++) { // 1行目はヘッダーなのでスキップ
+      if (allData[i][2] && allData[i][2].toString().trim() === userName.trim()) {
+        targetRow = i + 1; // 1ベースのインデックス
+        break;
+      }
     }
+    
+    if (targetRow === -1) {
+      throw new Error(`利用者「${userName}」のレコードが見つかりません`);
+    }
+    
+    console.log(`利用者「${userName}」のレコード発見: 行${targetRow}`);
+    
+    // カラム更新処理
+    updateHospitalRecord(sheet, targetRow, data, timestamp);
+    
+    const reportId = `HOSP-${timestamp.getTime()}`;
+
+    // 既存レコードの更新が完了
 
     // ログシートに記録
     logSheet.appendRow([
@@ -111,6 +108,70 @@ function handleHospitalReport(data) {
   } catch (error) {
     console.error("入退院報告処理エラー:", error);
     throw new Error("報告の送信に失敗しました: " + error.toString());
+  }
+}
+
+// 入退院管理シートのレコード更新関数
+function updateHospitalRecord(sheet, targetRow, data, timestamp) {
+  try {
+    console.log(`レコード更新開始: 行${targetRow}`);
+    
+    // 各カラムの値を設定
+    const statusText = data.reason === 'hospital' ? '入院中' : 
+                      data.contractEnd ? '契約終了' : '退院';
+    
+    // B列: 状況
+    sheet.getRange(targetRow, 2).setValue(statusText);
+    
+    // D列: 報告者
+    sheet.getRange(targetRow, 4).setValue(data.reporter || '');
+    
+    // E列: 報告日
+    if (data.reportDate) {
+      sheet.getRange(targetRow, 5).setValue(new Date(data.reportDate));
+    }
+    
+    // 入院の場合の追加情報
+    if (data.reason === 'hospital') {
+      // F列: 入院先
+      if (data.hospitalName) {
+        sheet.getRange(targetRow, 6).setValue(data.hospitalName);
+      }
+      
+      // G列: 入院日
+      if (data.hospitalDate) {
+        sheet.getRange(targetRow, 7).setValue(new Date(data.hospitalDate));
+      }
+      
+      // H列: 診断名
+      const diagnosis = data.hospitalDiagnosis === 'その他' ? 
+                       data.hospitalOtherDiagnosisText : 
+                       data.hospitalDiagnosis;
+      if (diagnosis) {
+        sheet.getRange(targetRow, 8).setValue(diagnosis);
+      }
+    } else {
+      // 中止の場合は診断名のみ
+      if (data.stopDiagnosis) {
+        sheet.getRange(targetRow, 8).setValue(data.stopDiagnosis);
+      }
+    }
+    
+    // M列: 契約終了
+    if (data.contractEnd) {
+      sheet.getRange(targetRow, 13).setValue('契約終了');
+    }
+    
+    // N列: 退院日・再開日
+    if (data.resumeDate) {
+      sheet.getRange(targetRow, 14).setValue(new Date(data.resumeDate));
+    }
+    
+    console.log(`レコード更新完了: 行${targetRow} 状況=${statusText}`);
+    
+  } catch (error) {
+    console.error(`レコード更新エラー (行${targetRow}):`, error);
+    throw new Error(`レコード更新に失敗しました: ${error.message}`);
   }
 }
 
