@@ -573,6 +573,7 @@ function setupUserAutocomplete() {
         // 検索リクエストを遅延実行（300ms）
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(async () => {
+            console.log('利用者検索開始:', query);
             try {
                 const params = new URLSearchParams({
                     action: 'searchUsers',
@@ -592,12 +593,13 @@ function setupUserAutocomplete() {
                 }
                 
                 const results = await response.json();
-                console.log('[DEBUG] 利用者検索結果:', {
-                    results: results,
-                    length: results ? results.length : 0
-                });
+                console.log('検索結果:', results);
+                console.log('結果の型:', typeof results);
+                console.log('配列かどうか:', Array.isArray(results));
+                console.log('件数:', results ? results.length : 'null');
                 
                 if (results && results.length > 0) {
+                    console.log('結果あり - サジェスト表示');
                     const suggestionsHTML = results.map((user, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${user.name}">
                             <div class="suggestion-name">${user.name}</div>
@@ -620,6 +622,7 @@ function setupUserAutocomplete() {
                     });
                 } else {
                     // 検索結果が0件の場合は「見つかりませんでした」を表示
+                    console.log('利用者検索: 結果なし - 見つかりませんでした表示');
                     suggestions.innerHTML = '<div class="suggestion-no-results">見つかりませんでした</div>';
                     suggestions.classList.add('show');
                     suggestions.style.display = 'block';
