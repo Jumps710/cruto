@@ -447,7 +447,8 @@ function getEntryType() {
 }
 
 function handleEntryTypeChange() {
-    const isNew = getEntryType() === 'new';
+    const entryType = getEntryType();
+    const isNew = entryType === 'new';
     const stopFields = ['stopDate', 'stopDiagnosis'];
 
     stopFields.forEach(id => {
@@ -459,6 +460,22 @@ function handleEntryTypeChange() {
             clearError(field);
         }
     });
+
+    const userInput = document.getElementById('userName');
+    const suggestions = document.getElementById('userSuggestions');
+    if (userInput) {
+        if (isNew) {
+            userInput.placeholder = '新規利用者名を入力してください';
+            userInput.setAttribute('data-entry-type', 'new');
+            if (suggestions) {
+                suggestions.classList.remove('show');
+                suggestions.innerHTML = '';
+            }
+        } else {
+            userInput.placeholder = '利用者名を入力...';
+            userInput.setAttribute('data-entry-type', 'existing');
+        }
+    }
 
     updateConditionalSections();
 }
@@ -498,6 +515,12 @@ function setupAutocomplete(inputId, suggestionsId, dataArray, nameField, subFiel
     let selectedIndex = -1;
     
     input.addEventListener('input', function() {
+        if (getEntryType() === 'new') {
+            suggestions.classList.remove('show');
+            suggestions.innerHTML = '';
+            selectedIndex = -1;
+            return;
+        }
         const value = this.value.toLowerCase();
         suggestions.innerHTML = '';
         selectedIndex = -1;
@@ -537,6 +560,9 @@ function setupAutocomplete(inputId, suggestionsId, dataArray, nameField, subFiel
     
     // キーボード操作
     input.addEventListener('keydown', function(e) {
+        if (getEntryType() === 'new') {
+            return;
+        }
         const items = suggestions.querySelectorAll('.suggestion-item');
         
         if (e.key === 'ArrowDown') {
