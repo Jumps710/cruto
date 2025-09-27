@@ -130,16 +130,56 @@ function handleHospitalReport(data) {
 }
 
 function createNewHospitalRecordRow(sheet, data, timestamp) {
-  const recordId = `HOSP-${timestamp.getTime()}`;
   const lastColumn = sheet.getLastColumn();
-  const newRowValues = new Array(lastColumn).fill('');
-  newRowValues[0] = recordId;
-  newRowValues[2] = data.userName || "";
-  sheet.appendRow(newRowValues);
-  const newRowIndex = sheet.getLastRow();
+  const lastRow = sheet.getLastRow();
+  let firstEmptyRowIndex = null;
+  let existingIdValue = null;
+  let maxNumericId = 0;
+
+  if (lastRow >= 2) {
+    const allRows = sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+    for (let i = 0; i < allRows.length; i++) {
+      const row = allRows[i];
+      const idValue = row[0];
+      const numericId = typeof idValue === 'number' ? idValue : parseInt(idValue, 10);
+      if (!Number.isNaN(numericId)) {
+        if (numericId > maxNumericId) {
+          maxNumericId = numericId;
+        }
+      }
+
+      const hasDataExceptId = row.slice(1).some(value => value !== '' && value !== null);
+      if (!hasDataExceptId && firstEmptyRowIndex === null) {
+        firstEmptyRowIndex = i + 2;
+        if (idValue !== '' && idValue !== null) {
+          existingIdValue = idValue;
+        }
+      }
+    }
+  }
+
+  let targetRow = firstEmptyRowIndex;
+  if (!targetRow) {
+    targetRow = lastRow + 1;
+    sheet.insertRowsAfter(lastRow, 1);
+  } else if (targetRow <= lastRow && lastColumn > 1) {
+    sheet.getRange(targetRow, 2, 1, lastColumn - 1).clearContent();
+  }
+
+  let recordId;
+  if (existingIdValue !== null && existingIdValue !== '') {
+    const numericExisting = typeof existingIdValue === 'number' ? existingIdValue : parseInt(existingIdValue, 10);
+    recordId = Number.isNaN(numericExisting) ? existingIdValue : numericExisting;
+  } else {
+    recordId = maxNumericId + 1;
+  }
+
+  sheet.getRange(targetRow, 1).setValue(recordId);
+  sheet.getRange(targetRow, 3).setValue(data.userName || '');
+
   return {
-    rowIndex: newRowIndex,
-    recordId
+    rowIndex: targetRow,
+    recordId: recordId.toString()
   };
 }
 
