@@ -1,4 +1,4 @@
-// 事故報告システム GAS
+﻿// 事故報告システム GAS
 function doPostAccidentReportLegacy_DISABLED(e) {
   const logSheet = getLogSheet();
   
@@ -379,7 +379,7 @@ function getAccidentUserOrganization(userId) {
     // LINE WORKS API設定
     const CLIENT_ID = ENV.LINE_WORKS.CLIENT_ID;
     const CLIENT_SECRET = ENV.LINE_WORKS.CLIENT_SECRET;
-    const SERVICE_ACCOUNT = 'nagmx.serviceaccount@works-demo.org';
+    const SERVICE_ACCOUNT = ENV.LINE_WORKS.SERVICE_ACCOUNT;
     const DOMAIN_ID = ENV.LINE_WORKS.DOMAIN_ID;
     const PRIVATE_KEY = getPrivateKeyFromFile(ENV.LINE_WORKS.PRIVATE_KEY_FILE);
 
@@ -629,7 +629,7 @@ function sendAccidentNotificationToLineWorks(data, reportId, timestamp) {
     // アクセストークンを取得
     const CLIENT_ID = ENV.LINE_WORKS.CLIENT_ID;
     const CLIENT_SECRET = ENV.LINE_WORKS.CLIENT_SECRET;
-    const SERVICE_ACCOUNT = 'nagmx.serviceaccount@works-demo.org';
+    const SERVICE_ACCOUNT = ENV.LINE_WORKS.SERVICE_ACCOUNT;
     const PRIVATE_KEY = getPrivateKeyFromFile(ENV.LINE_WORKS.PRIVATE_KEY_FILE);
     const DOMAIN_ID = ENV.LINE_WORKS.DOMAIN_ID;
     

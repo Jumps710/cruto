@@ -1,4 +1,4 @@
-// 入退院報告システム GAS
+﻿// 入退院報告システム GAS
 function doPostHospitalReportLegacy_DISABLED(e) {
   try {
     const requestText = e.postData.contents;
@@ -355,8 +355,8 @@ function getHospitalUserOrganization(userId) {
     // LINE WORKS API設定
     const CLIENT_ID = ENV.LINE_WORKS.CLIENT_ID;
     const CLIENT_SECRET = ENV.LINE_WORKS.CLIENT_SECRET;
-    const SERVICE_ACCOUNT = 'nagmx.serviceaccount@works-demo.org';
-    const DOMAIN_ID = '10000389';
+    const SERVICE_ACCOUNT = ENV.LINE_WORKS.SERVICE_ACCOUNT;
+    const DOMAIN_ID = ENV.LINE_WORKS.DOMAIN_ID;
     // 秘密鍵をファイルから読み込み
     const PRIVATE_KEY = getPrivateKeyFromFile(ENV.LINE_WORKS.PRIVATE_KEY_FILE);
 
