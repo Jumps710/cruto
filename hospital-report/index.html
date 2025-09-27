@@ -34,6 +34,25 @@
         <h1>入退院報告フォーム</h1>
 
         <form id="hospitalReportForm">
+            <!-- 報告対象 -->
+            <div class="form-section">
+                <h2>報告対象</h2>
+                <div class="form-group">
+                    <label class="required">対象区分</label>
+                    <div class="radio-group entry-type-group">
+                        <div class="radio-item">
+                            <input type="radio" id="entryExisting" name="entryType" value="existing" checked>
+                            <label for="entryExisting">既存利用者</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="entryNew" name="entryType" value="new">
+                            <label for="entryNew">新規利用者</label>
+                        </div>
+                    </div>
+                    <span class="help-text">新規を選択すると入退院管理シートに新しい行を追加します</span>
+                </div>
+            </div>
+
             <!-- 基本情報 -->
             <div class="form-section">
                 <h2>基本情報</h2>
@@ -158,7 +177,7 @@
                 <h2>今後の予定</h2>
                 
                 <div class="form-group">
-                    <label>退院日 または 再開日</label>
+                    <label>退院日 または 再開日 <span class="optional-note">（任意入力）</span></label>
                     <input type="date" id="resumeDate" name="resumeDate">
                     <span class="help-text">予定がある場合のみ入力してください</span>
                 </div>
@@ -166,7 +185,7 @@
                 <div class="form-group">
                     <div class="checkbox-item">
                         <input type="checkbox" id="contractEnd" name="contractEnd" value="yes">
-                        <label for="contractEnd">契約終了にする</label>
+                        <label for="contractEnd">契約終了にする <span class="optional-note">（任意入力）</span></label>
                     </div>
                     <span class="help-text">チェックすると該当利用者レコードのM列が「契約終了」に更新されます</span>
                 </div>

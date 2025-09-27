@@ -56,7 +56,7 @@ function generateOptimalRoute(e) {
 
 function getSalesTargetsData() {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("営業データ");
+    const sheet = getSheet(ENV.SHEETS.SALES);
     const data = sheet.getDataRange().getValues();
     
     // ヘッダー行を除いてデータを処理
@@ -392,7 +392,7 @@ function calculateTotalDistance(route) {
 
 function logRouteGeneration(userId, strategy, visitCount) {
   try {
-    const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+    const logSheet = getLogSheet();
     logSheet.appendRow([
       new Date(),
       "営業ルート生成",

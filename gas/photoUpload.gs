@@ -4,7 +4,8 @@
  */
 
 // 設定
-const PHOTO_FOLDER_ID = "11r9PGtZKBuX22TnA6cIRHru6zlNYD9T_"; // 事故報告フォルダ
+// フォルダIDはENVで管理
+const PHOTO_FOLDER_ID = ENV.PHOTO_FOLDER_ID;
 const PHOTO_COLUMNS = {
   SCENE: 22,     // V列: 事故現場写真
   PROPERTY: 23,  // W列: 対物写真
@@ -56,7 +57,7 @@ function onAccidentPhotoEditTrigger(e) {
     console.error("onEditTriggerエラー:", error);
     
     // エラーログをシートに記録
-    const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+    const logSheet = getLogSheet();
     if (logSheet) {
       logSheet.appendRow([
         new Date(),
@@ -78,7 +79,7 @@ function onAccidentPhotoEditTrigger(e) {
  */
 function checkForUnprocessedPhotos() {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事故報告");
+    const sheet = getSheet(ENV.SHEETS.ACCIDENT);
     if (!sheet) {
       console.log("事故報告シートが見つかりません");
       return;
@@ -124,7 +125,7 @@ function checkForUnprocessedPhotos() {
  */
 function testAccidentPhotoUpload() {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事故報告");
+    const sheet = getSheet(ENV.SHEETS.ACCIDENT);
     const lastRow = sheet.getLastRow();
     
     if (lastRow > 1) {
@@ -143,7 +144,7 @@ function testAccidentPhotoUpload() {
  */
 function uploadAccidentPhotosByReportId(reportId) {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事故報告");
+    const sheet = getSheet(ENV.SHEETS.ACCIDENT);
     const dataRange = sheet.getDataRange();
     const values = dataRange.getValues();
     
@@ -167,7 +168,7 @@ function uploadAccidentPhotosByReportId(reportId) {
  * 写真アップロード処理のメイン関数
  */
 function processAccidentPhotoUpload(sheet, row) {
-  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+  const logSheet = getLogSheet();
   const timestamp = new Date();
   
   try {
@@ -427,7 +428,7 @@ function setupAccidentPhotoTriggers() {
   });
   
   // スプレッドシート編集時のトリガーを作成
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = getSpreadsheet();
   ScriptApp.newTrigger('onAccidentPhotoEditTrigger')
     .timeBased()
     .everyMinutes(1) // 1分ごとにチェック
@@ -441,7 +442,7 @@ function setupAccidentPhotoTriggers() {
  * 全ての未処理レコードを処理（メンテナンス用）
  */
 function processAllPendingAccidentPhotoUploads() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事故報告");
+  const sheet = getSheet(ENV.SHEETS.ACCIDENT);
   const dataRange = sheet.getDataRange();
   const values = dataRange.getValues();
   

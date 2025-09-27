@@ -29,6 +29,13 @@ label {
     color: #374151;
 }
 
+.optional-note {
+    font-weight: normal;
+    color: #6b7280;
+    font-size: 0.85em;
+    margin-left: 4px;
+}
+
 .required::after {
     content: " *";
     color: #dc2626;
@@ -126,205 +133,135 @@ input[type="checkbox"] {
 .suggestions-list.show {
     display: block !important;
     visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 9999 !important;
 }
 
 .suggestion-item {
-    padding: 10px;
+    padding: 10px 12px;
     cursor: pointer;
-    border-bottom: 1px solid #e5e7eb;
-    transition: background-color 0.2s;
-}
-
-.suggestion-item:hover,
-.suggestion-item.selected {
-    background-color: #f3f4f6;
+    border-bottom: 1px solid #f3f4f6;
 }
 
 .suggestion-item:last-child {
     border-bottom: none;
 }
 
+.suggestion-item:hover,
+.suggestion-item.selected {
+    background-color: #FFF3E0;
+}
+
 .suggestion-name {
-    font-weight: bold;
+    font-weight: 600;
     color: #374151;
 }
 
 .suggestion-reading {
     font-size: 12px;
     color: #6b7280;
-    margin-top: 2px;
-}
-
-.suggestion-loading,
-.suggestion-no-results,
-.suggestion-error {
-    padding: 10px;
-    text-align: center;
-    font-style: italic;
-    color: #6b7280;
 }
 
 .suggestion-loading {
-    color: #3b82f6;
-}
-
-.suggestion-error {
-    color: #dc2626;
-}
-
-/* 事業所表示 */
-.office-display {
-    display: flex;
-    align-items: center;
-    gap: 10px;
     padding: 10px;
-    background-color: #f9fafb;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
+    color: #6b7280;
+    text-align: center;
 }
 
-.office-display span {
-    flex: 1;
-    font-weight: bold;
-    color: #374151;
-}
-
-.btn-change-office {
-    background-color: #6b7280;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.btn-change-office:hover {
-    background-color: #4b5563;
-}
-
-/* 事業所選択モーダル */
-.office-list {
-    max-height: 300px;
-    overflow-y: auto;
-    margin: 20px 0;
-}
-
-.office-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    margin-bottom: 5px;
-    cursor: pointer;
-}
-
-.office-option:hover {
-    background-color: #f3f4f6;
-}
-
-.office-option input[type="radio"] {
-    margin: 0;
-}
-
-.office-option label {
-    margin: 0;
-    cursor: pointer;
-    flex: 1;
-}
-
-/* 送信セクション */
-.submit-section {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    padding: 15px;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-}
-
+/* ボタン */
 .btn-submit {
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-    display: block;
     background-color: #FF8F00;
     color: white;
     border: none;
-    padding: 15px;
+    padding: 14px 28px;
     border-radius: 8px;
     font-size: 18px;
     font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.3s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    transition: all 0.2s ease;
 }
 
 .btn-submit:hover {
     background-color: #E67E00;
+    transform: translateY(-1px);
 }
 
-.btn-submit:disabled {
-    background-color: #9ca3af;
-    cursor: not-allowed;
+.btn-submit:active {
+    transform: translateY(1px);
 }
 
-/* ヘルプテキスト・エラーメッセージ */
-.help-text {
-    font-size: 14px;
-    color: #6b7280;
-    margin-top: 5px;
+.submit-section {
+    margin: 30px 0;
 }
 
+/* エラーメッセージ */
 .error-message {
+    display: none;
     color: #dc2626;
     font-size: 14px;
-    margin-top: 5px;
-    display: none;
+    margin-top: 6px;
 }
 
 .error-message.show {
     display: block;
 }
 
+input.error,
+select.error,
+textarea.error {
+    border-color: #dc2626;
+    background-color: #fef2f2;
+}
+
+/* ヘルプテキスト */
+.help-text {
+    display: block;
+    margin-top: 4px;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+/* 事業所表示 */
+.office-display {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.office-name {
+    font-weight: bold;
+    color: #374151;
+}
+
+.btn-change-office {
+    padding: 6px 12px;
+    border: 1px solid #FF8F00;
+    background-color: white;
+    color: #FF8F00;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-change-office:hover {
+    background-color: #FFF3E0;
+}
+
 /* モーダル */
 .modal {
     display: none;
     position: fixed;
-    top: 0;
+    z-index: 2000;
     left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    z-index: 1000;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
 }
 
 .modal.show {
     display: block;
-}
-
-/* ローディングメッセージ */
-.loading-message {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #666;
-    font-size: 14px;
-    padding: 8px 0;
-}
-
-.loading-icon {
-    font-size: 16px;
-    animation: rotate 2s linear infinite;
-}
-
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
 }
 
 .modal-content {

@@ -1,6 +1,61 @@
-// メインルーティング処理 - 統一doPost関数
+const ENV = Object.freeze({
+  SPREADSHEET_ID: '14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0',
+  SHEETS: {
+    LOG: 'Log',
+    ACCIDENT: '事故報告',
+    HOSPITAL: '入退院管理',
+    USERS: '利用者管理',
+    HOSPITAL_MASTER: '医療マスタ',
+    SALES: '営業データ'
+  },
+  LINE_WORKS: {
+    CLIENT_ID: 'De3dyIflyPCDY2xrHUak',
+    CLIENT_SECRET: 'ckuFb6OYxV',
+    SERVICE_ACCOUNT: 'nagmx.serviceaccount@works-demo.org',
+    DOMAIN_ID: '10000389',
+    PRIVATE_KEY_FILE: 'private_20250720123804.key'
+  },
+  ACCIDENT: {
+    BOT_ID: '10724480',
+    CHANNEL_ID: 'b11addf5-0a2a-8460-252e-babaeb579936',
+    SPREADSHEET_URL: 'https://docs.google.com/spreadsheets/d/14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0/edit?gid=494299374'
+  },
+  HOSPITAL: {
+    BOT_ID: '9946034'
+  },
+  PHOTO_FOLDER_ID: '11r9PGtZKBuX22TnA6cIRHru6zlNYD9T_'
+});
+
+function getSpreadsheet() {
+  return SpreadsheetApp.openById(ENV.SPREADSHEET_ID);
+}
+
+function getSheet(sheetName) {
+  return getSpreadsheet().getSheetByName(sheetName);
+}
+
+function getLogSheet() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName(ENV.SHEETS.LOG);
+  if (!sheet) {
+    sheet = ss.insertSheet(ENV.SHEETS.LOG);
+    sheet.getRange(1, 1, 1, 9).setValues([
+      'タイムスタンプ', 'タイプ', 'アクション', 'ユーザー', '報告ID',
+      'メッセージ', '詳細1', '詳細2', '詳細3'
+    ]);
+  }
+  return sheet;
+}
+
+function appendLog(rowValues) {
+  try {
+    getLogSheet().appendRow(rowValues);
+  } catch (error) {
+    console.error('ログ書き込みエラー:', error);
+  }
+}
 function doPost(e) {
-  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+  const logSheet = getLogSheet();
   const timestamp = new Date();
   
   // 最初にリクエスト到達を記録
@@ -214,7 +269,7 @@ function doPost(e) {
 
 // GET テスト用関数（簡素化版）
 function doGet(e) {
-  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+  const logSheet = getLogSheet();
   const timestamp = new Date();
   
   // GETリクエスト到達ログ
@@ -252,7 +307,7 @@ function doGet(e) {
     const userId = e.parameter.userId;
     
     // デバッグログ追加
-    const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+    const logSheet = getLogSheet();
     logSheet.appendRow([
       new Date(),
       "doGet",
@@ -427,7 +482,7 @@ function createErrorResponse(message) {
  * Google Maps APIレスポンスをログに記録する関数
  */
 function logGoogleMapsApiResponse(requestData) {
-  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+  const logSheet = getLogSheet();
   const timestamp = new Date();
   const requestId = 'MAPS_' + timestamp.getTime();
   

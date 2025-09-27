@@ -1,6 +1,6 @@
 // 事故報告システム GAS
 function doPostAccidentReportLegacy_DISABLED(e) {
-  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+  const logSheet = getLogSheet();
   
   try {
     const requestText = e.postData.contents;
@@ -49,7 +49,7 @@ function doGetAccidentReportLegacy_DISABLED(e) {
  * 新しい事故報告データ処理関数（条件分岐対応）
  */
 function handleAccidentReport(data) {
-  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+  const logSheet = getLogSheet();
   const timestamp = new Date();
   const reportId = generateAccidentReportId();
   
@@ -240,7 +240,7 @@ function getOrCreateFolder(parentFolder, folderName) {
  * 事故報告データをシートに保存 - 指定カラム順序対応
  */
 function saveAccidentReportToSheet(data, reportId, timestamp, photoInfo) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事故報告");
+  const sheet = getSheet(ENV.SHEETS.ACCIDENT);
   
   // デバッグ: 受信したデータを確認
   console.log('[DEBUG] 受信したdata:', JSON.stringify(data));
@@ -377,11 +377,11 @@ function getOffices() {
 function getAccidentUserOrganization(userId) {
   try {
     // LINE WORKS API設定
-    const CLIENT_ID = 'De3dyIflyPCDY2xrHUak';
-    const CLIENT_SECRET = 'ckuFb6OYxV';
+    const CLIENT_ID = ENV.LINE_WORKS.CLIENT_ID;
+    const CLIENT_SECRET = ENV.LINE_WORKS.CLIENT_SECRET;
     const SERVICE_ACCOUNT = 'nagmx.serviceaccount@works-demo.org';
-    const DOMAIN_ID = '10000389';
-    const PRIVATE_KEY = getPrivateKeyFromFile();
+    const DOMAIN_ID = ENV.LINE_WORKS.DOMAIN_ID;
+    const PRIVATE_KEY = getPrivateKeyFromFile(ENV.LINE_WORKS.PRIVATE_KEY_FILE);
 
     try {
       // JWTトークンを生成
@@ -600,15 +600,16 @@ function handleAccidentReportFromParams(params) {
 // レスポンス作成関数は main.gs で統一定義済み
 
 // 秘密鍵をファイルから読み込む関数
-function getPrivateKeyFromFile() {
+function getPrivateKeyFromFile(fileName) {
+  const targetName = fileName || ENV.LINE_WORKS.PRIVATE_KEY_FILE;
   try {
-    const files = DriveApp.getFilesByName('private_20250720123804.key');
+    const files = DriveApp.getFilesByName(targetName);
     if (files.hasNext()) {
       const file = files.next();
       const privateKey = file.getBlob().getDataAsString();
       return privateKey;
     } else {
-      throw new Error("秘密鍵ファイルが見つかりません: private_20250720123804.key");
+      throw new Error("秘密鍵ファイルが見つかりません: " + targetName);
     }
   } catch (error) {
     console.error("秘密鍵ファイル読み込みエラー:", error);
@@ -620,17 +621,17 @@ function getPrivateKeyFromFile() {
  * LINE WORKS Bot APIを使用して事故報告通知を送信
  */
 function sendAccidentNotificationToLineWorks(data, reportId, timestamp) {
-  const BOT_ID = "10480401";
-  const CHANNEL_ID = "b11addf5-0a2a-8460-252e-babaeb579936";
-  const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1ZZjvaUptj1BCbV0jsbILwXbB_NF8L4MkeYT5P23mU7Y/edit?gid=506010108#gid=506010108";
+  const BOT_ID = ENV.ACCIDENT.BOT_ID;
+  const CHANNEL_ID = ENV.ACCIDENT.CHANNEL_ID;
+  const SPREADSHEET_URL = ENV.ACCIDENT.SPREADSHEET_URL;
   
   try {
     // アクセストークンを取得
-    const CLIENT_ID = 'De3dyIflyPCDY2xrHUak';
-    const CLIENT_SECRET = 'ckuFb6OYxV';
+    const CLIENT_ID = ENV.LINE_WORKS.CLIENT_ID;
+    const CLIENT_SECRET = ENV.LINE_WORKS.CLIENT_SECRET;
     const SERVICE_ACCOUNT = 'nagmx.serviceaccount@works-demo.org';
-    const PRIVATE_KEY = getPrivateKeyFromFile();
-    const DOMAIN_ID = '10000389';
+    const PRIVATE_KEY = getPrivateKeyFromFile(ENV.LINE_WORKS.PRIVATE_KEY_FILE);
+    const DOMAIN_ID = ENV.LINE_WORKS.DOMAIN_ID;
     
     // JWTトークンを生成
     const jwt = generateAccidentJWT(CLIENT_ID, SERVICE_ACCOUNT, PRIVATE_KEY);

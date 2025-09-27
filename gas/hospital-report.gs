@@ -44,8 +44,8 @@ function handleHospitalReport(data) {
   try {
     console.log("入退院報告データ受信:", JSON.stringify(data));
     
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("入退院管理");
-    const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+    const sheet = getSheet(ENV.SHEETS.HOSPITAL);
+    const logSheet = getLogSheet();
     
     if (!sheet) {
       throw new Error('入退院管理シートが見つかりません');
@@ -177,7 +177,7 @@ function updateHospitalRecord(sheet, targetRow, data, timestamp) {
 
 function getUsers() {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("利用者管理");
+    const sheet = getSheet(ENV.SHEETS.USERS);
     if (!sheet) {
       throw new Error("利用者管理シートが見つかりません");
     }
@@ -204,7 +204,7 @@ function getUsers() {
 
 function getHospitals() {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("医療マスタ");
+    const sheet = getSheet(ENV.SHEETS.HOSPITAL_MASTER);
     if (!sheet) {
       throw new Error("医療マスタシートが見つかりません");
     }
@@ -260,7 +260,7 @@ function getOffices() {
 }
 
 function getHospitalUserOrganization(userId) {
-  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+  const logSheet = getLogSheet();
   const timestamp = new Date();
   const debugId = 'ORG_' + timestamp.getTime();
   
@@ -281,12 +281,12 @@ function getHospitalUserOrganization(userId) {
     ]);
     
     // LINE WORKS API設定
-    const CLIENT_ID = 'De3dyIflyPCDY2xrHUak';
-    const CLIENT_SECRET = 'ckuFb6OYxV';
+    const CLIENT_ID = ENV.LINE_WORKS.CLIENT_ID;
+    const CLIENT_SECRET = ENV.LINE_WORKS.CLIENT_SECRET;
     const SERVICE_ACCOUNT = 'nagmx.serviceaccount@works-demo.org';
     const DOMAIN_ID = '10000389';
     // 秘密鍵をファイルから読み込み
-    const PRIVATE_KEY = getPrivateKeyFromFile();
+    const PRIVATE_KEY = getPrivateKeyFromFile(ENV.LINE_WORKS.PRIVATE_KEY_FILE);
 
     try {
       // JWTトークンを生成
@@ -457,7 +457,7 @@ function getHospitalUserOrganization(userId) {
 
 // JWTトークン生成（動作確認済み手法）
 function generateJWT(clientId, serviceAccount, privateKey) {
-  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+  const logSheet = getLogSheet();
   const debugId = 'JWT_' + new Date().getTime();
   
   try {
@@ -516,7 +516,7 @@ function generateJWT(clientId, serviceAccount, privateKey) {
 
 // アクセストークン取得（動作確認済み手法）
 function getAccessToken(jwt, clientId, clientSecret) {
-  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+  const logSheet = getLogSheet();
   const debugId = 'TOKEN_' + new Date().getTime();
   const uri = 'https://auth.worksmobile.com/oauth2/v2.0/token';
   
@@ -630,7 +630,7 @@ function getAccessToken(jwt, clientId, clientSecret) {
 
 // ユーザー情報取得
 function getUserInfo(accessToken, domainId, userId) {
-  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+  const logSheet = getLogSheet();
   const debugId = 'USER_' + new Date().getTime();
   const url = `https://www.worksapis.com/v1.0/users/${userId}`;
   
@@ -767,7 +767,7 @@ function getUserInfo(accessToken, domainId, userId) {
 // 契約終了ステータス更新
 function updateContractEndStatus(userName, endDate) {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("入退院管理");
+    const sheet = getSheet(ENV.SHEETS.HOSPITAL);
     const data = sheet.getDataRange().getValues();
     
     // 該当利用者のレコードを検索してM列を更新
@@ -786,7 +786,7 @@ function updateContractEndStatus(userName, endDate) {
 // N列の退院日・再開日更新
 function updateResumeDate(userName, resumeDate) {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("入退院管理");
+    const sheet = getSheet(ENV.SHEETS.HOSPITAL);
     const data = sheet.getDataRange().getValues();
     
     // 該当利用者のレコードを検索してN列を更新
@@ -805,23 +805,22 @@ function updateResumeDate(userName, resumeDate) {
 // レスポンス作成関数は main.gs で統一定義済み
 
 // 秘密鍵をファイルから読み込む関数
-function getPrivateKeyFromFile() {
+function getPrivateKeyFromFile(fileName) {
+  const targetName = fileName || ENV.LINE_WORKS.PRIVATE_KEY_FILE;
   try {
-    const files = DriveApp.getFilesByName('private_20250720123804.key');
+    const files = DriveApp.getFilesByName(targetName);
     if (files.hasNext()) {
       const file = files.next();
       const privateKey = file.getBlob().getDataAsString();
       console.log("秘密鍵をファイルから正常に読み込みました");
       return privateKey;
-    } else {
-      throw new Error("秘密鍵ファイルが見つかりません: private_20250720123804.key");
     }
+    throw new Error("秘密鍵ファイルが見つかりません: " + targetName);
   } catch (error) {
     console.error("秘密鍵ファイル読み込みエラー:", error);
     throw error;
   }
 }
-
 // 利用者検索機能（改良版：2文字以上、部分一致、漢字のみ対応）
 function searchUsers(query) {
   try {
@@ -831,7 +830,7 @@ function searchUsers(query) {
     }
     
     const cleanQuery = query.trim();
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("入退院管理");
+    const sheet = getSheet(ENV.SHEETS.HOSPITAL);
     const data = sheet.getDataRange().getValues();
     const results = [];
     
@@ -878,7 +877,7 @@ function searchHospitals(query) {
     }
     
     const cleanQuery = query.trim();
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("医療機関マスタ");
+    const sheet = getSpreadsheet().getSheetByName("医療機関マスタ");
     const data = sheet.getDataRange().getValues();
     const results = [];
     
@@ -908,5 +907,21 @@ function searchHospitals(query) {
   } catch (error) {
     console.error("医療機関検索エラー:", error);
     return [];
+  }
+}// 秘密鍵をファイルから読み込む関数
+function getPrivateKeyFromFile(fileName) {
+  const targetName = fileName || ENV.LINE_WORKS.PRIVATE_KEY_FILE;
+  try {
+    const files = DriveApp.getFilesByName(targetName);
+    if (files.hasNext()) {
+      const file = files.next();
+      const privateKey = file.getBlob().getDataAsString();
+      console.log("秘密鍵をファイルから正常に読み込みました");
+      return privateKey;
+    }
+    throw new Error("秘密鍵ファイルが見つかりません: " + targetName);
+  } catch (error) {
+    console.error("秘密鍵ファイル読み込みエラー:", error);
+    throw error;
   }
 }
