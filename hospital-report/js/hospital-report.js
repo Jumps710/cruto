@@ -1,91 +1,91 @@
-// 入退院報告フォーム JavaScript
+﻿// 蜈･騾髯｢蝣ｱ蜻翫ヵ繧ｩ繝ｼ繝 JavaScript
 
-// 設定
+// 險ｭ螳・
 const config = {
-    woffId: '_2Todd08o2jPGgjmr_9Teg', // 本番環境のWOFF ID
+    woffId: '_2Todd08o2jPGgjmr_9Teg', // 譛ｬ逡ｪ迺ｰ蠅・・WOFF ID
     gasUrl: 'https://script.google.com/macros/s/AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj/exec'
 };
 
-// グローバル変数
+// 繧ｰ繝ｭ繝ｼ繝舌Ν螟画焚
 let formData = {};
 let userOrganization = '';
 let availableOffices = [];
 
-// キャッシュ機能
+// 繧ｭ繝｣繝・す繝･讖溯・
 const cache = {
     offices: null,
     officesExpiry: null
 };
 
-// 初期化
+// 蛻晄悄蛹・
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 hospital-report DOMContentLoaded開始');
+    console.log('噫 hospital-report DOMContentLoaded髢句ｧ・);
     
-    // まず最初にイベントリスナーを設定（フォーム操作を即座に有効化）
+    // 縺ｾ縺壽怙蛻昴↓繧､繝吶Φ繝医Μ繧ｹ繝翫・繧定ｨｭ螳夲ｼ医ヵ繧ｩ繝ｼ繝謫堺ｽ懊ｒ蜊ｳ蠎ｧ縺ｫ譛牙柑蛹厄ｼ・
     setupEventListeners();
-    console.log('🎧 イベントリスナー設定完了（優先実行）');
+    console.log('而 繧､繝吶Φ繝医Μ繧ｹ繝翫・險ｭ螳壼ｮ御ｺ・ｼ亥━蜈亥ｮ溯｡鯉ｼ・);
     
-    // 今日の日付を即座に設定
+    // 莉頑律縺ｮ譌･莉倥ｒ蜊ｳ蠎ｧ縺ｫ險ｭ螳・
     const today = new Date();
     document.getElementById('reportDate').value = today.toISOString().split('T')[0];
-    console.log('📅 報告日設定完了:', today.toISOString().split('T')[0]);
+    console.log('套 蝣ｱ蜻頑律險ｭ螳壼ｮ御ｺ・', today.toISOString().split('T')[0]);
     
     try {
-        console.log('📱 WOFF初期化開始', {woffId: config.woffId});
+        console.log('導 WOFF蛻晄悄蛹夜幕蟋・, {woffId: config.woffId});
         
-        // WOFF初期化
+        // WOFF蛻晄悄蛹・
         const profile = await WOFFManager.init(config.woffId);
-        console.log('✅ WOFF初期化完了', profile);
+        console.log('笨・WOFF蛻晄悄蛹門ｮ御ｺ・, profile);
         
-        // 報告者名を設定
+        // 蝣ｱ蜻願・錐繧定ｨｭ螳・
         document.getElementById('reporter').value = profile.displayName;
-        console.log('👤 報告者名設定完了:', profile.displayName);
+        console.log('側 蝣ｱ蜻願・錐險ｭ螳壼ｮ御ｺ・', profile.displayName);
         
-        // ユーザーの組織情報を非同期で取得（ブロッキングしない）
-        console.log('🏢 ユーザー組織情報取得開始:', profile.userId);
+        // 繝ｦ繝ｼ繧ｶ繝ｼ縺ｮ邨・ｹ疲ュ蝣ｱ繧帝撼蜷梧悄縺ｧ蜿門ｾ暦ｼ医ヶ繝ｭ繝・く繝ｳ繧ｰ縺励↑縺・ｼ・
+        console.log('召 繝ｦ繝ｼ繧ｶ繝ｼ邨・ｹ疲ュ蝣ｱ蜿門ｾ鈴幕蟋・', profile.userId);
         getUserOrganization(profile.userId).then(() => {
-            console.log('✅ 組織情報取得完了');
+            console.log('笨・邨・ｹ疲ュ蝣ｱ蜿門ｾ怜ｮ御ｺ・);
         }).catch(error => {
-            console.error('❌ 組織情報取得エラー:', error);
+            console.error('笶・邨・ｹ疲ュ蝣ｱ蜿門ｾ励お繝ｩ繝ｼ:', error);
         });
         
-        // リアルタイム検索を使用するため、マスタデータの事前取得は不要
+        // 繝ｪ繧｢繝ｫ繧ｿ繧､繝讀懃ｴ｢繧剃ｽｿ逕ｨ縺吶ｋ縺溘ａ縲√・繧ｹ繧ｿ繝・・繧ｿ縺ｮ莠句燕蜿門ｾ励・荳崎ｦ・
         
-        console.log('✅ 基本初期化処理完了（組織情報は並行取得中）');
+        console.log('笨・蝓ｺ譛ｬ蛻晄悄蛹門・逅・ｮ御ｺ・ｼ育ｵ・ｹ疲ュ蝣ｱ縺ｯ荳ｦ陦悟叙蠕嶺ｸｭ・・);
         
     } catch (error) {
-        console.error('❌ 初期化エラー:', error);
-        console.error('エラー詳細:', {
+        console.error('笶・蛻晄悄蛹悶お繝ｩ繝ｼ:', error);
+        console.error('繧ｨ繝ｩ繝ｼ隧ｳ邏ｰ:', {
             message: error.message,
             stack: error.stack,
             config: config
         });
         
-        // WOFF初期化に失敗しても、フォームは使えるようにする
-        document.getElementById('reporter').value = 'テストユーザー';
+        // WOFF蛻晄悄蛹悶↓螟ｱ謨励＠縺ｦ繧ゅ√ヵ繧ｩ繝ｼ繝縺ｯ菴ｿ縺医ｋ繧医≧縺ｫ縺吶ｋ
+        document.getElementById('reporter').value = '繝・せ繝医Θ繝ｼ繧ｶ繝ｼ';
         
-        // デフォルトの事業所選択肢を表示
+        // 繝・ヵ繧ｩ繝ｫ繝医・莠区･ｭ謇驕ｸ謚櫁い繧定｡ｨ遉ｺ
         const officeContainer = document.getElementById('officeContainer');
         const officeSelect = document.getElementById('office');
         
-        // ローディングメッセージのみを削除
+        // 繝ｭ繝ｼ繝・ぅ繝ｳ繧ｰ繝｡繝・そ繝ｼ繧ｸ縺ｮ縺ｿ繧貞炎髯､
         const loadingMsg = officeContainer.querySelector('.loading-message');
         if (loadingMsg) loadingMsg.remove();
         
-        // selectを表示
+        // select繧定｡ｨ遉ｺ
         officeSelect.innerHTML = `
-            <option value="">選択してください</option>
-            <option value="本社">本社</option>
-            <option value="関東支店">関東支店</option>
-            <option value="関西支店">関西支店</option>
+            <option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>
+            <option value="譛ｬ遉ｾ">譛ｬ遉ｾ</option>
+            <option value="髢｢譚ｱ謾ｯ蠎・>髢｢譚ｱ謾ｯ蠎・/option>
+            <option value="髢｢隘ｿ謾ｯ蠎・>髢｢隘ｿ謾ｯ蠎・/option>
         `;
         officeSelect.style.display = 'block';
         
-        console.log('⚠️ WOFF初期化失敗 - フォームは動作可能状態');
+        console.log('笞・・WOFF蛻晄悄蛹門､ｱ謨・- 繝輔か繝ｼ繝縺ｯ蜍穂ｽ懷庄閭ｽ迥ｶ諷・);
     }
 });
 
-// ユーザーの組織情報を取得
+// 繝ｦ繝ｼ繧ｶ繝ｼ縺ｮ邨・ｹ疲ュ蝣ｱ繧貞叙蠕・
 async function getUserOrganization(userId) {
     try {
         const requestData = {
@@ -97,11 +97,11 @@ async function getUserOrganization(userId) {
         let result;
         
         try {
-            // GETリクエストでパラメータとして送信（CORS回避）
+            // GET繝ｪ繧ｯ繧ｨ繧ｹ繝医〒繝代Λ繝｡繝ｼ繧ｿ縺ｨ縺励※騾∽ｿ｡・・ORS蝗樣∩・・
             const params = new URLSearchParams(requestData);
             const getUrl = `${config.gasUrl}?${params.toString()}`;
             
-            console.log('[DEBUG] getUserOrganization リクエスト送信:', {
+            console.log('[DEBUG] getUserOrganization 繝ｪ繧ｯ繧ｨ繧ｹ繝磯∽ｿ｡:', {
                 url: getUrl,
                 userId: requestData.userId,
                 gasUrl: config.gasUrl
@@ -113,7 +113,7 @@ async function getUserOrganization(userId) {
                 mode: 'cors'
             });
             
-            console.log('[DEBUG] getUserOrganization レスポンス受信:', {
+            console.log('[DEBUG] getUserOrganization 繝ｬ繧ｹ繝昴Φ繧ｹ蜿嶺ｿ｡:', {
                 status: response.status,
                 ok: response.ok,
                 statusText: response.statusText
@@ -123,31 +123,31 @@ async function getUserOrganization(userId) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
-            // レスポンステキストを先に取得してログ出力
+            // 繝ｬ繧ｹ繝昴Φ繧ｹ繝・く繧ｹ繝医ｒ蜈医↓蜿門ｾ励＠縺ｦ繝ｭ繧ｰ蜃ｺ蜉・
             const responseText = await response.text();
             
             try {
                 result = JSON.parse(responseText);
             } catch (parseError) {
-                throw new Error('レスポンスのJSON解析に失敗: ' + parseError.message);
+                throw new Error('繝ｬ繧ｹ繝昴Φ繧ｹ縺ｮJSON隗｣譫舌↓螟ｱ謨・ ' + parseError.message);
             }
         } catch (fetchError) {
-            throw new Error('ネットワークエラー: ' + fetchError.message);
+            throw new Error('繝阪ャ繝医Ρ繝ｼ繧ｯ繧ｨ繝ｩ繝ｼ: ' + fetchError.message);
         }
         
         if (result && result.orgUnitName) {
             userOrganization = result.orgUnitName;
             
-            console.log('[DEBUG] 組織情報取得成功:', {
+            console.log('[DEBUG] 邨・ｹ疲ュ蝣ｱ蜿門ｾ玲・蜉・', {
                 orgUnitName: result.orgUnitName,
                 userOrganization: userOrganization
             });
             
-            // 事業所フィールドを設定
+            // 莠区･ｭ謇繝輔ぅ繝ｼ繝ｫ繝峨ｒ險ｭ螳・
             const officeContainer = document.getElementById('officeContainer');
             const officeSelect = document.getElementById('office');
             
-            console.log('[DEBUG] DOM要素取得:', {
+            console.log('[DEBUG] DOM隕∫ｴ蜿門ｾ・', {
                 officeContainer: !!officeContainer,
                 officeSelect: !!officeSelect,
                 officeContainerHTML: officeContainer ? officeContainer.innerHTML : 'null',
@@ -155,38 +155,38 @@ async function getUserOrganization(userId) {
             });
             
             if (!officeContainer || !officeSelect) {
-                console.error('[ERROR] 事業所DOM要素が見つかりません:', {
+                console.error('[ERROR] 莠区･ｭ謇DOM隕∫ｴ縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ:', {
                     officeContainer: !!officeContainer,
                     officeSelect: !!officeSelect
                 });
                 return;
             }
             
-            console.log('🏗️ 事業所表示エリア更新開始');
+            console.log('女・・莠区･ｭ謇陦ｨ遉ｺ繧ｨ繝ｪ繧｢譖ｴ譁ｰ髢句ｧ・);
             
-            // ローディングメッセージを削除
-            console.log('[DEBUG] ローディングメッセージ削除前:', officeContainer.innerHTML);
+            // 繝ｭ繝ｼ繝・ぅ繝ｳ繧ｰ繝｡繝・そ繝ｼ繧ｸ繧貞炎髯､
+            console.log('[DEBUG] 繝ｭ繝ｼ繝・ぅ繝ｳ繧ｰ繝｡繝・そ繝ｼ繧ｸ蜑企勁蜑・', officeContainer.innerHTML);
             officeContainer.innerHTML = '';
-            console.log('[DEBUG] ローディングメッセージ削除後:', officeContainer.innerHTML);
+            console.log('[DEBUG] 繝ｭ繝ｼ繝・ぅ繝ｳ繧ｰ繝｡繝・そ繝ｼ繧ｸ蜑企勁蠕・', officeContainer.innerHTML);
             
-            // 取得した組織をデフォルトとして設定し、selectを表示
+            // 蜿門ｾ励＠縺溽ｵ・ｹ斐ｒ繝・ヵ繧ｩ繝ｫ繝医→縺励※險ｭ螳壹＠縲《elect繧定｡ｨ遉ｺ
             const optionHTML = `<option value="${userOrganization}">${userOrganization}</option>`;
-            console.log('[DEBUG] 設定するオプションHTML:', optionHTML);
+            console.log('[DEBUG] 險ｭ螳壹☆繧九が繝励す繝ｧ繝ｳHTML:', optionHTML);
             
             officeSelect.innerHTML = optionHTML;
             officeSelect.value = userOrganization;
             officeSelect.style.display = 'block';
             
-            console.log('[DEBUG] 事業所設定完了:', {
+            console.log('[DEBUG] 莠区･ｭ謇險ｭ螳壼ｮ御ｺ・', {
                 innerHTML: officeSelect.innerHTML,
                 value: officeSelect.value,
                 display: officeSelect.style.display,
                 selectedIndex: officeSelect.selectedIndex
             });
             
-            // 事業所一覧を非同期で取得してプルダウンに追加
+            // 莠区･ｭ謇荳隕ｧ繧帝撼蜷梧悄縺ｧ蜿門ｾ励＠縺ｦ繝励Ν繝繧ｦ繝ｳ縺ｫ霑ｽ蜉
             loadOfficesFromSheet().then(() => {
-                // 事業所一覧取得後、現在の組織が先頭に表示されるよう調整
+                // 莠区･ｭ謇荳隕ｧ蜿門ｾ怜ｾ後∫樟蝨ｨ縺ｮ邨・ｹ斐′蜈磯ｭ縺ｫ陦ｨ遉ｺ縺輔ｌ繧九ｈ縺・ｪｿ謨ｴ
                 if (availableOffices.length > 0) {
                     const currentOption = `<option value="${userOrganization}" selected>${userOrganization}</option>`;
                     const otherOptions = availableOffices
@@ -196,51 +196,51 @@ async function getUserOrganization(userId) {
                     officeSelect.innerHTML = currentOption + otherOptions;
                 }
             }).catch(error => {
-                console.error('事業所一覧の取得に失敗:', error);
+                console.error('莠区･ｭ謇荳隕ｧ縺ｮ蜿門ｾ励↓螟ｱ謨・', error);
             });
             
-            console.log('🎯 事業所表示エリア更新完了');
+            console.log('識 莠区･ｭ謇陦ｨ遉ｺ繧ｨ繝ｪ繧｢譖ｴ譁ｰ螳御ｺ・);
             
         } else if (result && Array.isArray(result)) {
-            // フォールバック: 事業所一覧を取得した場合
-            console.log('⚠️ フォールバック: 事業所一覧取得', result);
+            // 繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ: 莠区･ｭ謇荳隕ｧ繧貞叙蠕励＠縺溷ｴ蜷・
+            console.log('笞・・繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ: 莠区･ｭ謇荳隕ｧ蜿門ｾ・, result);
             loadOfficesFromAPIResponse(result);
             
         } else {
-            throw new Error('組織情報を取得できませんでした - result: ' + JSON.stringify(result));
+            throw new Error('邨・ｹ疲ュ蝣ｱ繧貞叙蠕励〒縺阪∪縺帙ｓ縺ｧ縺励◆ - result: ' + JSON.stringify(result));
         }
         
     } catch (error) {
-        console.error('❌ 組織情報取得エラー:', error);
-        console.error('エラー詳細:', {
+        console.error('笶・邨・ｹ疲ュ蝣ｱ蜿門ｾ励お繝ｩ繝ｼ:', error);
+        console.error('繧ｨ繝ｩ繝ｼ隧ｳ邏ｰ:', {
             message: error.message,
             stack: error.stack,
             userId: userId,
             gasUrl: config.gasUrl
         });
-        // フォールバック: 手動選択
-        console.log('🔄 フォールバック: 事業所一覧取得開始');
+        // 繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ: 謇句虚驕ｸ謚・
+        console.log('売 繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ: 莠区･ｭ謇荳隕ｧ蜿門ｾ鈴幕蟋・);
         await loadOfficesFromSheet();
     }
 }
 
-// APIレスポンスから事業所一覧を設定
+// API繝ｬ繧ｹ繝昴Φ繧ｹ縺九ｉ莠区･ｭ謇荳隕ｧ繧定ｨｭ螳・
 function loadOfficesFromAPIResponse(offices) {
-    console.log('📋 loadOfficesFromAPIResponse開始');
+    console.log('搭 loadOfficesFromAPIResponse髢句ｧ・);
     
     const officeContainer = document.getElementById('officeContainer');
     const officeSelect = document.getElementById('office');
     
     if (offices && Array.isArray(offices)) {
         availableOffices = offices;
-        console.log('✅ 事業所一覧取得成功:', offices.length + '件');
+        console.log('笨・莠区･ｭ謇荳隕ｧ蜿門ｾ玲・蜉・', offices.length + '莉ｶ');
         
-        // ローディングメッセージのみを削除
+        // 繝ｭ繝ｼ繝・ぅ繝ｳ繧ｰ繝｡繝・そ繝ｼ繧ｸ縺ｮ縺ｿ繧貞炎髯､
         const loadingMsg = officeContainer.querySelector('.loading-message');
         if (loadingMsg) loadingMsg.remove();
         
-        // 事業所選択肢を設定
-        officeSelect.innerHTML = '<option value="">選択してください</option>';
+        // 莠区･ｭ謇驕ｸ謚櫁い繧定ｨｭ螳・
+        officeSelect.innerHTML = '<option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>';
         
         offices.forEach(office => {
             const option = document.createElement('option');
@@ -251,33 +251,33 @@ function loadOfficesFromAPIResponse(offices) {
         
         officeSelect.style.display = 'block';
     } else {
-        console.log('⚠️ 無効な事業所データ');
+        console.log('笞・・辟｡蜉ｹ縺ｪ莠区･ｭ謇繝・・繧ｿ');
         loadOfficesFromSheet();
     }
 }
 
-// Sheetsから事業所一覧を取得（事故報告アプリと同じ成功パターン）
+// Sheets縺九ｉ莠区･ｭ謇荳隕ｧ繧貞叙蠕暦ｼ井ｺ区腐蝣ｱ蜻翫い繝励Μ縺ｨ蜷後§謌仙粥繝代ち繝ｼ繝ｳ・・
 async function loadOfficesFromSheet() {
-    // キャッシュチェック
+    // 繧ｭ繝｣繝・す繝･繝√ぉ繝・け
     if (cache.offices && cache.officesExpiry && Date.now() < cache.officesExpiry) {
         return loadOfficesFromCache();
     }
     
     try {
-        // 事業所情報取得開始
-        // Promise.raceでタイムアウト制御
+        // 莠区･ｭ謇諠・ｱ蜿門ｾ鈴幕蟋・
+        // Promise.race縺ｧ繧ｿ繧､繝繧｢繧ｦ繝亥宛蠕｡
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('タイムアウト: 10秒以内に応答がありませんでした')), 10000);
+            setTimeout(() => reject(new Error('繧ｿ繧､繝繧｢繧ｦ繝・ 10遘剃ｻ･蜀・↓蠢懃ｭ斐′縺ゅｊ縺ｾ縺帙ｓ縺ｧ縺励◆')), 10000);
         });
         
-        // GET方式でパラメータ送信（getUserOrganizationと同じ成功パターン）
+        // GET譁ｹ蠑上〒繝代Λ繝｡繝ｼ繧ｿ騾∽ｿ｡・・etUserOrganization縺ｨ蜷後§謌仙粥繝代ち繝ｼ繝ｳ・・
         const requestData = {
             action: 'getOffices'
         };
         const params = new URLSearchParams(requestData);
         const getUrl = `${config.gasUrl}?${params.toString()}`;
         
-        console.log('[DEBUG] getOffices リクエスト送信:', {
+        console.log('[DEBUG] getOffices 繝ｪ繧ｯ繧ｨ繧ｹ繝磯∽ｿ｡:', {
             url: getUrl,
             action: requestData.action,
             gasUrl: config.gasUrl
@@ -289,7 +289,7 @@ async function loadOfficesFromSheet() {
             mode: 'cors'
         });
         
-        console.log('[DEBUG] fetchPromise作成完了、レスポンス待機中...');
+        console.log('[DEBUG] fetchPromise菴懈・螳御ｺ・√Ξ繧ｹ繝昴Φ繧ｹ蠕・ｩ滉ｸｭ...');
         
         const response = await Promise.race([fetchPromise, timeoutPromise]);
         
@@ -300,7 +300,7 @@ async function loadOfficesFromSheet() {
         const offices = await response.json();
         
         if (offices && Array.isArray(offices)) {
-            // キャッシュに保存（5分間有効）
+            // 繧ｭ繝｣繝・す繝･縺ｫ菫晏ｭ假ｼ・蛻・俣譛牙柑・・
             cache.offices = offices;
             cache.officesExpiry = Date.now() + (5 * 60 * 1000);
             
@@ -309,11 +309,11 @@ async function loadOfficesFromSheet() {
             const officeContainer = document.getElementById('officeContainer');
             const officeSelect = document.getElementById('office');
             
-            // ローディングメッセージを削除
+            // 繝ｭ繝ｼ繝・ぅ繝ｳ繧ｰ繝｡繝・そ繝ｼ繧ｸ繧貞炎髯､
             officeContainer.innerHTML = '';
             
-            // 事業所選択肢を設定
-            officeSelect.innerHTML = '<option value="">選択してください</option>';
+            // 莠区･ｭ謇驕ｸ謚櫁い繧定ｨｭ螳・
+            officeSelect.innerHTML = '<option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>';
             
             offices.forEach(office => {
                 const option = document.createElement('option');
@@ -325,17 +325,17 @@ async function loadOfficesFromSheet() {
             officeSelect.style.display = 'block';
             
         } else {
-            throw new Error('無効な事業所データ');
+            throw new Error('辟｡蜉ｹ縺ｪ莠区･ｭ謇繝・・繧ｿ');
         }
         
     } catch (error) {
-        console.error('事業所情報取得エラー:', error);
-        // フォールバック: デフォルト事業所
+        console.error('莠区･ｭ謇諠・ｱ蜿門ｾ励お繝ｩ繝ｼ:', error);
+        // 繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ: 繝・ヵ繧ｩ繝ｫ繝井ｺ区･ｭ謇
         loadDefaultOffices();
     }
 }
 
-// キャッシュから事業所一覧を読み込み
+// 繧ｭ繝｣繝・す繝･縺九ｉ莠区･ｭ謇荳隕ｧ繧定ｪｭ縺ｿ霎ｼ縺ｿ
 function loadOfficesFromCache() {
     if (cache.offices && Array.isArray(cache.offices)) {
         availableOffices = cache.offices;
@@ -343,12 +343,12 @@ function loadOfficesFromCache() {
         const officeContainer = document.getElementById('officeContainer');
         const officeSelect = document.getElementById('office');
         
-        // ローディングメッセージのみを削除
+        // 繝ｭ繝ｼ繝・ぅ繝ｳ繧ｰ繝｡繝・そ繝ｼ繧ｸ縺ｮ縺ｿ繧貞炎髯､
         const loadingMsg = officeContainer.querySelector('.loading-message');
         if (loadingMsg) loadingMsg.remove();
         
-        // 事業所選択肢を設定
-        officeSelect.innerHTML = '<option value="">選択してください</option>';
+        // 莠区･ｭ謇驕ｸ謚櫁い繧定ｨｭ螳・
+        officeSelect.innerHTML = '<option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>';
         
         cache.offices.forEach(office => {
             const option = document.createElement('option');
@@ -363,12 +363,12 @@ function loadOfficesFromCache() {
     }
 }
 
-// デフォルト事業所の設定
+// 繝・ヵ繧ｩ繝ｫ繝井ｺ区･ｭ謇縺ｮ險ｭ螳・
 function loadDefaultOffices() {
     const defaultOffices = [
-        { value: '本社', name: '本社' },
-        { value: '関東支店', name: '関東支店' },
-        { value: '関西支店', name: '関西支店' }
+        { value: '譛ｬ遉ｾ', name: '譛ｬ遉ｾ' },
+        { value: '髢｢譚ｱ謾ｯ蠎・, name: '髢｢譚ｱ謾ｯ蠎・ },
+        { value: '髢｢隘ｿ謾ｯ蠎・, name: '髢｢隘ｿ謾ｯ蠎・ }
     ];
     
     availableOffices = defaultOffices;
@@ -376,12 +376,12 @@ function loadDefaultOffices() {
     const officeContainer = document.getElementById('officeContainer');
     const officeSelect = document.getElementById('office');
     
-    // ローディングメッセージのみを削除
+    // 繝ｭ繝ｼ繝・ぅ繝ｳ繧ｰ繝｡繝・そ繝ｼ繧ｸ縺ｮ縺ｿ繧貞炎髯､
     const loadingMsg = officeContainer.querySelector('.loading-message');
     if (loadingMsg) loadingMsg.remove();
     
-    // 事業所選択肢を設定
-    officeSelect.innerHTML = '<option value="">選択してください</option>';
+    // 莠区･ｭ謇驕ｸ謚櫁い繧定ｨｭ螳・
+    officeSelect.innerHTML = '<option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>';
     
     defaultOffices.forEach(office => {
         const option = document.createElement('option');
@@ -393,45 +393,45 @@ function loadDefaultOffices() {
     officeSelect.style.display = 'block';
 }
 
-// マスタデータはリアルタイム検索で取得するため、事前取得関数は不要
+// 繝槭せ繧ｿ繝・・繧ｿ縺ｯ繝ｪ繧｢繝ｫ繧ｿ繧､繝讀懃ｴ｢縺ｧ蜿門ｾ励☆繧九◆繧√∽ｺ句燕蜿門ｾ鈴未謨ｰ縺ｯ荳崎ｦ・
 
-// 不要な関数を削除（プルダウン選択に変更したため）
+// 荳崎ｦ√↑髢｢謨ｰ繧貞炎髯､・医・繝ｫ繝繧ｦ繝ｳ驕ｸ謚槭↓螟画峩縺励◆縺溘ａ・・
 
-// イベントリスナーの設定
+// 繧､繝吶Φ繝医Μ繧ｹ繝翫・縺ｮ險ｭ螳・
 function setupEventListeners() {
-    // 対象区分の切り替え
+    // 蟇ｾ雎｡蛹ｺ蛻・・蛻・ｊ譖ｿ縺・
     document.querySelectorAll('input[name="entryType"]').forEach(radio => {
         radio.addEventListener('change', handleEntryTypeChange);
     });
 
-    // 脱落理由の切り替え
+    // 閼ｱ關ｽ逅・罰縺ｮ蛻・ｊ譖ｿ縺・
     document.querySelectorAll('input[name="reason"]').forEach(radio => {
         radio.addEventListener('change', handleReasonChange);
     });
 
-    // 診断名で「その他」を選択した場合
+    // 險ｺ譁ｭ蜷阪〒縲後◎縺ｮ莉悶阪ｒ驕ｸ謚槭＠縺溷ｴ蜷・
     document.getElementById('hospitalDiagnosis').addEventListener('change', () => {
         const otherDiv = document.getElementById('hospitalOtherDiagnosis');
         const diagnosis = document.getElementById('hospitalDiagnosis');
-        otherDiv.style.display = diagnosis.value === 'その他' ? 'block' : 'none';
+        otherDiv.style.display = diagnosis.value === '縺昴・莉・ ? 'block' : 'none';
     });
 
-    // リアルタイム検索機能
+    // 繝ｪ繧｢繝ｫ繧ｿ繧､繝讀懃ｴ｢讖溯・
     try {
         setupUserAutocomplete();
         setupHospitalAutocomplete();
     } catch (autocompleteError) {
-        console.error('[ERROR] オートコンプリート初期化エラー:', autocompleteError);
+        console.error('[ERROR] 繧ｪ繝ｼ繝医さ繝ｳ繝励Μ繝ｼ繝亥・譛溷喧繧ｨ繝ｩ繝ｼ:', autocompleteError);
     }
 
-    // 送信ボタン
+    // 騾∽ｿ｡繝懊ち繝ｳ
     document.getElementById('submitBtn').addEventListener('click', showConfirmModal);
 
-    // モーダルボタン
+    // 繝｢繝ｼ繝繝ｫ繝懊ち繝ｳ
     document.getElementById('cancelBtn').addEventListener('click', closeModal);
     document.getElementById('confirmBtn').addEventListener('click', submitForm);
 
-    // エラーメッセージのクリア
+    // 繧ｨ繝ｩ繝ｼ繝｡繝・そ繝ｼ繧ｸ縺ｮ繧ｯ繝ｪ繧｢
     document.querySelectorAll('input, select, textarea').forEach(element => {
         element.addEventListener('input', () => clearError(element));
         element.addEventListener('change', () => clearError(element));
@@ -466,20 +466,20 @@ function handleEntryTypeChange() {
     const userHelpText = document.getElementById('userNameHelp');
     if (userInput) {
         if (isNew) {
-            userInput.placeholder = '利用者名を登録してください';
+            userInput.placeholder = '蛻ｩ逕ｨ閠・錐繧堤匳骭ｲ縺励※縺上□縺輔＞';
             userInput.setAttribute('data-entry-type', 'new');
             if (suggestions) {
                 suggestions.classList.remove('show');
                 suggestions.innerHTML = '';
             }
             if (userHelpText) {
-                userHelpText.textContent = '利用者名を登録してください';
+                userHelpText.textContent = '蛻ｩ逕ｨ閠・錐繧堤匳骭ｲ縺励※縺上□縺輔＞';
             }
         } else {
-            userInput.placeholder = '利用者名を入力してください...';
+            userInput.placeholder = '蛻ｩ逕ｨ閠・錐繧貞・蜉帙＠縺ｦ縺上□縺輔＞...';
             userInput.setAttribute('data-entry-type', 'existing');
             if (userHelpText) {
-                userHelpText.textContent = '漢字で入力してください';
+                userHelpText.textContent = '貍｢蟄励〒蜈･蜉帙＠縺ｦ縺上□縺輔＞';
             }
         }
     }
@@ -510,12 +510,12 @@ function updateConditionalSections() {
     }
 }
 
-// 脱落理由変更時の処理
+// 閼ｱ關ｽ逅・罰螟画峩譎ゅ・蜃ｦ逅・
 function handleReasonChange() {
     updateConditionalSections();
 }
 
-// 自動補完機能の設定
+// 閾ｪ蜍戊｣懷ｮ梧ｩ溯・縺ｮ險ｭ螳・
 function setupAutocomplete(inputId, suggestionsId, dataArray, nameField, subField) {
     const input = document.getElementById(inputId);
     const suggestions = document.getElementById(suggestionsId);
@@ -552,7 +552,7 @@ function setupAutocomplete(inputId, suggestionsId, dataArray, nameField, subFiel
             
             suggestions.classList.add('show');
             
-            // クリックイベント
+            // 繧ｯ繝ｪ繝・け繧､繝吶Φ繝・
             suggestions.querySelectorAll('.suggestion-item').forEach(item => {
                 item.addEventListener('click', function() {
                     input.value = this.dataset.value;
@@ -565,7 +565,7 @@ function setupAutocomplete(inputId, suggestionsId, dataArray, nameField, subFiel
         }
     });
     
-    // キーボード操作
+    // 繧ｭ繝ｼ繝懊・繝画桃菴・
     input.addEventListener('keydown', function(e) {
         if (getEntryType() === 'new') {
             return;
@@ -600,7 +600,7 @@ function setupAutocomplete(inputId, suggestionsId, dataArray, nameField, subFiel
         });
     }
     
-    // フォーカスを失った時に候補を非表示
+    // 繝輔か繝ｼ繧ｫ繧ｹ繧貞､ｱ縺｣縺滓凾縺ｫ蛟呵｣懊ｒ髱櫁｡ｨ遉ｺ
     input.addEventListener('blur', function() {
         setTimeout(() => {
             suggestions.classList.remove('show');
@@ -608,7 +608,7 @@ function setupAutocomplete(inputId, suggestionsId, dataArray, nameField, subFiel
     });
 }
 
-// 利用者検索オートコンプリート
+// 蛻ｩ逕ｨ閠・､懃ｴ｢繧ｪ繝ｼ繝医さ繝ｳ繝励Μ繝ｼ繝・
 function setupUserAutocomplete() {
     const input = document.getElementById('userName');
     const suggestions = document.getElementById('userSuggestions');
@@ -616,17 +616,17 @@ function setupUserAutocomplete() {
     let searchTimeout = null;
     let currentSearchQuery = '';
     let isSearching = false;
-    let searchSequence = 0; // 検索リクエストの順序管理
+    let searchSequence = 0; // 讀懃ｴ｢繝ｪ繧ｯ繧ｨ繧ｹ繝医・鬆・ｺ冗ｮ｡逅・
     
     if (!input || !suggestions) {
-        console.error('利用者検索用DOM要素が見つかりません');
+        console.error('蛻ｩ逕ｨ閠・､懃ｴ｢逕ｨDOM隕∫ｴ縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ');
         return;
     }
     
     input.addEventListener('input', function() {
         const query = this.value.trim();
         
-        // 前回の検索をキャンセル
+        // 蜑榊屓縺ｮ讀懃ｴ｢繧偵く繝｣繝ｳ繧ｻ繝ｫ
         clearTimeout(searchTimeout);
         
         suggestions.innerHTML = '';
@@ -640,7 +640,7 @@ function setupUserAutocomplete() {
             return;
         }
 
-        // テキストが削除された場合は検索結果をクリア
+        // 繝・く繧ｹ繝医′蜑企勁縺輔ｌ縺溷ｴ蜷医・讀懃ｴ｢邨先棡繧偵け繝ｪ繧｢
         if (query.length < 2) {
             suggestions.classList.remove('show');
             suggestions.style.display = 'none';
@@ -650,7 +650,7 @@ function setupUserAutocomplete() {
             return;
         }
         
-        // 同じクエリの場合は重複検索を防ぐ
+        // 蜷後§繧ｯ繧ｨ繝ｪ縺ｮ蝣ｴ蜷医・驥崎､・､懃ｴ｢繧帝亟縺・
         if (query === currentSearchQuery && isSearching) {
             return;
         }
@@ -658,24 +658,24 @@ function setupUserAutocomplete() {
         currentSearchQuery = query;
         isSearching = true;
         
-        // 検索シーケンス番号をインクリメント
+        // 讀懃ｴ｢繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ逡ｪ蜿ｷ繧偵う繝ｳ繧ｯ繝ｪ繝｡繝ｳ繝・
         searchSequence++;
         const currentSequence = searchSequence;
         
-        // ローディング表示
-        suggestions.innerHTML = '<div class="suggestion-loading">🔍 検索中...</div>';
+        // 繝ｭ繝ｼ繝・ぅ繝ｳ繧ｰ陦ｨ遉ｺ
+        suggestions.innerHTML = '<div class="suggestion-loading">剥 讀懃ｴ｢荳ｭ...</div>';
         suggestions.classList.add('show');
         suggestions.style.display = 'block';
         
-        // 検索リクエストを遅延実行（200msに短縮）
+        // 讀懃ｴ｢繝ｪ繧ｯ繧ｨ繧ｹ繝医ｒ驕・ｻｶ螳溯｡鯉ｼ・00ms縺ｫ遏ｭ邵ｮ・・
         searchTimeout = setTimeout(async () => {
-            // 検索開始時にクエリが変更されていないか確認
+            // 讀懃ｴ｢髢句ｧ区凾縺ｫ繧ｯ繧ｨ繝ｪ縺悟､画峩縺輔ｌ縺ｦ縺・↑縺・°遒ｺ隱・
             if (input.value.trim() !== currentSearchQuery) {
                 isSearching = false;
                 return;
             }
             
-            console.log('利用者検索開始:', query, 'シーケンス:', currentSequence);
+            console.log('蛻ｩ逕ｨ閠・､懃ｴ｢髢句ｧ・', query, '繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ:', currentSequence);
             try {
                 const params = new URLSearchParams({
                     action: 'searchUsers',
@@ -696,26 +696,26 @@ function setupUserAutocomplete() {
                 
                 const results = await response.json();
                 
-                // レスポンス受信時にシーケンス番号を確認（最新の検索結果のみ処理）
+                // 繝ｬ繧ｹ繝昴Φ繧ｹ蜿嶺ｿ｡譎ゅ↓繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ逡ｪ蜿ｷ繧堤｢ｺ隱搾ｼ域怙譁ｰ縺ｮ讀懃ｴ｢邨先棡縺ｮ縺ｿ蜃ｦ逅・ｼ・
                 if (currentSequence !== searchSequence) {
-                    console.log('古い検索結果を無視:', currentSequence, '現在:', searchSequence);
+                    console.log('蜿､縺・､懃ｴ｢邨先棡繧堤┌隕・', currentSequence, '迴ｾ蝨ｨ:', searchSequence);
                     return;
                 }
                 
-                // レスポンス受信時にクエリが変更されていないか確認
+                // 繝ｬ繧ｹ繝昴Φ繧ｹ蜿嶺ｿ｡譎ゅ↓繧ｯ繧ｨ繝ｪ縺悟､画峩縺輔ｌ縺ｦ縺・↑縺・°遒ｺ隱・
                 if (input.value.trim() !== currentSearchQuery) {
                     isSearching = false;
                     return;
                 }
                 
-                console.log('検索結果:', results, 'シーケンス:', currentSequence);
-                console.log('結果の型:', typeof results);
-                console.log('配列かどうか:', Array.isArray(results));
-                console.log('件数:', results ? results.length : 'null');
+                console.log('讀懃ｴ｢邨先棡:', results, '繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ:', currentSequence);
+                console.log('邨先棡縺ｮ蝙・', typeof results);
+                console.log('驟榊・縺九←縺・°:', Array.isArray(results));
+                console.log('莉ｶ謨ｰ:', results ? results.length : 'null');
                 
-                // 検索結果の確実な判定
+                // 讀懃ｴ｢邨先棡縺ｮ遒ｺ螳溘↑蛻､螳・
                 if (Array.isArray(results) && results.length > 0) {
-                    console.log('結果あり - サジェスト表示');
+                    console.log('邨先棡縺ゅｊ - 繧ｵ繧ｸ繧ｧ繧ｹ繝郁｡ｨ遉ｺ');
                     const suggestionsHTML = results.map((user, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${user.name}">
                             <div class="suggestion-name">${user.name}</div>
@@ -726,7 +726,7 @@ function setupUserAutocomplete() {
                     suggestions.classList.add('show');
                     suggestions.style.display = 'block';
                     
-                    // クリックイベント
+                    // 繧ｯ繝ｪ繝・け繧､繝吶Φ繝・
                     suggestions.querySelectorAll('.suggestion-item').forEach(item => {
                         item.addEventListener('click', function() {
                             input.value = this.dataset.value;
@@ -739,32 +739,32 @@ function setupUserAutocomplete() {
                         });
                     });
                 } else if (Array.isArray(results) && results.length === 0) {
-                    // 検索が正常に完了し、結果が0件の場合のみ「見つかりませんでした」を表示
-                    console.log('利用者検索: 検索完了、結果0件 - 見つかりませんでした表示');
-                    suggestions.innerHTML = '<div class="suggestion-no-results">見つかりませんでした</div>';
+                    // 讀懃ｴ｢縺梧ｭ｣蟶ｸ縺ｫ螳御ｺ・＠縲∫ｵ先棡縺・莉ｶ縺ｮ蝣ｴ蜷医・縺ｿ縲瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆縲阪ｒ陦ｨ遉ｺ
+                    console.log('蛻ｩ逕ｨ閠・､懃ｴ｢: 讀懃ｴ｢螳御ｺ・∫ｵ先棡0莉ｶ - 隕九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆陦ｨ遉ｺ');
+                    suggestions.innerHTML = '<div class="suggestion-no-results">隕九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆</div>';
                     suggestions.classList.add('show');
                     suggestions.style.display = 'block';
                 } else {
-                    // 不正なレスポンスの場合はエラーとして扱う
-                    console.log('利用者検索: 不正なレスポンス形式 - 候補非表示');
+                    // 荳肴ｭ｣縺ｪ繝ｬ繧ｹ繝昴Φ繧ｹ縺ｮ蝣ｴ蜷医・繧ｨ繝ｩ繝ｼ縺ｨ縺励※謇ｱ縺・
+                    console.log('蛻ｩ逕ｨ閠・､懃ｴ｢: 荳肴ｭ｣縺ｪ繝ｬ繧ｹ繝昴Φ繧ｹ蠖｢蠑・- 蛟呵｣憺撼陦ｨ遉ｺ');
                     suggestions.classList.remove('show');
                     suggestions.style.display = 'none';
                 }
                 
                 isSearching = false;
             } catch (error) {
-                console.error('利用者検索エラー:', error.message);
+                console.error('蛻ｩ逕ｨ閠・､懃ｴ｢繧ｨ繝ｩ繝ｼ:', error.message);
                 suggestions.classList.remove('show');
                 isSearching = false;
             }
         }, 200);
     });
     
-    // キーボード操作は既存の実装を使用
+    // 繧ｭ繝ｼ繝懊・繝画桃菴懊・譌｢蟄倥・螳溯｣・ｒ菴ｿ逕ｨ
     setupKeyboardNavigation(input, suggestions);
 }
 
-// 医療機関検索オートコンプリート
+// 蛹ｻ逋よｩ滄未讀懃ｴ｢繧ｪ繝ｼ繝医さ繝ｳ繝励Μ繝ｼ繝・
 function setupHospitalAutocomplete() {
     const input = document.getElementById('hospitalName');
     const suggestions = document.getElementById('hospitalSuggestions');
@@ -772,26 +772,26 @@ function setupHospitalAutocomplete() {
     let searchTimeout = null;
     let currentSearchQuery = '';
     let isSearching = false;
-    let searchSequence = 0; // 検索リクエストの順序管理
+    let searchSequence = 0; // 讀懃ｴ｢繝ｪ繧ｯ繧ｨ繧ｹ繝医・鬆・ｺ冗ｮ｡逅・
     
     if (!input || !suggestions) {
-        console.error('医療機関検索用DOM要素が見つかりません');
+        console.error('蛹ｻ逋よｩ滄未讀懃ｴ｢逕ｨDOM隕∫ｴ縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ');
         return;
     }
     
-    // イベントリスナーがアタッチされたことを示すマーカー
+    // 繧､繝吶Φ繝医Μ繧ｹ繝翫・縺後い繧ｿ繝・メ縺輔ｌ縺溘％縺ｨ繧堤､ｺ縺吶・繝ｼ繧ｫ繝ｼ
     input.setAttribute('data-listener-attached', 'true');
     
     input.addEventListener('input', function() {
         const query = this.value.trim();
         
-        // 前回の検索をキャンセル
+        // 蜑榊屓縺ｮ讀懃ｴ｢繧偵く繝｣繝ｳ繧ｻ繝ｫ
         clearTimeout(searchTimeout);
         
         suggestions.innerHTML = '';
         selectedIndex = -1;
         
-        // テキストが削除された場合は検索結果をクリア
+        // 繝・く繧ｹ繝医′蜑企勁縺輔ｌ縺溷ｴ蜷医・讀懃ｴ｢邨先棡繧偵け繝ｪ繧｢
         if (query.length < 2) {
             suggestions.classList.remove('show');
             suggestions.style.display = 'none';
@@ -801,7 +801,7 @@ function setupHospitalAutocomplete() {
             return;
         }
         
-        // 同じクエリの場合は重複検索を防ぐ
+        // 蜷後§繧ｯ繧ｨ繝ｪ縺ｮ蝣ｴ蜷医・驥崎､・､懃ｴ｢繧帝亟縺・
         if (query === currentSearchQuery && isSearching) {
             return;
         }
@@ -809,18 +809,18 @@ function setupHospitalAutocomplete() {
         currentSearchQuery = query;
         isSearching = true;
         
-        // 検索シーケンス番号をインクリメント
+        // 讀懃ｴ｢繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ逡ｪ蜿ｷ繧偵う繝ｳ繧ｯ繝ｪ繝｡繝ｳ繝・
         searchSequence++;
         const currentSequence = searchSequence;
         
-        // ローディング表示
-        suggestions.innerHTML = '<div class="suggestion-loading">🔍 検索中...</div>';
+        // 繝ｭ繝ｼ繝・ぅ繝ｳ繧ｰ陦ｨ遉ｺ
+        suggestions.innerHTML = '<div class="suggestion-loading">剥 讀懃ｴ｢荳ｭ...</div>';
         suggestions.classList.add('show');
         suggestions.style.display = 'block';
         
-        // 検索リクエストを遅延実行（200msに短縮）
+        // 讀懃ｴ｢繝ｪ繧ｯ繧ｨ繧ｹ繝医ｒ驕・ｻｶ螳溯｡鯉ｼ・00ms縺ｫ遏ｭ邵ｮ・・
         searchTimeout = setTimeout(async () => {
-            // 検索開始時にクエリが変更されていないか確認
+            // 讀懃ｴ｢髢句ｧ区凾縺ｫ繧ｯ繧ｨ繝ｪ縺悟､画峩縺輔ｌ縺ｦ縺・↑縺・°遒ｺ隱・
             if (input.value.trim() !== currentSearchQuery) {
                 isSearching = false;
                 return;
@@ -845,19 +845,19 @@ function setupHospitalAutocomplete() {
                 
                 const results = await response.json();
                 
-                // レスポンス受信時にシーケンス番号を確認（最新の検索結果のみ処理）
+                // 繝ｬ繧ｹ繝昴Φ繧ｹ蜿嶺ｿ｡譎ゅ↓繧ｷ繝ｼ繧ｱ繝ｳ繧ｹ逡ｪ蜿ｷ繧堤｢ｺ隱搾ｼ域怙譁ｰ縺ｮ讀懃ｴ｢邨先棡縺ｮ縺ｿ蜃ｦ逅・ｼ・
                 if (currentSequence !== searchSequence) {
-                    console.log('古い医療機関検索結果を無視:', currentSequence, '現在:', searchSequence);
+                    console.log('蜿､縺・現逋よｩ滄未讀懃ｴ｢邨先棡繧堤┌隕・', currentSequence, '迴ｾ蝨ｨ:', searchSequence);
                     return;
                 }
                 
-                // レスポンス受信時にクエリが変更されていないか確認
+                // 繝ｬ繧ｹ繝昴Φ繧ｹ蜿嶺ｿ｡譎ゅ↓繧ｯ繧ｨ繝ｪ縺悟､画峩縺輔ｌ縺ｦ縺・↑縺・°遒ｺ隱・
                 if (input.value.trim() !== currentSearchQuery) {
                     isSearching = false;
                     return;
                 }
                 
-                // 検索結果の確実な判定
+                // 讀懃ｴ｢邨先棡縺ｮ遒ｺ螳溘↑蛻､螳・
                 if (Array.isArray(results) && results.length > 0) {
                     const suggestionsHTML = results.map((hospital, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${hospital.name}">
@@ -870,7 +870,7 @@ function setupHospitalAutocomplete() {
                     suggestions.classList.add('show');
                     suggestions.style.display = 'block';
                     
-                    // クリックイベント
+                    // 繧ｯ繝ｪ繝・け繧､繝吶Φ繝・
                     suggestions.querySelectorAll('.suggestion-item').forEach(item => {
                         item.addEventListener('click', function() {
                             input.value = this.dataset.value;
@@ -883,30 +883,30 @@ function setupHospitalAutocomplete() {
                         });
                     });
                 } else if (Array.isArray(results) && results.length === 0) {
-                    // 検索が正常に完了し、結果が0件の場合のみ「見つかりませんでした」を表示
-                    suggestions.innerHTML = '<div class="suggestion-no-results">見つかりませんでした</div>';
+                    // 讀懃ｴ｢縺梧ｭ｣蟶ｸ縺ｫ螳御ｺ・＠縲∫ｵ先棡縺・莉ｶ縺ｮ蝣ｴ蜷医・縺ｿ縲瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆縲阪ｒ陦ｨ遉ｺ
+                    suggestions.innerHTML = '<div class="suggestion-no-results">隕九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆</div>';
                     suggestions.classList.add('show');
                     suggestions.style.display = 'block';
                 } else {
-                    // 不正なレスポンスの場合はエラーとして扱う
+                    // 荳肴ｭ｣縺ｪ繝ｬ繧ｹ繝昴Φ繧ｹ縺ｮ蝣ｴ蜷医・繧ｨ繝ｩ繝ｼ縺ｨ縺励※謇ｱ縺・
                     suggestions.classList.remove('show');
                     suggestions.style.display = 'none';
                 }
                 
                 isSearching = false;
             } catch (error) {
-                console.error('医療機関検索エラー:', error.message);
+                console.error('蛹ｻ逋よｩ滄未讀懃ｴ｢繧ｨ繝ｩ繝ｼ:', error.message);
                 suggestions.classList.remove('show');
                 isSearching = false;
             }
         }, 200);
     });
     
-    // キーボード操作は既存の実装を使用
+    // 繧ｭ繝ｼ繝懊・繝画桃菴懊・譌｢蟄倥・螳溯｣・ｒ菴ｿ逕ｨ
     setupKeyboardNavigation(input, suggestions);
 }
 
-// キーボードナビゲーション共通機能
+// 繧ｭ繝ｼ繝懊・繝峨リ繝薙ご繝ｼ繧ｷ繝ｧ繝ｳ蜈ｱ騾壽ｩ溯・
 function setupKeyboardNavigation(input, suggestions) {
     let selectedIndex = -1;
     
@@ -931,7 +931,7 @@ function setupKeyboardNavigation(input, suggestions) {
         }
     });
     
-    // フォーカスを失った時に候補を非表示
+    // 繝輔か繝ｼ繧ｫ繧ｹ繧貞､ｱ縺｣縺滓凾縺ｫ蛟呵｣懊ｒ髱櫁｡ｨ遉ｺ
     input.addEventListener('blur', function() {
         setTimeout(() => {
             suggestions.classList.remove('show');
@@ -949,7 +949,7 @@ function setupKeyboardNavigation(input, suggestions) {
     }
 }
 
-// エラー表示クリア
+// 繧ｨ繝ｩ繝ｼ陦ｨ遉ｺ繧ｯ繝ｪ繧｢
 function clearError(element) {
     const errorMsg = element.parentElement.querySelector('.error-message');
     if (errorMsg) {
@@ -957,7 +957,7 @@ function clearError(element) {
     }
 }
 
-// エラー表示
+// 繧ｨ繝ｩ繝ｼ陦ｨ遉ｺ
 function showError(element) {
     const errorMsg = element.parentElement.querySelector('.error-message');
     if (errorMsg) {
@@ -965,13 +965,13 @@ function showError(element) {
     }
 }
 
-// バリデーション
+// 繝舌Μ繝・・繧ｷ繝ｧ繝ｳ
 function validateForm() {
     let isValid = true;
 
     const entryType = getEntryType();
 
-    // 必須項目のチェック
+    // 蠢・磯・岼縺ｮ繝√ぉ繝・け
     const requiredFields = ['reportDate', 'userName'];
     requiredFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
@@ -981,14 +981,14 @@ function validateForm() {
         }
     });
 
-    // 事業所のチェック
+    // 莠区･ｭ謇縺ｮ繝√ぉ繝・け
     const office = document.getElementById('office').value;
     if (!office) {
-        alert('事業所が設定されていません');
+        alert('莠区･ｭ謇縺瑚ｨｭ螳壹＆繧後※縺・∪縺帙ｓ');
         isValid = false;
     }
 
-    // 脱落理由の選択チェック
+    // 閼ｱ關ｽ逅・罰縺ｮ驕ｸ謚槭メ繧ｧ繝・け
     const reason = document.querySelector('input[name="reason"]:checked');
     if (!reason) {
         const radioGroup = document.querySelector('.radio-group');
@@ -996,7 +996,7 @@ function validateForm() {
         isValid = false;
     }
 
-    // 入院の場合の追加チェック
+    // 蜈･髯｢縺ｮ蝣ｴ蜷医・霑ｽ蜉繝√ぉ繝・け
     if (reason && reason.value === 'hospital') {
         const hospitalFields = ['hospitalDate', 'hospitalName', 'hospitalDiagnosis'];
         hospitalFields.forEach(fieldId => {
@@ -1008,7 +1008,7 @@ function validateForm() {
         });
 
         const diagnosis = document.getElementById('hospitalDiagnosis');
-        if (diagnosis.value === 'その他') {
+        if (diagnosis.value === '縺昴・莉・) {
             const otherDiagnosis = document.getElementById('hospitalOtherDiagnosisText');
             if (!otherDiagnosis.value) {
                 showError(otherDiagnosis);
@@ -1017,7 +1017,7 @@ function validateForm() {
         }
     }
 
-    // 中止の場合の追加チェック（既存レコードのみ）
+    // 荳ｭ豁｢縺ｮ蝣ｴ蜷医・霑ｽ蜉繝√ぉ繝・け・域里蟄倥Ξ繧ｳ繝ｼ繝峨・縺ｿ・・
     if (reason && reason.value === 'stop' && entryType === 'existing') {
         const stopFields = ['stopDate', 'stopDiagnosis'];
         stopFields.forEach(fieldId => {
@@ -1032,30 +1032,30 @@ function validateForm() {
     return isValid;
 }
 
-// 確認モーダル表示
+// 遒ｺ隱阪Δ繝ｼ繝繝ｫ陦ｨ遉ｺ
 function showConfirmModal() {
     if (!validateForm()) {
-        alert('必須項目を入力してください');
+        alert('蠢・磯・岼繧貞・蜉帙＠縺ｦ縺上□縺輔＞');
         return;
     }
     
-    // フォームデータ収集
+    // 繝輔か繝ｼ繝繝・・繧ｿ蜿朱寔
     collectFormData();
     
-    // 確認内容の生成
+    // 遒ｺ隱榊・螳ｹ縺ｮ逕滓・
     const confirmContent = document.getElementById('confirmContent');
     confirmContent.innerHTML = generateConfirmContent();
     
-    // モーダル表示
+    // 繝｢繝ｼ繝繝ｫ陦ｨ遉ｺ
     document.getElementById('confirmModal').classList.add('show');
 }
 
-// フォームデータ収集
+// 繝輔か繝ｼ繝繝・・繧ｿ蜿朱寔
 function collectFormData() {
     const form = document.getElementById('hospitalReportForm');
     formData = Utils.formToObject(form);
 
-    // 手動で値を設定
+    // 謇句虚縺ｧ蛟､繧定ｨｭ螳・
     formData.entryType = getEntryType();
     formData.office = document.getElementById('office').value || userOrganization;
     formData.reason = document.querySelector('input[name="reason"]:checked').value;
@@ -1067,67 +1067,67 @@ function collectFormData() {
     }
 }
 
-// 確認内容生成
+// 遒ｺ隱榊・螳ｹ逕滓・
 function generateConfirmContent() {
     const entryType = formData.entryType || 'existing';
-    const reasonLabel = formData.reason === 'hospital' ? '入院' : '中止';
+    const reasonLabel = formData.reason === 'hospital' ? '蜈･髯｢' : '荳ｭ豁｢';
     const office = formData.office || userOrganization;
 
     let html = '';
-    html += `<p><strong>報告者:</strong> ${formData.reporter}</p>`;
-    html += `<p><strong>事業所:</strong> ${office}</p>`;
-    html += `<p><strong>報告日:</strong> ${Utils.formatDate(formData.reportDate)}</p>`;
-    html += `<p><strong>利用者名:</strong> ${formData.userName}</p>`;
-    html += `<p><strong>報告理由:</strong> ${reasonLabel}</p>`;
+    html += `<p><strong>蝣ｱ蜻願・</strong> ${formData.reporter}</p>`;
+    html += `<p><strong>莠区･ｭ謇:</strong> ${office}</p>`;
+    html += `<p><strong>蝣ｱ蜻頑律:</strong> ${Utils.formatDate(formData.reportDate)}</p>`;
+    html += `<p><strong>蛻ｩ逕ｨ閠・錐:</strong> ${formData.userName}</p>`;
+    html += `<p><strong>蝣ｱ蜻顔炊逕ｱ:</strong> ${reasonLabel}</p>`;
 
     if (formData.reason === 'hospital') {
-        html += `<p><strong>入院日:</strong> ${Utils.formatDate(formData.hospitalDate)}</p>`;
-        html += `<p><strong>入院先:</strong> ${formData.hospitalName}</p>`;
-        html += `<p><strong>診断名:</strong> ${formData.hospitalDiagnosis === 'その他' ? formData.hospitalOtherDiagnosisText : formData.hospitalDiagnosis}</p>`;
+        html += `<p><strong>蜈･髯｢譌･:</strong> ${Utils.formatDate(formData.hospitalDate)}</p>`;
+        html += `<p><strong>蜈･髯｢蜈・</strong> ${formData.hospitalName}</p>`;
+        html += `<p><strong>險ｺ譁ｭ蜷・</strong> ${formData.hospitalDiagnosis === '縺昴・莉・ ? formData.hospitalOtherDiagnosisText : formData.hospitalDiagnosis}</p>`;
     } else if (entryType === 'existing') {
-        html += `<p><strong>中止日:</strong> ${Utils.formatDate(formData.stopDate)}</p>`;
-        html += `<p><strong>診断名:</strong> ${formData.stopDiagnosis}</p>`;
+        html += `<p><strong>荳ｭ豁｢譌･:</strong> ${Utils.formatDate(formData.stopDate)}</p>`;
+        html += `<p><strong>險ｺ譁ｭ蜷・</strong> ${formData.stopDiagnosis}</p>`;
     }
 
     if (formData.resumeDate) {
-        html += `<p><strong>退院日・再開日:</strong> ${Utils.formatDate(formData.resumeDate)}</p>`;
+        html += `<p><strong>騾髯｢譌･繝ｻ蜀埼幕譌･:</strong> ${Utils.formatDate(formData.resumeDate)}</p>`;
     }
 
     if (formData.contractEnd) {
-        html += `<p><strong>契約終了:</strong> はい</p>`;
+        html += `<p><strong>螂醍ｴ・ｵゆｺ・</strong> 縺ｯ縺・/p>`;
     }
 
     if (formData.remarks) {
-        html += `<p><strong>備考:</strong><br>${formData.remarks.replace(/\n/g, '<br>')}</p>`;
+        html += `<p><strong>蛯呵・</strong><br>${formData.remarks.replace(/\n/g, '<br>')}</p>`;
     }
 
     return html;
 }
 
-// モーダルを閉じる
+// 繝｢繝ｼ繝繝ｫ繧帝哩縺倥ｋ
 function closeModal() {
     document.getElementById('confirmModal').classList.remove('show');
 }
 
-// フォーム送信
+// 繝輔か繝ｼ繝騾∽ｿ｡
 async function submitForm() {
     const submitBtn = document.getElementById('confirmBtn');
     submitBtn.disabled = true;
-    submitBtn.textContent = '送信中...';
+    submitBtn.textContent = '騾∽ｿ｡荳ｭ...';
     
     try {
-        // タイムスタンプ追加
+        // 繧ｿ繧､繝繧ｹ繧ｿ繝ｳ繝苓ｿｽ蜉
         formData.timestamp = new Date().toISOString();
         formData.userId = WOFFManager.getUserId();
         formData.department = WOFFManager.getDepartment();
         
-        console.log('送信データ:', formData);
+        console.log('騾∽ｿ｡繝・・繧ｿ:', formData);
         
-        // GASに送信
+        // GAS縺ｫ騾∽ｿ｡
         const response = await fetch(config.gasUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/plain;charset=UTF-8',
             },
             body: JSON.stringify({
                 action: 'submitHospitalReport',
@@ -1136,10 +1136,10 @@ async function submitForm() {
         });
         
         const result = await response.json();
-        console.log('GAS応答:', result);
+        console.log('GAS蠢懃ｭ・', result);
         
         if (result.success) {
-            // 成功時は結果画面へ遷移
+            // 謌仙粥譎ゅ・邨先棡逕ｻ髱｢縺ｸ驕ｷ遘ｻ
             localStorage.setItem('reportResult', JSON.stringify({
                 success: true,
                 reportId: result.reportId,
@@ -1147,13 +1147,13 @@ async function submitForm() {
             }));
             window.location.href = 'result.html';
         } else {
-            throw new Error(result.error || '送信に失敗しました');
+            throw new Error(result.error || '騾∽ｿ｡縺ｫ螟ｱ謨励＠縺ｾ縺励◆');
         }
         
     } catch (error) {
-        console.error('送信エラー:', error);
-        alert('送信に失敗しました。もう一度お試しください。\nエラー: ' + error.message);
+        console.error('騾∽ｿ｡繧ｨ繝ｩ繝ｼ:', error);
+        alert('騾∽ｿ｡縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲ゅｂ縺・ｸ蠎ｦ縺願ｩｦ縺励￥縺縺輔＞縲・n繧ｨ繝ｩ繝ｼ: ' + error.message);
         submitBtn.disabled = false;
-        submitBtn.textContent = '送信する';
+        submitBtn.textContent = '騾∽ｿ｡縺吶ｋ';
     }
 }
