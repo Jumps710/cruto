@@ -52,6 +52,8 @@ function handleHospitalReport(data) {
     }
     
     const timestamp = new Date();
+    const isNewEntry = data.entryType === "new" || data.isNew === true;
+    let createdRecord = null;
     
     // 利用者名で既存レコードを検索
     const userName = data.userName;
@@ -72,15 +74,31 @@ function handleHospitalReport(data) {
     }
     
     if (targetRow === -1) {
-      throw new Error(`利用者「${userName}」のレコードが見つかりません`);
+      if (isNewEntry) {
+        createdRecord = createNewHospitalRecordRow(sheet, data, timestamp);
+        targetRow = createdRecord.rowIndex;
+        logSheet.appendRow([
+          timestamp,
+          "HOSPITAL_REPORT",
+          "NEW_RECORD_CREATED",
+          data.reporter || "",
+          createdRecord.recordId,
+          data.userName,
+          data.reason || "",
+          data.contractEnd ? "契約終了" : "",
+          JSON.stringify({ entryType: data.entryType || "", office: data.office || "" })
+        ]);
+      } else {
+        throw new Error(`利用者「${userName}」のレコードが見つかりません`);
+      }
     }
-    
+
     console.log(`利用者「${userName}」のレコード発見: 行${targetRow}`);
     
     // カラム更新処理
     updateHospitalRecord(sheet, targetRow, data, timestamp);
     
-    const reportId = `HOSP-${timestamp.getTime()}`;
+    const reportId = createdRecord ? createdRecord.recordId : `HOSP-${timestamp.getTime()}`;
 
     // 既存レコードの更新が完了
 
@@ -109,6 +127,20 @@ function handleHospitalReport(data) {
     console.error("入退院報告処理エラー:", error);
     throw new Error("報告の送信に失敗しました: " + error.toString());
   }
+}
+
+function createNewHospitalRecordRow(sheet, data, timestamp) {
+  const recordId = `HOSP-${timestamp.getTime()}`;
+  const lastColumn = sheet.getLastColumn();
+  const newRowValues = new Array(lastColumn).fill('');
+  newRowValues[0] = recordId;
+  newRowValues[2] = data.userName || "";
+  sheet.appendRow(newRowValues);
+  const newRowIndex = sheet.getLastRow();
+  return {
+    rowIndex: newRowIndex,
+    recordId
+  };
 }
 
 // 入退院管理シートのレコード更新関数

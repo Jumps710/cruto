@@ -9,16 +9,16 @@ const ENV = Object.freeze({
     SALES: '営業データ'
   },
   LINE_WORKS: {
-    CLIENT_ID: 'De3dyIflyPCDY2xrHUak',
-    CLIENT_SECRET: 'ckuFb6OYxV',
-    SERVICE_ACCOUNT: 'nagmx.serviceaccount@works-demo.org',
-    DOMAIN_ID: '10000389',
+    CLIENT_ID: 'aq99AxovXKTKZKc0oj06',
+    CLIENT_SECRET: 'mzYq8vAkhM',
+    SERVICE_ACCOUNT: 'c5amh.serviceaccount@works-87651',
+    DOMAIN_ID: '10314671',
     PRIVATE_KEY_FILE: 'private_20250720123804.key'
   },
   ACCIDENT: {
     BOT_ID: '10724480',
-    CHANNEL_ID: 'b11addf5-0a2a-8460-252e-babaeb579936',
-    SPREADSHEET_URL: 'https://docs.google.com/spreadsheets/d/14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0/edit?gid=494299374'
+    CHANNEL_ID: '76a979bb-5f37-10eb-41c7-f9e7222643c7',
+    SPREADSHEET_URL: 'https://docs.google.com/spreadsheets/d/14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0/edit?gid=1986088926#gid=1986088926'
   },
   HOSPITAL: {
     BOT_ID: '9946034'
