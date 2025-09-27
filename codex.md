@@ -1,4 +1,4 @@
-# Cruto Project Codex
+﻿# Cruto Project Codex
 
 ## Snapshot
 - Purpose: LINE WORKS向けの業務アプリ（事故報告・入退院報告・営業支援Bot）をフロント（静的ホスティング）+ Google Apps Scriptバックエンドで提供
@@ -13,6 +13,7 @@
 - SpreadSheet URL: `https://docs.google.com/spreadsheets/d/14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0/edit?gid=494299374#gid=494299374`
 - GAS Script ID: `19CXCTk6AZWQ_FxToZlaKJ3Snlh17AvJG5zoFVmA9VD70eV1lf8XLYaJj`
 - Web App URL: `https://script.google.com/macros/s/AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj/exec`
+- Frontend `config.gasUrl` (accident/hospital/sales) は上記テスト Web App を指すよう設定済み。切替時は各アプリの `config.gasUrl` を同時更新すること。
 - 事故
    Bot ID: 10724480
    WOFF ID: k7_SVZ1p8vy45jQkIRvOUw
@@ -86,6 +87,7 @@
 - Netlify: 各アプリフォルダを個別サイトとして設定（Publish directory `.`、ビルド無し）
 - GitHub Pages: main ブランチ直下を公開、ベースURL `https://jumps710.github.io/cruto/`
 - Apps Script デプロイは既存デプロイメントIDを更新して同じURLを維持する方針（スクリプトでIDが複数登場するため環境整合に注意）
+- WebアプリURLは既存デプロイ（例: `npx clasp deploy -i AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj`）を再利用して維持すること。新規デプロイを作成しない。
 
 ## Setup & Access
 - `manual-auth.md` : ブラウザ認証できない環境向けの手動clasp認証フローと `.clasp.json` 例
@@ -131,3 +133,4 @@
 ・契約終了にする　→　（任意入力）という表示を追加
 
 既存の場合は、これまでと同じ。
+
