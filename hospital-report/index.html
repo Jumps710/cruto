@@ -1,15 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>入退院報告フォーム</title>
+    <title>蜈･騾髯｢蝣ｱ蜻翫ヵ繧ｩ繝ｼ繝</title>
     <script>
-        // タイムスタンプを先に生成
+        // 繧ｿ繧､繝繧ｹ繧ｿ繝ｳ繝励ｒ蜈医↓逕滓・
         window.cacheTimestamp = Date.now();
     </script>
     <script>
-        // 動的にCSSを読み込む
+        // 蜍慕噪縺ｫCSS繧定ｪｭ縺ｿ霎ｼ繧
         document.write('<link rel="stylesheet" href="../common/css/base.css?v=' + window.cacheTimestamp + '">');
         document.write('<link rel="stylesheet" href="css/hospital-report.css?v=' + window.cacheTimestamp + '">');
     </script>
@@ -17,9 +17,9 @@
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
         var vConsole = new VConsole();
-        console.log('[SYSTEM] vConsole初期化完了 - 入退院報告 動的キャッシュバスター版', Date.now());
+        console.log('[SYSTEM] vConsole蛻晄悄蛹門ｮ御ｺ・- 蜈･騾髯｢蝣ｱ蜻・蜍慕噪繧ｭ繝｣繝・す繝･繝舌せ繧ｿ繝ｼ迚・, Date.now());
         
-        // 強制キャッシュクリア
+        // 蠑ｷ蛻ｶ繧ｭ繝｣繝・す繝･繧ｯ繝ｪ繧｢
         if ('caches' in window) {
             caches.keys().then(names => {
                 names.forEach(name => {
@@ -31,217 +31,51 @@
 </head>
 <body>
     <div class="container">
-        <h1>入退院報告フォーム</h1>
+        <h1>蜈･騾髯｢蝣ｱ蜻翫ヵ繧ｩ繝ｼ繝</h1>
 
         <form id="hospitalReportForm">
-            <!-- 報告対象 -->
-            <div class="form-section">
-                <h2>報告対象</h2>
-                <div class="form-group">
-                    <label class="required">対象区分</label>
-                    <div class="radio-group entry-type-group">
-                        <div class="radio-item">
-                            <input type="radio" id="entryExisting" name="entryType" value="existing" checked>
-                            <label for="entryExisting">既存利用者</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="entryNew" name="entryType" value="new">
-                            <label for="entryNew">新規利用者</label>
-                        </div>
-                    </div>
-                    <span class="help-text">新規を選択すると入退院管理シートに新しい行を追加します</span>
-                </div>
-            </div>
-
-            <!-- 基本情報 -->
-            <div class="form-section">
-                <h2>基本情報</h2>
-                
-                <div class="form-group">
-                    <label>報告者</label>
-                    <input type="text" id="reporter" name="reporter" readonly>
-                </div>
-
-                <div class="form-group">
-                    <label class="required">事業所</label>
-                    <div id="officeContainer">
-                        <div class="loading-message">
-                            <span class="loading-icon">⌛</span> 取得中...しばらくお待ちください
-                        </div>
-                    </div>
-                    <select id="office" name="office" style="display: none;" required>
-                        <option value="">選択してください</option>
-                    </select>
-                    <span class="error-message">事業所を選択してください</span>
-                </div>
-
-                <div class="form-group">
-                    <label class="required">報告日</label>
-                    <input type="date" id="reportDate" name="reportDate" required>
-                    <span class="error-message">報告日を入力してください</span>
-                </div>
-            </div>
-
-            <!-- 利用者情報 -->
-            <div class="form-section">
-                <h2>利用者情報</h2>
-                
-                <div class="form-group">
-                    <label class="required">利用者名</label>
-                    <div class="autocomplete-container">
-                        <input type="text" id="userName" name="userName" placeholder="利用者名を入力..." required autocomplete="off">
-                        <div id="userSuggestions" class="suggestions-list"></div>
-                    </div>
-                    <span class="help-text">漢字で入力してください</span>
-                    <span class="error-message">利用者名を入力してください</span>
-                </div>
-            </div>
-
-            <!-- 脱落理由 -->
-            <div class="form-section">
-                <h2>脱落理由</h2>
-                
-                <div class="form-group">
-                    <label class="required">脱落理由を選択してください</label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="reasonHospital" name="reason" value="hospital" required>
-                            <label for="reasonHospital">入院</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="reasonStop" name="reason" value="stop" required>
-                            <label for="reasonStop">中止</label>
-                        </div>
-                    </div>
-                    <span class="error-message">脱落理由を選択してください</span>
-                </div>
-
-                <!-- 入院の場合 -->
-                <div id="hospitalSection" class="conditional-section">
-                    <div class="form-group">
-                        <label class="required">入院日</label>
-                        <input type="date" id="hospitalDate" name="hospitalDate">
-                        <span class="error-message">入院日を入力してください</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required">入院先</label>
-                        <div class="autocomplete-container">
-                            <input type="text" id="hospitalName" name="hospitalName" placeholder="病院名を入力..." autocomplete="off">
-                            <div id="hospitalSuggestions" class="suggestions-list"></div>
-                        </div>
-                        <span class="help-text">医療機関マスタから検索されます</span>
-                        <span class="error-message">入院先を入力してください</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required">診断名</label>
-                        <select id="hospitalDiagnosis" name="hospitalDiagnosis">
-                            <option value="">選択してください</option>
-                            <option value="誤嚥性肺炎">誤嚥性肺炎</option>
-                            <option value="肺炎">肺炎</option>
-                            <option value="尿路感染">尿路感染</option>
-                            <option value="心不全">心不全</option>
-                            <option value="消化器系疾患">消化器系疾患</option>
-                            <option value="骨折">骨折</option>
-                            <option value="その他">その他</option>
-                        </select>
-                        <span class="error-message">診断名を選択してください</span>
-                    </div>
-
-                    <div id="hospitalOtherDiagnosis" class="form-group" style="display: none;">
-                        <label class="required">その他の診断名</label>
-                        <input type="text" id="hospitalOtherDiagnosisText" name="hospitalOtherDiagnosisText" placeholder="診断名を入力してください">
-                        <span class="error-message">診断名を入力してください</span>
-                    </div>
-                </div>
-
-                <!-- 中止の場合 -->
-                <div id="stopSection" class="conditional-section">
-                    <div class="form-group">
-                        <label class="required">中止日</label>
-                        <input type="date" id="stopDate" name="stopDate">
-                        <span class="error-message">中止日を入力してください</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required">診断名</label>
-                        <textarea id="stopDiagnosis" name="stopDiagnosis" rows="3" placeholder="診断名を入力してください"></textarea>
-                        <span class="error-message">診断名を入力してください</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 共通項目 -->
-            <div class="form-section">
-                <h2>今後の予定</h2>
-                
-                <div class="form-group">
-                    <label>退院日 または 再開日 <span class="optional-note">（任意入力）</span></label>
-                    <input type="date" id="resumeDate" name="resumeDate">
-                    <span class="help-text">予定がある場合のみ入力してください</span>
-                </div>
-
-                <div class="form-group">
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="contractEnd" name="contractEnd" value="yes">
-                        <label for="contractEnd">契約終了にする <span class="optional-note">（任意入力）</span></label>
-                    </div>
-                    <span class="help-text">チェックすると該当利用者レコードのM列が「契約終了」に更新されます</span>
-                </div>
-            </div>
-
-            <!-- 備考 -->
-            <div class="form-section">
-                <h2>備考</h2>
-                
-                <div class="form-group">
-                    <label>備考</label>
-                    <textarea id="remarks" name="remarks" rows="3" placeholder="その他特記事項があれば記入してください"></textarea>
-                </div>
-            </div>
         </form>
     </div>
 
-    <!-- 送信ボタン -->
+    <!-- 騾∽ｿ｡繝懊ち繝ｳ -->
     <div class="submit-section">
         <button type="button" class="btn-submit" id="submitBtn">
-            送信内容を確認
-        </button>
+            騾∽ｿ｡蜀・ｮｹ繧堤｢ｺ隱・        </button>
     </div>
 
-    <!-- 確認モーダル -->
+    <!-- 遒ｺ隱阪Δ繝ｼ繝繝ｫ -->
     <div id="confirmModal" class="modal">
         <div class="modal-content">
-            <h3>送信内容の確認</h3>
+            <h3>騾∽ｿ｡蜀・ｮｹ縺ｮ遒ｺ隱・/h3>
             <div id="confirmContent">
-                <!-- 確認内容がここに表示される -->
+                <!-- 遒ｺ隱榊・螳ｹ縺後％縺薙↓陦ｨ遉ｺ縺輔ｌ繧・-->
             </div>
             <div class="modal-buttons">
-                <button type="button" class="btn-cancel" id="cancelBtn">修正する</button>
-                <button type="button" class="btn-confirm" id="confirmBtn">送信する</button>
+                <button type="button" class="btn-cancel" id="cancelBtn">菫ｮ豁｣縺吶ｋ</button>
+                <button type="button" class="btn-confirm" id="confirmBtn">騾∽ｿ｡縺吶ｋ</button>
             </div>
         </div>
     </div>
 
-    <!-- 事業所選択モーダル -->
+    <!-- 莠区･ｭ謇驕ｸ謚槭Δ繝ｼ繝繝ｫ -->
     <div id="officeModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <h3>事業所を選択</h3>
+            <h3>莠区･ｭ謇繧帝∈謚・/h3>
             <div class="office-list" id="officeList">
-                <!-- 事業所一覧がここに表示される -->
+                <!-- 莠区･ｭ謇荳隕ｧ縺後％縺薙↓陦ｨ遉ｺ縺輔ｌ繧・-->
             </div>
             <div class="modal-buttons">
-                <button type="button" class="btn-cancel" id="cancelOfficeBtn">キャンセル</button>
-                <button type="button" class="btn-confirm" id="confirmOfficeBtn">決定</button>
+                <button type="button" class="btn-cancel" id="cancelOfficeBtn">繧ｭ繝｣繝ｳ繧ｻ繝ｫ</button>
+                <button type="button" class="btn-confirm" id="confirmOfficeBtn">豎ｺ螳・/button>
             </div>
         </div>
     </div>
 
     <script>
-        // 動的にキャッシュバスターを追加
+        // 蜍慕噪縺ｫ繧ｭ繝｣繝・す繝･繝舌せ繧ｿ繝ｼ繧定ｿｽ蜉
         document.write('<script src="../common/js/woff-init.js?v=' + window.cacheTimestamp + '"><\/script>');
         document.write('<script src="js/hospital-report.js?v=' + window.cacheTimestamp + '"><\/script>');
     </script>
 </body>
 </html>
+
