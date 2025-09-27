@@ -463,17 +463,24 @@ function handleEntryTypeChange() {
 
     const userInput = document.getElementById('userName');
     const suggestions = document.getElementById('userSuggestions');
+    const userHelpText = document.getElementById('userNameHelp');
     if (userInput) {
         if (isNew) {
-            userInput.placeholder = '新規利用者名を入力してください';
+            userInput.placeholder = '利用者名を登録してください';
             userInput.setAttribute('data-entry-type', 'new');
             if (suggestions) {
                 suggestions.classList.remove('show');
                 suggestions.innerHTML = '';
             }
+            if (userHelpText) {
+                userHelpText.textContent = '利用者名を登録してください';
+            }
         } else {
-            userInput.placeholder = '利用者名を入力...';
+            userInput.placeholder = '利用者名を入力してください...';
             userInput.setAttribute('data-entry-type', 'existing');
+            if (userHelpText) {
+                userHelpText.textContent = '漢字で入力してください';
+            }
         }
     }
 
@@ -625,6 +632,14 @@ function setupUserAutocomplete() {
         suggestions.innerHTML = '';
         selectedIndex = -1;
         
+        if (getEntryType() === 'new') {
+            suggestions.classList.remove('show');
+            suggestions.style.display = 'none';
+            currentSearchQuery = '';
+            isSearching = false;
+            return;
+        }
+
         // テキストが削除された場合は検索結果をクリア
         if (query.length < 2) {
             suggestions.classList.remove('show');
