@@ -2,8 +2,10 @@
 
 // 設定
 const config = {
-    woffId: 'Exth8PXun2d80vxUyBamIw', // 本番環境のWOFF ID
-    gasUrl: 'https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec'
+    // woffId: 'Exth8PXun2d80vxUyBamIw', // 本番環境のWOFF ID
+    woffId: '_2Todd08o2jPGgjmr_9Teg', // テスト環境
+    // gasUrl: 'https://script.google.com/macros/s/AKfycbyL58-LDmfXvfXkYbj-LL9PPrnDZreH0RPg1-io0xgdNgICh30_VUBa1SZebAqk4hBxoA/exec'
+    gasUrl: 'https://script.google.com/macros/s/AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj/exec'
 };
 
 // グローバル変数
