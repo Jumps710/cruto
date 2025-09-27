@@ -1124,15 +1124,13 @@ async function submitForm() {
         console.log('騾∽ｿ｡繝・・繧ｿ:', formData);
         
         // GAS縺ｫ騾∽ｿ｡
+        const payload = new URLSearchParams();
+        payload.append('action', 'submitHospitalReport');
+        payload.append('data', JSON.stringify(formData));
+
         const response = await fetch(config.gasUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=UTF-8',
-            },
-            body: JSON.stringify({
-                action: 'submitHospitalReport',
-                data: formData
-            })
+            body: payload
         });
         
         const result = await response.json();
@@ -1157,3 +1155,4 @@ async function submitForm() {
         submitBtn.textContent = '騾∽ｿ｡縺吶ｋ';
     }
 }
+

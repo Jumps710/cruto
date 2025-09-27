@@ -84,12 +84,31 @@ function doPost(e) {
     }
     
     // リクエスト形式の判定と処理
+    const toPlainObject = (source) => {
+      const obj = {};
+      if (!source) return obj;
+      const keys = Object.keys(source);
+      if (keys.length === 0) {
+        for (const key in source) {
+          if (Object.prototype.hasOwnProperty.call(source, key)) {
+            obj[key] = source[key];
+          }
+        }
+      } else {
+        keys.forEach(key => {
+          obj[key] = source[key];
+        });
+      }
+      return obj;
+    };
+
+    const isStringValue = (value) => typeof value === 'string' || value instanceof String;
     let action, requestData;
     
     // URLSearchParams形式（application/x-www-form-urlencoded）で送信された場合
     if (e.parameter && e.parameter.action) {
       action = e.parameter.action;
-      requestData = e.parameter;
+      requestData = toPlainObject(e.parameter);
     }
     // POSTでURLSearchParams形式の場合（e.postDataがURLSearchParams）
     else if (e.postData && e.postData.contents && e.postData.type === 'application/x-www-form-urlencoded') {
@@ -110,6 +129,25 @@ function doPost(e) {
       throw new Error('リクエストデータが不正な形式です');
     }
     
+    if (requestData && isStringValue(requestData.data)) {
+      try {
+        requestData.data = JSON.parse(String(requestData.data));
+      } catch (parseError) {
+        logSheet.appendRow([
+          new Date(),
+          "doPost",
+          "JSON変換エラー",
+          action || "",
+          "",
+          'dataフィールドのJSON変換に失敗: ' + parseError.message,
+          String(requestData.data),
+          parseError.stack || "",
+          ""
+        ]);
+        throw new Error('リクエストデータの解析に失敗しました (data)');
+      }
+    }
+
     // アクション別ルーティング
     switch(action) {
       // 事故報告系アクション
