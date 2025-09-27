@@ -1121,22 +1121,24 @@ async function submitForm() {
         formData.userId = WOFFManager.getUserId();
         formData.department = WOFFManager.getDepartment();
         
-        console.log('送信データ:', formData);
+        console.log('[INFO] submit payload prepared', formData);
         
         // GASに送信
+        console.log('[INFO] sending request to', config.gasUrl);
         const response = await fetch(config.gasUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/plain;charset=UTF-8',
             },
             body: JSON.stringify({
                 action: 'submitHospitalReport',
                 data: formData
             })
         });
+        console.log('[INFO] response received', response.status, response.statusText);
         
         const result = await response.json();
-        console.log('GAS応答:', result);
+        console.log('[INFO] response json parsed', result);
         
         if (result.success) {
             // 成功時は結果画面へ遷移
@@ -1151,7 +1153,7 @@ async function submitForm() {
         }
         
     } catch (error) {
-        console.error('送信エラー:', error);
+        console.error('[ERROR] submit error object:', error);
         alert('送信に失敗しました。もう一度お試しください。\nエラー: ' + error.message);
         submitBtn.disabled = false;
         submitBtn.textContent = '送信する';
