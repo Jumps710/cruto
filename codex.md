@@ -138,3 +138,9 @@
 
 
 
+## Sales Bot (営業支援)
+- Spreadsheet: 1nJaGTKQfYs6BVK0hQKQUBya_gS7CeUWUKv3adhehgt4（シート: 医療機関/居宅/施設/相談支援事業所/入院動向/年間動向/Log）
+- GAS project: 1xh2akw2bV02HRLa02s0DG2e6sIoe5lRXePx8HwFlVJ-YqKGmXz5LBtaR（WebApp: https://script.google.com/macros/s/AKfycbyOPk9BoPSZRkx_PmqeNIBjvuhvwF90PYiz4LkZ69h11P-ArDrnMUKg4Auhjr96dd1YvQ/exec）
+- ソース: gas-sales-bot/（env.gs の CURRENT_ENV を 'DEV' / 'PROD' に切り替え）。既存の LINE WORKS 認証を流用。
+- Bot ID 10834470（Callback URL 同上）。
+- フロー: 固定メニュー→位置情報 Quick Reply→ターゲット選択 Quick Reply→契約率上位10件から最寄り3件ずつ Flex 表示（"もっと見る" Quick Reply で 4–6 / 7–9）。
