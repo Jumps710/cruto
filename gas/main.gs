@@ -1,31 +1,3 @@
-const ENV = Object.freeze({
-  SPREADSHEET_ID: '14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0',
-  SHEETS: {
-    LOG: 'Log',
-    ACCIDENT: '事故報告',
-    HOSPITAL: '入退院管理',
-    USERS: '利用者管理',
-    HOSPITAL_MASTER: '医療マスタ',
-    SALES: '営業データ'
-  },
-  LINE_WORKS: {
-    CLIENT_ID: 'aq99AxovXKTKZKc0oj06',
-    CLIENT_SECRET: 'mzYq8vAkhM',
-    SERVICE_ACCOUNT: 'c5amh.serviceaccount@works-87651',
-    DOMAIN_ID: '10314671',
-    PRIVATE_KEY_FILE: 'private_20250720123804.key'
-  },
-  ACCIDENT: {
-    BOT_ID: '10724480',
-    CHANNEL_ID: '76a979bb-5f37-10eb-41c7-f9e7222643c7',
-    SPREADSHEET_URL: 'https://docs.google.com/spreadsheets/d/14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0/edit?gid=1986088926#gid=1986088926'
-  },
-  HOSPITAL: {
-    BOT_ID: '9946034'
-  },
-  PHOTO_FOLDER_ID: '11r9PGtZKBuX22TnA6cIRHru6zlNYD9T_'
-});
-
 function getSpreadsheet() {
   return SpreadsheetApp.openById(ENV.SPREADSHEET_ID);
 }

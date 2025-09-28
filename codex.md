@@ -89,6 +89,7 @@
 - Apps Script デプロイは既存デプロイメントIDを更新して同じURLを維持する方針（スクリプトでIDが複数登場するため環境整合に注意）
 - WebアプリURLは既存デプロイ（例: `npx clasp deploy -i AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj`）を再利用して維持すること。新規デプロイを作成しない。
 - 変更作業のデフォルト手順として、`npx clasp push` → `npx clasp deploy -i AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj` を必ず実行し、同一URLのままデプロイ完了まで行うこと。
+- 環境切り替え: `gas/env.gs` の `CURRENT_ENV` を 'DEV'/'PROD' に切り替えるだけでOK。値も同ファイルで管理。
 
 ## Setup & Access
 - `manual-auth.md` : ブラウザ認証できない環境向けの手動clasp認証フローと `.clasp.json` 例
@@ -134,5 +135,6 @@
 ・契約終了にする　→　（任意入力）という表示を追加
 
 既存の場合は、これまでと同じ。
+
 
 
