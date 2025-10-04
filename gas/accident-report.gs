@@ -241,37 +241,6 @@ function getOrCreateFolder(parentFolder, folderName) {
  */
 function saveAccidentReportToSheet(data, reportId, timestamp, photoInfo) {
   const sheet = getSheet(ENV.SHEETS.ACCIDENT);
-  
-  // デバッグ: 受信したデータを確認
-  console.log('[DEBUG] 受信したdata:', JSON.stringify(data));
-  console.log('[DEBUG] 受信したphotoInfo:', JSON.stringify(photoInfo));
-  console.log('[DEBUG] 事故種類:', data.accidentType);
-  console.log('[DEBUG] 運転手名:', data.driverName);
-  console.log('[DEBUG] 対物有無:', data.propertyDamage);
-  console.log('[DEBUG] 対物詳細:', data.propertyDetails);
-  console.log('[DEBUG] 対人有無:', data.personalInjury);
-  console.log('[DEBUG] 負傷情報:', data.injury);
-  
-  // 写真データの詳細チェック
-  console.log('[DEBUG] 写真データ詳細:', {
-    scene: photoInfo.scene?.length || 0,
-    property: photoInfo.property?.length || 0, 
-    otherVehicle: photoInfo.otherVehicle?.length || 0,
-    ownVehicle: photoInfo.ownVehicle?.length || 0,
-    license: photoInfo.license?.length || 0
-  });
-  
-  // 各写真の最初の数文字を確認（重複チェック）
-  if (photoInfo.scene?.length > 0) {
-    console.log('[DEBUG] 事故現場写真（最初の50文字）:', photoInfo.scene[0]?.base64Data?.substring(0, 50));
-  }
-  if (photoInfo.property?.length > 0) {
-    console.log('[DEBUG] 対物写真（最初の50文字）:', photoInfo.property[0]?.base64Data?.substring(0, 50));
-  }
-  if (photoInfo.otherVehicle?.length > 0) {
-    console.log('[DEBUG] 相手の車写真（最初の50文字）:', photoInfo.otherVehicle[0]?.base64Data?.substring(0, 50));
-  }
-  
   // カラム順序通りに行データを構築
   const row = [
     reportId,                                    // A: 報告ID
@@ -282,40 +251,40 @@ function saveAccidentReportToSheet(data, reportId, timestamp, photoInfo) {
     data.office || '',                           // F: 事業所名
     data.accidentType || '',                     // G: 事故種類
     
-    // その他事故エリア（H-K列）
-    data.accidentType === 'その他' ? (data.locationCategory || '') : '',     // H: 場所分類
-    data.accidentType === 'その他' ? (data.locationDetail || '') : '',       // I: 詳細場所
-    data.accidentType === 'その他' ? (data.locationNote || '') : '',         // J: その他の場所
-    data.accidentType === 'その他' ? (data.details || '') : '',              // K: 事故内容詳細
+    // その他事故エリア
+    data.accidentType === 'その他' ? (data.locationCategory || '') : '',
+    data.accidentType === 'その他' ? (data.otherAccidentCategory || '') : '',
+    data.accidentType === 'その他' ? (data.locationDetail || '') : '',
+    data.accidentType === 'その他' ? (data.locationNote || '') : '',
+    data.accidentType === 'その他' ? (data.details || '') : '',
     
-    // 車両事故エリア（L-U列）
-    data.accidentType === '車両事故' ? (data.driverName || '') : '',         // L: 運転手名
-    data.accidentType === '車両事故' ? (data.location || '') : '',           // M: 発生場所（住所）
-    data.accidentType === '車両事故' ? (data.propertyDamage || '') : '',     // N: 対物有無
-    data.accidentType === '車両事故' ? (data.propertyDetails || '') : '',    // O: 対物詳細
-    data.accidentType === '車両事故' ? (data.personalInjury || '') : '',     // P: 対人有無
-    data.accidentType === '車両事故' ? (data.injury?.self || '') : '',       // Q: 負傷_本人
-    data.accidentType === '車両事故' ? (data.injury?.passenger || '') : '',  // R: 負傷_同乗者
-    data.accidentType === '車両事故' ? (data.injury?.other || '') : '',      // S: 負傷_対人
-    data.accidentType === '車両事故' ? buildInjuryDetails(data.injury) : '', // T: 負傷詳細
-    data.accidentType === '車両事故' ? (data.details || '') : '',            // U: 事故内容詳細
+    // 車両事故エリア
+    data.accidentType === '車両事故' ? (data.driverName || '') : '',
+    data.accidentType === '車両事故' ? (data.location || '') : '',
+    data.accidentType === '車両事故' ? (data.propertyDamage || '') : '',
+    data.accidentType === '車両事故' ? (data.propertyDetails || '') : '',
+    data.accidentType === '車両事故' ? (data.personalInjury || '') : '',
+    data.accidentType === '車両事故' ? (data.injury?.self || '') : '',
+    data.accidentType === '車両事故' ? (data.injury?.passenger || '') : '',
+    data.accidentType === '車両事故' ? (data.injury?.other || '') : '',
+    data.accidentType === '車両事故' ? buildInjuryDetails(data.injury) : '',
+    data.accidentType === '車両事故' ? (data.details || '') : '',
     
-    // 写真管理エリア（V-Z列）
-    buildPhotoData(photoInfo.scene),             // V: 事故現場写真
-    buildPhotoData(photoInfo.property),          // W: 対物写真
-    buildPhotoData(photoInfo.otherVehicle),      // X: 相手の車の写真
-    buildPhotoData(photoInfo.ownVehicle),        // Y: 自分の車の写真
-    buildPhotoData(photoInfo.license),           // Z: 相手の免許証写真
+    // 写真管理エリア
+    buildPhotoData(photoInfo.scene),
+    buildPhotoData(photoInfo.property),
+    buildPhotoData(photoInfo.otherVehicle),
+    buildPhotoData(photoInfo.ownVehicle),
+    buildPhotoData(photoInfo.license),
     
-    // システム管理エリア（AA-AC列）
-    '未処理',                                    // AA: 写真処理ステータス
-    '',                                          // AB: DriveフォルダID
-    new Date()                                   // AC: 作成日時
+    // システム管理エリア
+    '未処理',
+    '',
+    new Date()
   ];
   
   sheet.appendRow(row);
   
-  console.log(`[シート保存] 報告ID: ${reportId}, カラム数: ${row.length}`);
   return { reportId, rowData: row };
 }
 
@@ -366,7 +335,6 @@ function getOffices() {
       }
     }
     
-    console.log("事業所一覧取得成功:", offices.length + "件");
     return offices;
   } catch (error) {
     console.error("事業所取得エラー:", error);
@@ -518,10 +486,7 @@ function getAccidentUserInfo(accessToken, domainId, userId) {
 // URLSearchParams形式のデータを処理する関数
 function handleAccidentReportFromParams(params) {
   try {
-    console.log("事故報告データ受信（URLSearchParams形式）");
     
-    // デバッグ: 受信したパラメータをログ出力
-    console.log('[DEBUG] 受信パラメータ:', JSON.stringify(params));
     
     // ログ記録は削除（handleAccidentReportで記録される）
     
@@ -545,6 +510,7 @@ function handleAccidentReportFromParams(params) {
       
       // その他事故の追加フィールド
       locationCategory: params.locationCategory || '',
+      otherAccidentCategory: params.otherAccidentCategory || '',
       locationDetail: params.locationDetail || '',
       locationNote: params.locationNote || '',
       
@@ -562,8 +528,6 @@ function handleAccidentReportFromParams(params) {
       photos: {}
     };
     
-    // デバッグ: 構築されたformDataを確認
-    console.log('[DEBUG] 構築されたformData:', JSON.stringify(formData));
     
     // 写真データを復元
     Object.keys(params).forEach(key => {
@@ -647,7 +611,8 @@ function sendAccidentNotificationToLineWorks(data, reportId, timestamp) {
     
     if (data.accidentType === 'その他') {
       messageText += `【その他事故の詳細】\n`;
-      messageText += `場所分類: ${data.locationCategory || ''}\n`;
+      messageText += `事故種類: ${data.otherAccidentCategory || ''}\n`;
+      messageText += `事業所分類: ${data.locationCategory || ''}\n`;
       messageText += `詳細場所: ${data.locationDetail || ''}\n`;
       if (data.locationNote) {
         messageText += `その他の場所: ${data.locationNote}\n`;
@@ -724,11 +689,58 @@ function sendAccidentNotificationToLineWorks(data, reportId, timestamp) {
     // 次にボタンメッセージを送信
     options.payload = JSON.stringify(buttonMessagePayload);
     const response2 = UrlFetchApp.fetch(url, options);
+
+    const statusText = `text:${response1.getResponseCode()} body:${response1.getContentText()}`;
+    const statusButton = `button:${response2.getResponseCode()} body:${response2.getContentText()}`;
+
+    if (response1.getResponseCode() >= 400) {
+      throw new Error('Text message send failed: ' + statusText);
+    }
+    if (response2.getResponseCode() >= 400) {
+      throw new Error('Button message send failed: ' + statusButton);
+    }
+
+    appendLog([
+      new Date(),
+      'AccidentNotification',
+      'SUCCESS',
+      reportId,
+      (data && data.office) || '',
+      statusText,
+      statusButton,
+      CHANNEL_ID,
+      JSON.stringify({
+        reportId: reportId,
+        timestamp: timestamp,
+        responses: {
+          text: {
+            code: response1.getResponseCode(),
+            body: response1.getContentText()
+          },
+          button: {
+            code: response2.getResponseCode(),
+            body: response2.getContentText()
+          }
+        }
+      })
+    ]);
+
     
     console.log("LINE WORKS通知送信成功:", reportId);
     
   } catch (error) {
     console.error("LINE WORKS通知送信エラー:", error);
+    appendLog([
+      new Date(),
+      'AccidentNotification',
+      'ERROR',
+      reportId,
+      (data && data.office) || '',
+      error && error.message ? error.message : String(error),
+      CHANNEL_ID,
+      '',
+      error && error.stack ? error.stack : ''
+    ]);
     throw error;
   }
 }
