@@ -437,6 +437,16 @@ function setupEventListeners() {
         element.addEventListener('change', () => clearError(element));
     });
 
+    const resumeDateInput = document.getElementById('resumeDate');
+    const contractEndCheckbox = document.getElementById('contractEnd');
+    if (resumeDateInput) {
+        resumeDateInput.addEventListener('input', clearFutureRequirementError);
+        resumeDateInput.addEventListener('change', clearFutureRequirementError);
+    }
+    if (contractEndCheckbox) {
+        contractEndCheckbox.addEventListener('change', clearFutureRequirementError);
+    }
+
     handleEntryTypeChange();
     updateConditionalSections();
 }
@@ -450,16 +460,72 @@ function handleEntryTypeChange() {
     const entryType = getEntryType();
     const isNew = entryType === 'new';
     const stopFields = ['stopDate', 'stopDiagnosis'];
+    const basicInfoSection = document.getElementById('basicInfoSection');
+    const reasonSection = document.getElementById('reasonSection');
+    const futureSection = document.getElementById('futureSection');
+    const officeGroup = document.getElementById('officeGroup');
+    const officeSelect = document.getElementById('office');
+    const resumeDateInput = document.getElementById('resumeDate');
+    const contractEndCheckbox = document.getElementById('contractEnd');
 
+    if (basicInfoSection) {
+        basicInfoSection.style.display = isNew ? '' : 'none';
+    }
+    if (reasonSection) {
+        reasonSection.style.display = isNew ? '' : 'none';
+    }
+    if (futureSection) {
+        futureSection.style.display = isNew ? 'none' : '';
+    }
+    if (officeGroup) {
+        officeGroup.style.display = isNew ? 'none' : '';
+    }
+    if (officeSelect) {
+        officeSelect.required = false;
+        if (!officeSelect.value && userOrganization) {
+            officeSelect.value = userOrganization;
+        }
+        clearError(officeSelect);
+    }
+
+    const reasonRadios = document.querySelectorAll('input[name="reason"]');
+    reasonRadios.forEach(radio => {
+        radio.disabled = !isNew;
+        if (!isNew) {
+            radio.checked = false;
+        }
+    });
+    if (isNew) {
+        const defaultReason = document.querySelector('input[name="reason"][value="hospital"]');
+        if (defaultReason && !document.querySelector('input[name="reason"]:checked')) {
+            defaultReason.checked = true;
+        }
+    } else {
+        const hospitalSection = document.getElementById('hospitalSection');
+        const stopSectionEl = document.getElementById('stopSection');
+        if (hospitalSection) hospitalSection.classList.remove('active');
+        if (stopSectionEl) stopSectionEl.classList.remove('active');
+    }
+
+    const disableStopFields = entryType === 'existing';
     stopFields.forEach(id => {
         const field = document.getElementById(id);
         if (!field) return;
-        field.disabled = isNew;
-        if (isNew) {
+        field.disabled = disableStopFields;
+        if (disableStopFields) {
             field.value = '';
             clearError(field);
         }
     });
+
+    if (isNew) {
+        if (resumeDateInput) {
+            resumeDateInput.value = '';
+        }
+        if (contractEndCheckbox) {
+            contractEndCheckbox.checked = false;
+        }
+    }
 
     const userInput = document.getElementById('userName');
     const suggestions = document.getElementById('userSuggestions');
@@ -484,6 +550,7 @@ function handleEntryTypeChange() {
         }
     }
 
+    clearFutureRequirementError();
     updateConditionalSections();
 }
 
@@ -503,7 +570,7 @@ function updateConditionalSections() {
         hospitalSection.classList.remove('active');
     }
 
-    if (entryType === 'existing' && reasonInput && reasonInput.value === 'stop') {
+    if (reasonInput && reasonInput.value === 'stop') {
         stopSection.classList.add('active');
     } else {
         stopSection.classList.remove('active');
@@ -965,11 +1032,19 @@ function showError(element) {
     }
 }
 
+function clearFutureRequirementError() {
+    const futureError = document.getElementById('futureRequirementError');
+    if (futureError) {
+        futureError.classList.remove('show');
+    }
+}
+
 // バリデーション
 function validateForm() {
     let isValid = true;
 
     const entryType = getEntryType();
+    const isNew = entryType === 'new';
 
     // 必須項目のチェック
     const requiredFields = ['reportDate', 'userName'];
@@ -982,17 +1057,15 @@ function validateForm() {
     });
 
     // 事業所のチェック
-    const office = document.getElementById('office').value;
-    if (!office) {
-        alert('事業所が設定されていません');
+    const officeElement = document.getElementById('office');
+    if (officeElement && officeElement.offsetParent !== null && !officeElement.value) {
+        showError(officeElement);
         isValid = false;
     }
 
     // 脱落理由の選択チェック
-    const reason = document.querySelector('input[name="reason"]:checked');
-    if (!reason) {
-        const radioGroup = document.querySelector('.radio-group');
-        showError(radioGroup);
+    const reason = isNew ? document.querySelector('input[name="reason"]:checked') : null;
+    if (isNew && !reason) {
         isValid = false;
     }
 
@@ -1017,8 +1090,8 @@ function validateForm() {
         }
     }
 
-    // 中止の場合の追加チェック（既存レコードのみ）
-    if (reason && reason.value === 'stop' && entryType === 'existing') {
+    // 中止の場合の追加チェック
+    if (reason && reason.value === 'stop') {
         const stopFields = ['stopDate', 'stopDiagnosis'];
         stopFields.forEach(fieldId => {
             const field = document.getElementById(fieldId);
@@ -1027,6 +1100,22 @@ function validateForm() {
                 isValid = false;
             }
         });
+    }
+
+    const futureError = document.getElementById('futureRequirementError');
+    if (entryType === 'existing') {
+        const resumeDate = document.getElementById('resumeDate').value;
+        const contractEnd = document.getElementById('contractEnd').checked;
+        if (!resumeDate && !contractEnd) {
+            if (futureError) {
+                futureError.classList.add('show');
+            }
+            isValid = false;
+        } else if (futureError) {
+            futureError.classList.remove('show');
+        }
+    } else if (futureError) {
+        futureError.classList.remove('show');
     }
 
     return isValid;
@@ -1057,11 +1146,17 @@ function collectFormData() {
 
     // 手動で値を設定
     formData.entryType = getEntryType();
-    formData.office = document.getElementById('office').value || userOrganization;
-    formData.reason = document.querySelector('input[name="reason"]:checked').value;
+    const officeValue = document.getElementById('office').value || userOrganization;
+    formData.office = officeValue;
+    const selectedReason = document.querySelector('input[name="reason"]:checked');
+    if (formData.entryType === 'existing') {
+        formData.reason = 'existing';
+    } else {
+        formData.reason = selectedReason ? selectedReason.value : '';
+    }
     formData.contractEnd = document.getElementById('contractEnd').checked;
 
-    if (formData.entryType === 'new') {
+    if (formData.entryType === 'existing') {
         formData.stopDate = '';
         formData.stopDiagnosis = '';
     }
@@ -1070,7 +1165,6 @@ function collectFormData() {
 // 確認内容生成
 function generateConfirmContent() {
     const entryType = formData.entryType || 'existing';
-    const reasonLabel = formData.reason === 'hospital' ? '入院' : '中止';
     const office = formData.office || userOrganization;
 
     let html = '';
@@ -1078,15 +1172,21 @@ function generateConfirmContent() {
     html += `<p><strong>事業所:</strong> ${office}</p>`;
     html += `<p><strong>報告日:</strong> ${Utils.formatDate(formData.reportDate)}</p>`;
     html += `<p><strong>利用者名:</strong> ${formData.userName}</p>`;
-    html += `<p><strong>報告理由:</strong> ${reasonLabel}</p>`;
+    
+    if (entryType === 'new') {
+        const reasonLabel = formData.reason === 'hospital' ? '入院' : '中止';
+        html += `<p><strong>報告理由:</strong> ${reasonLabel}</p>`;
 
-    if (formData.reason === 'hospital') {
-        html += `<p><strong>入院日:</strong> ${Utils.formatDate(formData.hospitalDate)}</p>`;
-        html += `<p><strong>入院先:</strong> ${formData.hospitalName}</p>`;
-        html += `<p><strong>診断名:</strong> ${formData.hospitalDiagnosis === 'その他' ? formData.hospitalOtherDiagnosisText : formData.hospitalDiagnosis}</p>`;
-    } else if (entryType === 'existing') {
-        html += `<p><strong>中止日:</strong> ${Utils.formatDate(formData.stopDate)}</p>`;
-        html += `<p><strong>診断名:</strong> ${formData.stopDiagnosis}</p>`;
+        if (formData.reason === 'hospital') {
+            html += `<p><strong>入院日:</strong> ${Utils.formatDate(formData.hospitalDate)}</p>`;
+            html += `<p><strong>入院先:</strong> ${formData.hospitalName}</p>`;
+            html += `<p><strong>診断名および理由:</strong> ${formData.hospitalDiagnosis === 'その他' ? formData.hospitalOtherDiagnosisText : formData.hospitalDiagnosis}</p>`;
+        } else if (formData.reason === 'stop') {
+            html += `<p><strong>中止日:</strong> ${Utils.formatDate(formData.stopDate)}</p>`;
+            html += `<p><strong>診断名および理由:</strong> ${formData.stopDiagnosis}</p>`;
+        }
+    } else {
+        html += `<p><strong>対象区分:</strong> 既存（入院中）</p>`;
     }
 
     if (formData.resumeDate) {

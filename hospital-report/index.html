@@ -54,7 +54,7 @@
             </div>
 
             <!-- 基本情報 -->
-            <div class="form-section">
+            <div class="form-section" id="basicInfoSection">
                 <h2>基本情報</h2>
                 
                 <div class="form-group">
@@ -62,7 +62,7 @@
                     <input type="text" id="reporter" name="reporter" readonly>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="officeGroup">
                     <label class="required">事業所</label>
                     <div id="officeContainer">
                         <div class="loading-message">
@@ -98,9 +98,9 @@
             </div>
 
             <!-- 脱落理由 -->
-            <div class="form-section">
+            <div class="form-section" id="reasonSection">
                 <h2>脱落理由</h2>
-                
+
                 <div class="form-group">
                     <label class="required">脱落理由を選択してください</label>
                     <div class="radio-group">
@@ -135,7 +135,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="required">診断名</label>
+                        <label class="required">診断名および理由</label>
                         <select id="hospitalDiagnosis" name="hospitalDiagnosis">
                             <option value="">選択してください</option>
                             <option value="誤嚥性肺炎">誤嚥性肺炎</option>
@@ -165,7 +165,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="required">診断名</label>
+                        <label class="required">診断名および理由</label>
                         <textarea id="stopDiagnosis" name="stopDiagnosis" rows="3" placeholder="診断名を入力してください"></textarea>
                         <span class="error-message">診断名を入力してください</span>
                     </div>
@@ -173,7 +173,7 @@
             </div>
 
             <!-- 共通項目 -->
-            <div class="form-section">
+            <div class="form-section" id="futureSection">
                 <h2>今後の予定</h2>
                 
                 <div class="form-group">
@@ -189,6 +189,8 @@
                     </div>
                     <span class="help-text">チェックすると該当利用者レコードのM列が「契約終了」に更新されます</span>
                 </div>
+
+                <p class="error-message" id="futureRequirementError">退院日または契約終了のいずれかを入力してください</p>
             </div>
         </form>
     </div>

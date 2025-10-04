@@ -18,15 +18,18 @@ const CRUTO_ENVIRONMENTS = Object.freeze({
       CLIENT_SECRET: 'mzYq8vAkhM',
       SERVICE_ACCOUNT: 'c5amh.serviceaccount@works-87651',
       DOMAIN_ID: '10314671',
-      PRIVATE_KEY_FILE: 'private_20250720123804.key'
+      PRIVATE_KEY_FILE: 'private_20250928234958.key'
     }),
     ACCIDENT: Object.freeze({
       BOT_ID: '10724480',
-      CHANNEL_ID: '76a979bb-5f37-10eb-41c7-f9e7222643c7',
+      CHANNEL_ID: '76524c45-5ef0-4673-e4f5-e4710590fa62',
       SPREADSHEET_URL: 'https://docs.google.com/spreadsheets/d/14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0/edit?gid=1986088926#gid=1986088926'
     }),
     HOSPITAL: Object.freeze({
-      BOT_ID: '9946034'
+      BOT_ID: '9946034',
+      SPREADSHEET_ID: '1glDMEMQNZ483fP8qq-dnqd9eN9ijoviIu0Lmdi0cEMs',
+      SHEET_NAME: '脱落管理',
+      MASTER_SHEET_NAME: '福岡'
     }),
     PHOTO_FOLDER_ID: '11r9PGtZKBuX22TnA6cIRHru6zlNYD9T_'
   }),
@@ -46,15 +49,18 @@ const CRUTO_ENVIRONMENTS = Object.freeze({
       CLIENT_SECRET: 'mzYq8vAkhM',
       SERVICE_ACCOUNT: 'c5amh.serviceaccount@works-87651',
       DOMAIN_ID: '10314671',
-      PRIVATE_KEY_FILE: 'private_20250720123804.key'
+      PRIVATE_KEY_FILE: 'private_20250928234958.key'
     }),
     ACCIDENT: Object.freeze({
       BOT_ID: '10724480',
-      CHANNEL_ID: '76a979bb-5f37-10eb-41c7-f9e7222643c7',
+      CHANNEL_ID: '76524c45-5ef0-4673-e4f5-e4710590fa62',
       SPREADSHEET_URL: 'https://docs.google.com/spreadsheets/d/14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0/edit?gid=1986088926#gid=1986088926'
     }),
     HOSPITAL: Object.freeze({
-      BOT_ID: '9946034'
+      BOT_ID: '9946034',
+      SPREADSHEET_ID: '1glDMEMQNZ483fP8qq-dnqd9eN9ijoviIu0Lmdi0cEMs',
+      SHEET_NAME: '脱落管理',
+      MASTER_SHEET_NAME: '福岡'
     }),
     PHOTO_FOLDER_ID: '11r9PGtZKBuX22TnA6cIRHru6zlNYD9T_'
   })
@@ -73,3 +79,6 @@ const ENV = Object.freeze(CRUTO_ENVIRONMENTS[CURRENT_ENV]);
 if (!ENV) {
   throw new Error('選択された CURRENT_ENV に対応する設定が見つかりません: ' + CURRENT_ENV);
 }
+
+
+

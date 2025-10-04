@@ -40,11 +40,40 @@ function doGetHospitalReportLegacy_DISABLED(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function getHospitalDataSpreadsheet() {
+  const hospitalConfig = ENV.HOSPITAL || {};
+  const spreadsheetId = hospitalConfig.SPREADSHEET_ID || ENV.SPREADSHEET_ID;
+  if (!spreadsheetId) {
+    throw new Error('HOSPITAL用のスプレッドシートIDが設定されていません');
+  }
+  return SpreadsheetApp.openById(spreadsheetId);
+}
+
+function getHospitalDataSheet() {
+  const hospitalConfig = ENV.HOSPITAL || {};
+  const sheetName = hospitalConfig.SHEET_NAME || ENV.SHEETS.HOSPITAL;
+  const sheet = getHospitalDataSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) {
+    throw new Error('入退院データシートが見つかりません: ' + sheetName);
+  }
+  return sheet;
+}
+
+function getHospitalMasterSheet() {
+  const hospitalConfig = ENV.HOSPITAL || {};
+  const masterSheetName = hospitalConfig.MASTER_SHEET_NAME || ENV.SHEETS.HOSPITAL_MASTER;
+  const sheet = getHospitalDataSpreadsheet().getSheetByName(masterSheetName);
+  if (!sheet) {
+    throw new Error('医療機関マスタシートが見つかりません: ' + masterSheetName);
+  }
+  return sheet;
+}
+
 function handleHospitalReport(data) {
   try {
     console.log("入退院報告データ受信:", JSON.stringify(data));
-    
-    const sheet = getSheet(ENV.SHEETS.HOSPITAL);
+
+    const sheet = getHospitalDataSheet();
     const logSheet = getLogSheet();
     
     if (!sheet) {
@@ -189,8 +218,21 @@ function updateHospitalRecord(sheet, targetRow, data, timestamp) {
     console.log(`レコード更新開始: 行${targetRow}`);
     
     // 各カラムの値を設定
-    const statusText = data.reason === 'hospital' ? '入院中' : 
-                      data.contractEnd ? '契約終了' : '退院';
+    const entryType = (data.entryType || '').toLowerCase();
+    let statusText;
+
+    if (entryType === 'existing') {
+      if (data.contractEnd) {
+        statusText = '契約終了';
+      } else if (data.resumeDate) {
+        statusText = '退院';
+      } else {
+        statusText = '入院中';
+      }
+    } else {
+      statusText = data.reason === 'hospital' ? '入院中'
+        : data.contractEnd ? '契約終了' : '退院';
+    }
     
     // B列: 状況
     sheet.getRange(targetRow, 2).setValue(statusText);
@@ -209,12 +251,12 @@ function updateHospitalRecord(sheet, targetRow, data, timestamp) {
       if (data.hospitalName) {
         sheet.getRange(targetRow, 6).setValue(data.hospitalName);
       }
-      
+
       // G列: 入院日
       if (data.hospitalDate) {
         sheet.getRange(targetRow, 7).setValue(new Date(data.hospitalDate));
       }
-      
+
       // H列: 診断名
       const diagnosis = data.hospitalDiagnosis === 'その他' ? 
                        data.hospitalOtherDiagnosisText : 
@@ -223,20 +265,27 @@ function updateHospitalRecord(sheet, targetRow, data, timestamp) {
         sheet.getRange(targetRow, 8).setValue(diagnosis);
       }
     } else {
-      // 中止の場合は診断名のみ
+      // 中止の場合
+      if (data.stopDate) {
+        sheet.getRange(targetRow, 7).setValue(new Date(data.stopDate));
+      }
       if (data.stopDiagnosis) {
         sheet.getRange(targetRow, 8).setValue(data.stopDiagnosis);
       }
     }
-    
+
     // M列: 契約終了
     if (data.contractEnd) {
       sheet.getRange(targetRow, 13).setValue('契約終了');
+    } else {
+      sheet.getRange(targetRow, 13).clearContent();
     }
-    
+
     // N列: 退院日・再開日
     if (data.resumeDate) {
       sheet.getRange(targetRow, 14).setValue(new Date(data.resumeDate));
+    } else {
+      sheet.getRange(targetRow, 14).clearContent();
     }
     
     console.log(`レコード更新完了: 行${targetRow} 状況=${statusText}`);
@@ -276,7 +325,7 @@ function getUsers() {
 
 function getHospitals() {
   try {
-    const sheet = getSheet(ENV.SHEETS.HOSPITAL_MASTER);
+    const sheet = getHospitalMasterSheet();
     if (!sheet) {
       throw new Error("医療マスタシートが見つかりません");
     }
@@ -839,7 +888,7 @@ function getUserInfo(accessToken, domainId, userId) {
 // 契約終了ステータス更新
 function updateContractEndStatus(userName, endDate) {
   try {
-    const sheet = getSheet(ENV.SHEETS.HOSPITAL);
+    const sheet = getHospitalDataSheet();
     const data = sheet.getDataRange().getValues();
     
     // 該当利用者のレコードを検索してM列を更新
@@ -858,7 +907,7 @@ function updateContractEndStatus(userName, endDate) {
 // N列の退院日・再開日更新
 function updateResumeDate(userName, resumeDate) {
   try {
-    const sheet = getSheet(ENV.SHEETS.HOSPITAL);
+    const sheet = getHospitalDataSheet();
     const data = sheet.getDataRange().getValues();
     
     // 該当利用者のレコードを検索してN列を更新
@@ -902,13 +951,18 @@ function searchUsers(query) {
     }
     
     const cleanQuery = query.trim();
-    const sheet = getSheet(ENV.SHEETS.HOSPITAL);
+    const sheet = getHospitalDataSheet();
     const data = sheet.getDataRange().getValues();
     const results = [];
     
     // C列（利用者名）から検索
     for (let i = 1; i < data.length; i++) {
       if (data[i][2] && data[i][2].toString().trim() !== '') {
+        const status = data[i][1] ? data[i][1].toString().trim() : '';
+        if (status !== '入院中') {
+          continue;
+        }
+
         const userName = data[i][2].toString().trim(); // C列：利用者名（漢字）
         const userReading = data[i][3] ? data[i][3].toString().trim() : ''; // D列：フリガナ（もしあれば）
         
@@ -923,7 +977,7 @@ function searchUsers(query) {
               value: userName,
               reading: userReading,
               id: data[i][0] || '', // A列：ID
-              status: data[i][1] || '' // B列：状態
+              status: status // B列：状態
             });
           }
         }
@@ -949,7 +1003,7 @@ function searchHospitals(query) {
     }
     
     const cleanQuery = query.trim();
-    const sheet = getSpreadsheet().getSheetByName("医療機関マスタ");
+    const sheet = getHospitalMasterSheet();
     const data = sheet.getDataRange().getValues();
     const results = [];
     
