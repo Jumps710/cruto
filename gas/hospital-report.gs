@@ -1004,8 +1004,27 @@ function searchHospitals(query) {
     
     const cleanQuery = query.trim();
     const sheet = getHospitalMasterSheet();
-    console.log('[searchHospitals] query:', cleanQuery, 'sheet:', sheet ? sheet.getName() : 'N/A');
-    const data = sheet.getDataRange().getValues();
+    const sheetName = sheet ? sheet.getName() : 'N/A';
+    const allValues = sheet.getDataRange().getValues();
+    const totalRows = Math.max(allValues.length - 1, 0);
+    const sampleEntries = allValues.slice(1, Math.min(6, allValues.length))
+      .map(function(row) { return row && row[0] ? row[0] : ''; })
+      .filter(function(name) { return name; });
+
+    appendLog([
+      new Date(),
+      'searchHospitals',
+      'START',
+      '',
+      '',
+      'query=' + cleanQuery,
+      'sheet=' + sheetName,
+      'rows=' + totalRows,
+      JSON.stringify({ sample: sampleEntries })
+    ]);
+
+    console.log('[searchHospitals] query:', cleanQuery, 'sheet:', sheetName, 'rows:', totalRows);
+    const data = allValues;
     const results = [];
     
     // A列から医療機関名を完全一致検索
@@ -1029,11 +1048,34 @@ function searchHospitals(query) {
       }
     }
     
+    appendLog([
+      new Date(),
+      'searchHospitals',
+      'RESULT',
+      '',
+      '',
+      'hits=' + results.length,
+      '',
+      '',
+      results.length > 0 ? JSON.stringify({ hits: results.slice(0, 5).map(function(r) { return r.name; }) }) : ''
+    ]);
+
     console.log('[searchHospitals] matches:', results.length);
     return results;
     
   } catch (error) {
     console.error("医療機関検索エラー:", error);
+    appendLog([
+      new Date(),
+      'searchHospitals',
+      'ERROR',
+      '',
+      '',
+      error && error.message ? error.message : String(error),
+      '',
+      '',
+      error && error.stack ? error.stack : ''
+    ]);
     return [];
   }
 }// 秘密鍵をファイルから読み込む関数
