@@ -930,6 +930,7 @@ function setupHospitalAutocomplete() {
                 
                 // 検索結果の確実な判定
                 if (Array.isArray(results) && results.length > 0) {
+                    console.log('[HOSPITAL SEARCH] results received', results);
                     const suggestionsHTML = results.map((hospital, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${hospital.name}">
                             <div class="suggestion-name">${hospital.name}</div>
@@ -954,6 +955,7 @@ function setupHospitalAutocomplete() {
                         });
                     });
                 } else if (Array.isArray(results) && results.length === 0) {
+                    console.log('[HOSPITAL SEARCH] zero results, showing empty message');
                     // 検索が正常に完了し、結果が0件の場合のみ「見つかりませんでした」を表示
                     suggestions.innerHTML = '<div class="suggestion-no-results">見つかりませんでした</div>';
                     suggestions.classList.add('show');

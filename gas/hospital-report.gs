@@ -1007,9 +1007,14 @@ function searchHospitals(query) {
     const sheetName = sheet ? sheet.getName() : 'N/A';
     const allValues = sheet.getDataRange().getValues();
     const totalRows = Math.max(allValues.length - 1, 0);
-    const sampleEntries = allValues.slice(1, Math.min(6, allValues.length))
-      .map(function(row) { return row && row[0] ? row[0] : ''; })
-      .filter(function(name) { return name; });
+    const sampleEntries = allValues.slice(1, Math.min(11, allValues.length))
+      .map(function(row, idx) {
+        return {
+          row: idx + 2,
+          name: row && row[0] ? row[0] : '',
+          raw: row
+        };
+      });
 
     appendLog([
       new Date(),
@@ -1030,10 +1035,13 @@ function searchHospitals(query) {
     // A列から医療機関名を完全一致検索
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] && data[i][0].toString().trim() !== '') {
-        const hospitalName = data[i][0].toString().trim();
-        
+        const hospitalNameRaw = data[i][0];
+        const hospitalName = hospitalNameRaw.toString().trim();
+        const normalizedHospital = hospitalName.toLowerCase();
+        const normalizedQuery = cleanQuery.toLowerCase();
+
         // 部分一致検索（大文字小文字を区別しない）
-        if (hospitalName.toLowerCase().includes(cleanQuery.toLowerCase())) {
+        if (normalizedHospital.includes(normalizedQuery)) {
           // 重複を除去
           if (!results.find(r => r.name === hospitalName)) {
             results.push({
@@ -1055,9 +1063,9 @@ function searchHospitals(query) {
       '',
       '',
       'hits=' + results.length,
+      results.length > 0 ? JSON.stringify({ firstHit: results[0] }) : '',
       '',
-      '',
-      results.length > 0 ? JSON.stringify({ hits: results.slice(0, 5).map(function(r) { return r.name; }) }) : ''
+      results.length > 0 ? '' : JSON.stringify({ lastSample: sampleEntries.slice(0, 5) })
     ]);
 
     console.log('[searchHospitals] matches:', results.length);
