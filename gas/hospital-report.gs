@@ -69,6 +69,20 @@ function getHospitalMasterSheet() {
   return sheet;
 }
 
+const HOSPITAL_COLUMNS = Object.freeze({
+  ID: 1,
+  STATUS: 2,
+  USER_NAME: 3,
+  ROOM: 4,
+  REPORTER: 5,
+  REPORT_DATE: 6,
+  HOSPITAL_NAME: 7,
+  HOSPITAL_DATE: 8,
+  DIAGNOSIS: 9,
+  CONTRACT_END: 12,
+  RESUME_DATE: 13
+});
+
 function handleHospitalReport(data) {
   try {
     console.log("入退院報告データ受信:", JSON.stringify(data));
@@ -203,9 +217,8 @@ function createNewHospitalRecordRow(sheet, data, timestamp) {
     recordId = maxNumericId + 1;
   }
 
-  sheet.getRange(targetRow, 1).setValue(recordId);
-  sheet.getRange(targetRow, 3).setValue(data.office || '');
-  sheet.getRange(targetRow, 4).setValue(data.userName || '');
+  sheet.getRange(targetRow, HOSPITAL_COLUMNS.ID).setValue(recordId);
+  sheet.getRange(targetRow, HOSPITAL_COLUMNS.USER_NAME).setValue(data.userName || '');
 
   return {
     rowIndex: targetRow,
@@ -217,20 +230,6 @@ function createNewHospitalRecordRow(sheet, data, timestamp) {
 function updateHospitalRecord(sheet, targetRow, data, timestamp) {
   try {
     console.log(`レコード更新開始: 行${targetRow}`);
-
-    const COLUMN = {
-      STATUS: 2,
-      OFFICE: 3,
-      USER_NAME: 4,
-      ROOM: 5,
-      REPORTER: 6,
-      REPORT_DATE: 7,
-      HOSPITAL_NAME: 8,
-      HOSPITAL_DATE: 9,
-      DIAGNOSIS: 10,
-      CONTRACT_END: 13,
-      RESUME_DATE: 14
-    };
 
     // 各カラムの値を設定
     const entryType = (data.entryType || '').toLowerCase();
@@ -250,42 +249,37 @@ function updateHospitalRecord(sheet, targetRow, data, timestamp) {
     }
     
     // 状況
-    sheet.getRange(targetRow, COLUMN.STATUS).setValue(statusText);
-
-    // 担当事業所
-    if (data.office) {
-      sheet.getRange(targetRow, COLUMN.OFFICE).setValue(data.office);
-    }
+    sheet.getRange(targetRow, HOSPITAL_COLUMNS.STATUS).setValue(statusText);
 
     // 利用者名
     if (data.userName) {
-      sheet.getRange(targetRow, COLUMN.USER_NAME).setValue(data.userName);
+      sheet.getRange(targetRow, HOSPITAL_COLUMNS.USER_NAME).setValue(data.userName);
     }
 
     // 報告者
-    sheet.getRange(targetRow, COLUMN.REPORTER).setValue(data.reporter || '');
+    sheet.getRange(targetRow, HOSPITAL_COLUMNS.REPORTER).setValue(data.reporter || '');
 
     // 報告日
     if (data.reportDate) {
-      sheet.getRange(targetRow, COLUMN.REPORT_DATE).setValue(new Date(data.reportDate));
+      sheet.getRange(targetRow, HOSPITAL_COLUMNS.REPORT_DATE).setValue(new Date(data.reportDate));
     } else {
-      sheet.getRange(targetRow, COLUMN.REPORT_DATE).clearContent();
+      sheet.getRange(targetRow, HOSPITAL_COLUMNS.REPORT_DATE).clearContent();
     }
 
     // 入院の場合の追加情報
     if (data.reason === 'hospital') {
       // 入院先
       if (data.hospitalName) {
-        sheet.getRange(targetRow, COLUMN.HOSPITAL_NAME).setValue(data.hospitalName);
+        sheet.getRange(targetRow, HOSPITAL_COLUMNS.HOSPITAL_NAME).setValue(data.hospitalName);
       } else {
-        sheet.getRange(targetRow, COLUMN.HOSPITAL_NAME).clearContent();
+        sheet.getRange(targetRow, HOSPITAL_COLUMNS.HOSPITAL_NAME).clearContent();
       }
 
       // 入院日
       if (data.hospitalDate) {
-        sheet.getRange(targetRow, COLUMN.HOSPITAL_DATE).setValue(new Date(data.hospitalDate));
+        sheet.getRange(targetRow, HOSPITAL_COLUMNS.HOSPITAL_DATE).setValue(new Date(data.hospitalDate));
       } else {
-        sheet.getRange(targetRow, COLUMN.HOSPITAL_DATE).clearContent();
+        sheet.getRange(targetRow, HOSPITAL_COLUMNS.HOSPITAL_DATE).clearContent();
       }
 
       // 診断名
@@ -293,37 +287,37 @@ function updateHospitalRecord(sheet, targetRow, data, timestamp) {
                        data.hospitalOtherDiagnosisText :
                        data.hospitalDiagnosis;
       if (diagnosis) {
-        sheet.getRange(targetRow, COLUMN.DIAGNOSIS).setValue(diagnosis);
+        sheet.getRange(targetRow, HOSPITAL_COLUMNS.DIAGNOSIS).setValue(diagnosis);
       } else {
-        sheet.getRange(targetRow, COLUMN.DIAGNOSIS).clearContent();
+        sheet.getRange(targetRow, HOSPITAL_COLUMNS.DIAGNOSIS).clearContent();
       }
     } else {
       // 中止の場合
       if (data.stopDate) {
-        sheet.getRange(targetRow, COLUMN.HOSPITAL_DATE).setValue(new Date(data.stopDate));
+        sheet.getRange(targetRow, HOSPITAL_COLUMNS.HOSPITAL_DATE).setValue(new Date(data.stopDate));
       } else {
-        sheet.getRange(targetRow, COLUMN.HOSPITAL_DATE).clearContent();
+        sheet.getRange(targetRow, HOSPITAL_COLUMNS.HOSPITAL_DATE).clearContent();
       }
       if (data.stopDiagnosis) {
-        sheet.getRange(targetRow, COLUMN.DIAGNOSIS).setValue(data.stopDiagnosis);
+        sheet.getRange(targetRow, HOSPITAL_COLUMNS.DIAGNOSIS).setValue(data.stopDiagnosis);
       } else {
-        sheet.getRange(targetRow, COLUMN.DIAGNOSIS).clearContent();
+        sheet.getRange(targetRow, HOSPITAL_COLUMNS.DIAGNOSIS).clearContent();
       }
-      sheet.getRange(targetRow, COLUMN.HOSPITAL_NAME).clearContent();
+      sheet.getRange(targetRow, HOSPITAL_COLUMNS.HOSPITAL_NAME).clearContent();
     }
 
     // M列: 契約終了
     if (data.contractEnd) {
-      sheet.getRange(targetRow, COLUMN.CONTRACT_END).setValue('契約終了');
+      sheet.getRange(targetRow, HOSPITAL_COLUMNS.CONTRACT_END).setValue('契約終了');
     } else {
-      sheet.getRange(targetRow, COLUMN.CONTRACT_END).clearContent();
+      sheet.getRange(targetRow, HOSPITAL_COLUMNS.CONTRACT_END).clearContent();
     }
 
     // N列: 退院日・再開日
     if (data.resumeDate) {
-      sheet.getRange(targetRow, COLUMN.RESUME_DATE).setValue(new Date(data.resumeDate));
+      sheet.getRange(targetRow, HOSPITAL_COLUMNS.RESUME_DATE).setValue(new Date(data.resumeDate));
     } else {
-      sheet.getRange(targetRow, COLUMN.RESUME_DATE).clearContent();
+      sheet.getRange(targetRow, HOSPITAL_COLUMNS.RESUME_DATE).clearContent();
     }
     
     console.log(`レコード更新完了: 行${targetRow} 状況=${statusText}`);
@@ -931,8 +925,9 @@ function updateContractEndStatus(userName, endDate) {
     
     // 該当利用者のレコードを検索してM列を更新
     for (let i = 1; i < data.length; i++) {
-      if (data[i][8] === userName) { // I列（利用者名）で検索
-        sheet.getRange(i + 1, 15).setValue('契約終了'); // O列（M列は13番目、O列は15番目）
+      const rowUserName = data[i][HOSPITAL_COLUMNS.USER_NAME - 1];
+      if (rowUserName && rowUserName.toString().trim() === userName.trim()) {
+        sheet.getRange(i + 1, HOSPITAL_COLUMNS.CONTRACT_END).setValue('契約終了');
         console.log(`契約終了ステータス更新: ${userName}`);
         break;
       }
@@ -950,8 +945,9 @@ function updateResumeDate(userName, resumeDate) {
     
     // 該当利用者のレコードを検索してN列を更新
     for (let i = 1; i < data.length; i++) {
-      if (data[i][8] === userName) { // I列（利用者名）で検索
-        sheet.getRange(i + 1, 14).setValue(resumeDate); // N列（14番目）
+      const rowUserName = data[i][HOSPITAL_COLUMNS.USER_NAME - 1];
+      if (rowUserName && rowUserName.toString().trim() === userName.trim()) {
+        sheet.getRange(i + 1, HOSPITAL_COLUMNS.RESUME_DATE).setValue(resumeDate);
         console.log(`退院日・再開日更新: ${userName} -> ${resumeDate}`);
         break;
       }
@@ -992,30 +988,27 @@ function searchUsers(query) {
     const sheet = getHospitalDataSheet();
     const data = sheet.getDataRange().getValues();
     const results = [];
-    
-    // C列（利用者名）から検索
+
     for (let i = 1; i < data.length; i++) {
-      if (data[i][2] && data[i][2].toString().trim() !== '') {
-        const status = data[i][1] ? data[i][1].toString().trim() : '';
+      const rawName = data[i][HOSPITAL_COLUMNS.USER_NAME - 1];
+      if (rawName && rawName.toString().trim() !== '') {
+        const statusCell = data[i][HOSPITAL_COLUMNS.STATUS - 1];
+        const status = statusCell ? statusCell.toString().trim() : '';
         if (status !== '入院中') {
           continue;
         }
 
-        const userName = data[i][2].toString().trim(); // C列：利用者名（漢字）
-        const userReading = data[i][3] ? data[i][3].toString().trim() : ''; // D列：フリガナ（もしあれば）
-        
-        // 漢字のみで部分一致検索（大文字小文字を区別しない）
+        const userName = rawName.toString().trim();
         const nameMatch = userName.toLowerCase().includes(cleanQuery.toLowerCase());
-        
+
         if (nameMatch) {
-          // 重複を除去
           if (!results.find(r => r.name === userName)) {
             results.push({
               name: userName,
               value: userName,
-              reading: userReading,
-              id: data[i][0] || '', // A列：ID
-              status: status // B列：状態
+              reading: '',
+              id: data[i][HOSPITAL_COLUMNS.ID - 1] || '',
+              status: status
             });
           }
         }
