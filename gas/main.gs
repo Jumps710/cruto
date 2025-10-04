@@ -172,54 +172,24 @@ function doPost(e) {
       // 入退院報告系アクション
       case 'submitHospitalReport':
         try {
-          // フォーム送信開始ログ（詳細データ付き）
-          logSheet.appendRow([
-            new Date(),
-            "入退院報告",
-            "フォーム送信開始",
-            requestData.data?.reporter || requestData.data?.reporterId || "",
-            "",
-            `入退院報告フォーム送信開始`,
-            JSON.stringify(requestData.data || {}),
-            "",
-            ""
-          ]);
-          
           if (!requestData.data) {
             throw new Error('フォームデータが送信されていません');
           }
-          
-          console.log('入退院報告データ受信:', JSON.stringify(requestData.data));
           const hospitalResult = handleHospitalReport(requestData.data);
-          
-          // 成功ログ
-          logSheet.appendRow([
-            new Date(),
-            "入退院報告",
-            "フォーム送信成功",
-            requestData.data?.reporter || "",
-            "",
-            `入退院報告フォーム送信成功: ID=${hospitalResult.reportId || '不明'}`,
-            "",
-            "",
-            ""
-          ]);
-          
           return createSuccessResponse(hospitalResult);
         } catch (hospitalError) {
           // エラーログ（詳細）
           logSheet.appendRow([
             new Date(),
-            "入退院報告",
-            "フォーム送信エラー",
+            "HOSPITAL_REPORT",
+            "ERROR",
             requestData.data?.reporter || "",
-            "",
-            `入退院報告エラー: ${hospitalError.message}`,
-            JSON.stringify(requestData || {}),
-            hospitalError.stack || "",
-            ""
+            '',
+            hospitalError.message || hospitalError.toString(),
+            requestData.data?.userName || '',
+            requestData.data?.reason || '',
+            ''
           ]);
-          console.error('入退院報告エラー:', hospitalError);
           throw hospitalError;
         }
         

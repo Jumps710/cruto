@@ -85,8 +85,6 @@ const HOSPITAL_COLUMNS = Object.freeze({
 
 function handleHospitalReport(data) {
   try {
-    console.log("入退院報告データ受信:", JSON.stringify(data));
-
     const sheet = getHospitalDataSheet();
     const logSheet = getLogSheet();
     
@@ -120,45 +118,29 @@ function handleHospitalReport(data) {
       if (isNewEntry) {
         createdRecord = createNewHospitalRecordRow(sheet, data, timestamp);
         targetRow = createdRecord.rowIndex;
-        logSheet.appendRow([
-          timestamp,
-          "HOSPITAL_REPORT",
-          "NEW_RECORD_CREATED",
-          data.reporter || "",
-          createdRecord.recordId,
-          data.userName,
-          data.reason || "",
-          data.contractEnd ? "契約終了" : "",
-          JSON.stringify({ entryType: data.entryType || "", office: data.office || "" })
-        ]);
       } else {
         throw new Error(`利用者「${userName}」のレコードが見つかりません`);
       }
     }
 
-    console.log(`利用者「${userName}」のレコード発見: 行${targetRow}`);
-    
     // カラム更新処理
+    const existingRecordId = sheet.getRange(targetRow, HOSPITAL_COLUMNS.ID).getValue();
     updateHospitalRecord(sheet, targetRow, data, timestamp);
-    
-    const reportId = createdRecord ? createdRecord.recordId : `HOSP-${timestamp.getTime()}`;
 
-    // 既存レコードの更新が完了
+    const reportId = createdRecord ? createdRecord.recordId : String(existingRecordId || `HOSP-${timestamp.getTime()}`);
+    const logAction = createdRecord ? 'NEW' : 'UPDATE';
 
-    // ログシートに記録
     logSheet.appendRow([
       timestamp,
-      "入退院報告",
-      data.reporter,
-      data.userId || '',
+      'HOSPITAL_REPORT',
+      logAction,
+      data.reporter || '',
       reportId,
-      data.userName,
-      data.reason,
-      data.contractEnd ? '契約終了' : '',
-      JSON.stringify(data)
+      data.userName || '',
+      data.reason || '',
+      data.reportDate || '',
+      data.contractEnd ? '契約終了' : ''
     ]);
-
-    console.log("入退院報告保存完了:", reportId);
 
     return {
       success: true,
@@ -229,7 +211,6 @@ function createNewHospitalRecordRow(sheet, data, timestamp) {
 // 入退院管理シートのレコード更新関数
 function updateHospitalRecord(sheet, targetRow, data, timestamp) {
   try {
-    console.log(`レコード更新開始: 行${targetRow}`);
 
     // 各カラムの値を設定
     const entryType = (data.entryType || '').toLowerCase();
@@ -319,8 +300,6 @@ function updateHospitalRecord(sheet, targetRow, data, timestamp) {
     } else {
       sheet.getRange(targetRow, HOSPITAL_COLUMNS.RESUME_DATE).clearContent();
     }
-    
-    console.log(`レコード更新完了: 行${targetRow} 状況=${statusText}`);
     
   } catch (error) {
     console.error(`レコード更新エラー (行${targetRow}):`, error);
@@ -928,7 +907,6 @@ function updateContractEndStatus(userName, endDate) {
       const rowUserName = data[i][HOSPITAL_COLUMNS.USER_NAME - 1];
       if (rowUserName && rowUserName.toString().trim() === userName.trim()) {
         sheet.getRange(i + 1, HOSPITAL_COLUMNS.CONTRACT_END).setValue('契約終了');
-        console.log(`契約終了ステータス更新: ${userName}`);
         break;
       }
     }
@@ -948,7 +926,6 @@ function updateResumeDate(userName, resumeDate) {
       const rowUserName = data[i][HOSPITAL_COLUMNS.USER_NAME - 1];
       if (rowUserName && rowUserName.toString().trim() === userName.trim()) {
         sheet.getRange(i + 1, HOSPITAL_COLUMNS.RESUME_DATE).setValue(resumeDate);
-        console.log(`退院日・再開日更新: ${userName} -> ${resumeDate}`);
         break;
       }
     }
@@ -1027,97 +1004,44 @@ function searchUsers(query) {
 // 医療機関検索機能（改良版：2文字以上、部分一致対応）
 function searchHospitals(query) {
   try {
-    
-    // 2文字未満の場合は検索しない
     if (!query || query.trim().length < 2) {
       return [];
     }
-    
-    const cleanQuery = query.trim();
+
+    const cleanQuery = query.trim().toLowerCase();
     const sheet = getHospitalMasterSheet();
-    const sheetName = sheet ? sheet.getName() : 'N/A';
-    const allValues = sheet.getDataRange().getValues();
-    const totalRows = Math.max(allValues.length - 1, 0);
-    const sampleEntries = allValues.slice(1, Math.min(11, allValues.length))
-      .map(function(row, idx) {
-        return {
-          row: idx + 2,
-          name: row && row[0] ? row[0] : '',
-          raw: row
-        };
-      });
-
-    appendLog([
-      new Date(),
-      'searchHospitals',
-      'START',
-      '',
-      '',
-      'query=' + cleanQuery,
-      'sheet=' + sheetName,
-      'rows=' + totalRows,
-      JSON.stringify({ sample: sampleEntries })
-    ]);
-
-    console.log('[searchHospitals] query:', cleanQuery, 'sheet:', sheetName, 'rows:', totalRows);
-    const data = allValues;
+    const data = sheet.getDataRange().getValues();
     const results = [];
-    
-    // A列から医療機関名を完全一致検索
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0] && data[i][0].toString().trim() !== '') {
-        const hospitalNameRaw = data[i][0];
-        const hospitalName = hospitalNameRaw.toString().trim();
-        const normalizedHospital = hospitalName.toLowerCase();
-        const normalizedQuery = cleanQuery.toLowerCase();
 
-        // 部分一致検索（大文字小文字を区別しない）
-        if (normalizedHospital.includes(normalizedQuery)) {
-          // 重複を除去
-          if (!results.find(r => r.name === hospitalName)) {
-            results.push({
-              name: hospitalName,
-              value: hospitalName,
-              area: data[i][1] || '', // B列: エリア
-              address: data[i][2] || '', // C列: 住所
-              phone: data[i][3] || '' // D列: 電話番号
-            });
-          }
+    for (let i = 1; i < data.length; i++) {
+      const cell = data[i][0];
+      if (!cell) {
+        continue;
+      }
+      const hospitalName = cell.toString().trim();
+      if (!hospitalName) {
+        continue;
+      }
+      if (hospitalName.toLowerCase().includes(cleanQuery)) {
+        if (!results.find(r => r.name === hospitalName)) {
+          results.push({
+            name: hospitalName,
+            value: hospitalName,
+            area: data[i][1] || '',
+            address: data[i][2] || '',
+            phone: data[i][3] || ''
+          });
         }
       }
     }
-    
-    appendLog([
-      new Date(),
-      'searchHospitals',
-      'RESULT',
-      '',
-      '',
-      'hits=' + results.length,
-      results.length > 0 ? JSON.stringify({ firstHit: results[0] }) : '',
-      '',
-      results.length > 0 ? '' : JSON.stringify({ lastSample: sampleEntries.slice(0, 5) })
-    ]);
 
-    console.log('[searchHospitals] matches:', results.length);
     return results;
-    
   } catch (error) {
     console.error("医療機関検索エラー:", error);
-    appendLog([
-      new Date(),
-      'searchHospitals',
-      'ERROR',
-      '',
-      '',
-      error && error.message ? error.message : String(error),
-      '',
-      '',
-      error && error.stack ? error.stack : ''
-    ]);
     return [];
   }
-}// 秘密鍵をファイルから読み込む関数
+}
+// 秘密鍵をファイルから読み込む関数
 function getPrivateKeyFromFile(fileName) {
   const targetName = fileName || ENV.LINE_WORKS.PRIVATE_KEY_FILE;
   try {

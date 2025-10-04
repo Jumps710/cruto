@@ -901,7 +901,6 @@ function setupHospitalAutocomplete() {
                 });
 
                 const requestUrl = `${config.gasUrl}?${params.toString()}`;
-                console.log('[HOSPITAL SEARCH] fetching', { requestUrl, query, sequence: currentSequence });
 
                 const response = await fetch(requestUrl, {
                     method: 'GET',
@@ -914,7 +913,6 @@ function setupHospitalAutocomplete() {
                 }
                 
                 const results = await response.json();
-                console.log('[HOSPITAL SEARCH] response', { status: response.status, resultsCount: Array.isArray(results) ? results.length : 'invalid', sequence: currentSequence });
                 
                 // レスポンス受信時にシーケンス番号を確認（最新の検索結果のみ処理）
                 if (currentSequence !== searchSequence) {
@@ -930,7 +928,6 @@ function setupHospitalAutocomplete() {
                 
                 // 検索結果の確実な判定
                 if (Array.isArray(results) && results.length > 0) {
-                    console.log('[HOSPITAL SEARCH] results received', results);
                     const suggestionsHTML = results.map((hospital, index) => `
                         <div class="suggestion-item" data-index="${index}" data-value="${hospital.name}">
                             <div class="suggestion-name">${hospital.name}</div>
@@ -955,7 +952,6 @@ function setupHospitalAutocomplete() {
                         });
                     });
                 } else if (Array.isArray(results) && results.length === 0) {
-                    console.log('[HOSPITAL SEARCH] zero results, showing empty message');
                     // 検索が正常に完了し、結果が0件の場合のみ「見つかりませんでした」を表示
                     suggestions.innerHTML = '<div class="suggestion-no-results">見つかりませんでした</div>';
                     suggestions.classList.add('show');
