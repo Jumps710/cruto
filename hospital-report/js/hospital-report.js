@@ -693,6 +693,8 @@ function setupUserAutocomplete() {
     input.addEventListener('input', function() {
         const query = this.value.trim();
         
+        console.log('[HOSPITAL SEARCH] input changed', { query });
+
         // 前回の検索をキャンセル
         clearTimeout(searchTimeout);
         
@@ -728,7 +730,7 @@ function setupUserAutocomplete() {
         // 検索シーケンス番号をインクリメント
         searchSequence++;
         const currentSequence = searchSequence;
-        
+
         // ローディング表示
         suggestions.innerHTML = '<div class="suggestion-loading">🔍 検索中...</div>';
         suggestions.classList.add('show');
@@ -897,9 +899,10 @@ function setupHospitalAutocomplete() {
                     action: 'searchHospitals',
                     query: query
                 });
-                
+
                 const requestUrl = `${config.gasUrl}?${params.toString()}`;
-                
+                console.log('[HOSPITAL SEARCH] fetching', { requestUrl, query, sequence: currentSequence });
+
                 const response = await fetch(requestUrl, {
                     method: 'GET',
                     mode: 'cors'
@@ -911,6 +914,7 @@ function setupHospitalAutocomplete() {
                 }
                 
                 const results = await response.json();
+                console.log('[HOSPITAL SEARCH] response', { status: response.status, resultsCount: Array.isArray(results) ? results.length : 'invalid', sequence: currentSequence });
                 
                 // レスポンス受信時にシーケンス番号を確認（最新の検索結果のみ処理）
                 if (currentSequence !== searchSequence) {

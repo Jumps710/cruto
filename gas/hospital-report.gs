@@ -1004,6 +1004,7 @@ function searchHospitals(query) {
     
     const cleanQuery = query.trim();
     const sheet = getHospitalMasterSheet();
+    console.log('[searchHospitals] query:', cleanQuery, 'sheet:', sheet ? sheet.getName() : 'N/A');
     const data = sheet.getDataRange().getValues();
     const results = [];
     
@@ -1028,6 +1029,7 @@ function searchHospitals(query) {
       }
     }
     
+    console.log('[searchHospitals] matches:', results.length);
     return results;
     
   } catch (error) {
