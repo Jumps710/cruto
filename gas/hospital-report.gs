@@ -204,7 +204,8 @@ function createNewHospitalRecordRow(sheet, data, timestamp) {
   }
 
   sheet.getRange(targetRow, 1).setValue(recordId);
-  sheet.getRange(targetRow, 3).setValue(data.userName || '');
+  sheet.getRange(targetRow, 3).setValue(data.office || '');
+  sheet.getRange(targetRow, 4).setValue(data.userName || '');
 
   return {
     rowIndex: targetRow,
@@ -216,7 +217,21 @@ function createNewHospitalRecordRow(sheet, data, timestamp) {
 function updateHospitalRecord(sheet, targetRow, data, timestamp) {
   try {
     console.log(`レコード更新開始: 行${targetRow}`);
-    
+
+    const COLUMN = {
+      STATUS: 2,
+      OFFICE: 3,
+      USER_NAME: 4,
+      ROOM: 5,
+      REPORTER: 6,
+      REPORT_DATE: 7,
+      HOSPITAL_NAME: 8,
+      HOSPITAL_DATE: 9,
+      DIAGNOSIS: 10,
+      CONTRACT_END: 13,
+      RESUME_DATE: 14
+    };
+
     // 各カラムの値を設定
     const entryType = (data.entryType || '').toLowerCase();
     let statusText;
@@ -234,58 +249,81 @@ function updateHospitalRecord(sheet, targetRow, data, timestamp) {
         : data.contractEnd ? '契約終了' : '退院';
     }
     
-    // B列: 状況
-    sheet.getRange(targetRow, 2).setValue(statusText);
-    
-    // D列: 報告者
-    sheet.getRange(targetRow, 4).setValue(data.reporter || '');
-    
-    // E列: 報告日
-    if (data.reportDate) {
-      sheet.getRange(targetRow, 5).setValue(new Date(data.reportDate));
+    // 状況
+    sheet.getRange(targetRow, COLUMN.STATUS).setValue(statusText);
+
+    // 担当事業所
+    if (data.office) {
+      sheet.getRange(targetRow, COLUMN.OFFICE).setValue(data.office);
     }
-    
+
+    // 利用者名
+    if (data.userName) {
+      sheet.getRange(targetRow, COLUMN.USER_NAME).setValue(data.userName);
+    }
+
+    // 報告者
+    sheet.getRange(targetRow, COLUMN.REPORTER).setValue(data.reporter || '');
+
+    // 報告日
+    if (data.reportDate) {
+      sheet.getRange(targetRow, COLUMN.REPORT_DATE).setValue(new Date(data.reportDate));
+    } else {
+      sheet.getRange(targetRow, COLUMN.REPORT_DATE).clearContent();
+    }
+
     // 入院の場合の追加情報
     if (data.reason === 'hospital') {
-      // F列: 入院先
+      // 入院先
       if (data.hospitalName) {
-        sheet.getRange(targetRow, 6).setValue(data.hospitalName);
+        sheet.getRange(targetRow, COLUMN.HOSPITAL_NAME).setValue(data.hospitalName);
+      } else {
+        sheet.getRange(targetRow, COLUMN.HOSPITAL_NAME).clearContent();
       }
 
-      // G列: 入院日
+      // 入院日
       if (data.hospitalDate) {
-        sheet.getRange(targetRow, 7).setValue(new Date(data.hospitalDate));
+        sheet.getRange(targetRow, COLUMN.HOSPITAL_DATE).setValue(new Date(data.hospitalDate));
+      } else {
+        sheet.getRange(targetRow, COLUMN.HOSPITAL_DATE).clearContent();
       }
 
-      // H列: 診断名
-      const diagnosis = data.hospitalDiagnosis === 'その他' ? 
-                       data.hospitalOtherDiagnosisText : 
+      // 診断名
+      const diagnosis = data.hospitalDiagnosis === 'その他' ?
+                       data.hospitalOtherDiagnosisText :
                        data.hospitalDiagnosis;
       if (diagnosis) {
-        sheet.getRange(targetRow, 8).setValue(diagnosis);
+        sheet.getRange(targetRow, COLUMN.DIAGNOSIS).setValue(diagnosis);
+      } else {
+        sheet.getRange(targetRow, COLUMN.DIAGNOSIS).clearContent();
       }
     } else {
       // 中止の場合
       if (data.stopDate) {
-        sheet.getRange(targetRow, 7).setValue(new Date(data.stopDate));
+        sheet.getRange(targetRow, COLUMN.HOSPITAL_DATE).setValue(new Date(data.stopDate));
+      } else {
+        sheet.getRange(targetRow, COLUMN.HOSPITAL_DATE).clearContent();
       }
       if (data.stopDiagnosis) {
-        sheet.getRange(targetRow, 8).setValue(data.stopDiagnosis);
+        sheet.getRange(targetRow, COLUMN.DIAGNOSIS).setValue(data.stopDiagnosis);
+      } else {
+        sheet.getRange(targetRow, COLUMN.DIAGNOSIS).clearContent();
       }
+      sheet.getRange(targetRow, COLUMN.HOSPITAL_NAME).clearContent();
     }
 
     // M列: 契約終了
     if (data.contractEnd) {
-      sheet.getRange(targetRow, 13).setValue('契約終了');
+      sheet.getRange(targetRow, COLUMN.CONTRACT_END).setValue('契約終了');
     } else {
-      sheet.getRange(targetRow, 13).clearContent();
+      sheet.getRange(targetRow, COLUMN.CONTRACT_END).clearContent();
     }
 
     // N列: 退院日・再開日
     if (data.resumeDate) {
-      sheet.getRange(targetRow, 14).setValue(new Date(data.resumeDate));
+      sheet.getRange(targetRow, COLUMN.RESUME_DATE).setValue(new Date(data.resumeDate));
     } else {
-      sheet.getRange(targetRow, 14).clearContent();
+      sheet.getRange(targetRow, COLUMN.RESUME_DATE).clearContent();
     }
     
     console.log(`レコード更新完了: 行${targetRow} 状況=${statusText}`);
