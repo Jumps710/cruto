@@ -1171,11 +1171,9 @@ function collectFormData() {
 // 確認内容生成
 function generateConfirmContent() {
     const entryType = formData.entryType || 'existing';
-    const office = formData.office || userOrganization;
 
     let html = '';
     html += `<p><strong>報告者:</strong> ${formData.reporter}</p>`;
-    html += `<p><strong>事業所:</strong> ${office}</p>`;
     html += `<p><strong>報告日:</strong> ${Utils.formatDate(formData.reportDate)}</p>`;
     html += `<p><strong>利用者名:</strong> ${formData.userName}</p>`;
     

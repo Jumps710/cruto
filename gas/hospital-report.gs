@@ -80,7 +80,7 @@ const HOSPITAL_COLUMNS = Object.freeze({
   HOSPITAL_DATE: 8,
   DIAGNOSIS: 9,
   CONTRACT_END: 12,
-  RESUME_DATE: 13
+  RESUME_DATE: 15
 });
 
 function handleHospitalReport(data) {
