@@ -29,7 +29,7 @@ const CRUTO_ENVIRONMENTS = Object.freeze({
       BOT_ID: '9946034',
       SPREADSHEET_ID: '1glDMEMQNZ483fP8qq-dnqd9eN9ijoviIu0Lmdi0cEMs',
       SHEET_NAME: '脱落管理',
-      MASTER_SHEET_NAME: '福岡'
+      MASTER_SHEET_NAME: 'マスタ_福岡'
     }),
     PHOTO_FOLDER_ID: '11r9PGtZKBuX22TnA6cIRHru6zlNYD9T_'
   }),
@@ -60,7 +60,7 @@ const CRUTO_ENVIRONMENTS = Object.freeze({
       BOT_ID: '9946034',
       SPREADSHEET_ID: '1glDMEMQNZ483fP8qq-dnqd9eN9ijoviIu0Lmdi0cEMs',
       SHEET_NAME: '脱落管理',
-      MASTER_SHEET_NAME: '福岡'
+      MASTER_SHEET_NAME: 'マスタ_福岡'
     }),
     PHOTO_FOLDER_ID: '11r9PGtZKBuX22TnA6cIRHru6zlNYD9T_'
   })
