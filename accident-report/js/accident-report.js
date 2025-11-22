@@ -1,1587 +1,1587 @@
-// –ŒÌ•ñƒtƒH[ƒ€ JavaScript - URLSearchParams + ‰æ¿‰ü‘P”Å v20250728001
-
-// İ’è
-const config = {
-    woffId: 'EownaFs9auCN-igUa84MDA', // –{”ÔŠÂ‹«‚ÌWOFF ID
-   // gasUrl: 'https://script.google.com/macros/s/AKfycbxD9kzCqRreieyw1WDNADsaw_zLsmYGB6pTiue-5Vuw0-2KcViZ4MNM_TtQkeASIkN7OA/exec', // Cruto—l–{”ÔŠÂ‹«
-    gasUrl: 'https://script.google.com/macros/s/AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj/exec', // ‘º¼ƒeƒXƒg
-
-    
-    googleMapsApiKey: 'AIzaSyCdhA4t8flujiYex2OddJCkFv4u6nWvi9w' // Google Maps Geocoding API
-};
-
-
-// ƒOƒ[ƒoƒ‹•Ï”
-let formData = {};
-let photoData = {
-    scene: [],
-    property: [],
-    otherVehicle: [],
-    ownVehicle: [],
-    license: []
-};
-let userOrganization = '';
-let availableOffices = [];
-
-// ƒLƒƒƒbƒVƒ…‹@”\
-const cache = {
-    offices: null,
-    officesExpiry: null,
-    CACHE_DURATION: 5 * 60 * 1000 // 5•ªŠÔƒLƒƒƒbƒVƒ…
-};
-
-// ‹­§ƒLƒƒƒbƒVƒ…ƒNƒŠƒA
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) {
-            registration.unregister();
-        }
-    });
-}
-
-// ‰Šú‰»
-document.addEventListener('DOMContentLoaded', async function() {
-    // ƒo[ƒWƒ‡ƒ“Šm”F—pƒƒOiŠm”FŒãíœj
-    console.log('?? Script loaded: v20250728001, DOMContentLoaded fired');
-    
-    // ƒtƒH[ƒ€—v‘f‚Ì‘¶İŠm”F
-    const form = document.getElementById('accidentReportForm');
-    const reporter = document.getElementById('reporter');
-    const officeContainer = document.getElementById('officeContainer');
-    
-    console.log('?? Elements check:', {
-        form: !!form,
-        reporter: !!reporter,
-        officeContainer: !!officeContainer
-    });
-    
-    if (!form) {
-        console.error('? ƒtƒH[ƒ€—v‘f‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ');
-        return;
-    }
-    
-    try {
-        // ‚Ü‚¸Å‰‚ÉƒCƒxƒ“ƒgƒŠƒXƒi[‚ğİ’èiƒtƒH[ƒ€‘€ì‚ğ‘¦À‚É—LŒø‰»j
-        console.log('?? Setting up event listeners...');
-        setupEventListeners();
-        // ‰Šúó‘Ô‚Å‚ÍÊ^‚Í”CˆÓi–ŒÌí—Ş‚ª–¢‘I‘ğ or ‚»‚Ì‘¼j
-        try {
-            const initialType = document.querySelector('input[name="accidentType"]:checked')?.value;
-            setScenePhotoRequired(initialType === 'vehicle');
-        } catch (_) {
-            // ‰Šú‰»’†‚Í–³‹
-        }
-        console.log('? Event listeners setup complete');
-    } catch (eventError) {
-        console.error('? Event listener setup failed:', eventError);
-        return;
-    }
-    
-    try {
-        // WOFF‰Šú‰»
-        console.log('?? Starting WOFF initialization...');
-        const profile = await WOFFManager.init(config.woffId);
-        console.log('? WOFF initialization successful:', profile);
-        
-        // •ñÒ–¼‚ğİ’è
-        document.getElementById('reporter').value = profile.displayName;
-        console.log('?? Reporter name set:', profile.displayName);
-        
-        // ¡“ú‚Ì“ú•t‚ğİ’èi‘¦À‚ÉÀsj
-        const today = new Date();
-        document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
-        console.log('?? Date set:', today.toISOString().split('T')[0]);
-        
-        // ƒ†[ƒU[‚Ì‘gDî•ñ‚ğ”ñ“¯Šú‚Åæ“¾iƒuƒƒbƒLƒ“ƒO‚µ‚È‚¢j
-        console.log('?? Getting user organization...');
-        getUserOrganization(profile.userId);
-        
-        
-    } catch (error) {
-        // ‰Šú‰»ƒGƒ‰[
-        console.error('‰Šú‰»ƒGƒ‰[:', error);
-        
-        // WOFF‰Šú‰»‚É¸”s‚µ‚Ä‚àAƒtƒH[ƒ€‚Íg‚¦‚é‚æ‚¤‚É‚·‚é
-        document.getElementById('reporter').value = 'ƒeƒXƒgƒ†[ƒU[';
-        const today = new Date();
-        document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
-        
-        // ƒfƒtƒHƒ‹ƒg‚Ì–‹ÆŠ‘I‘ğˆ‚ğ•\¦
-        const officeContainer = document.getElementById('officeContainer');
-        const officeSelect = document.getElementById('office');
-        
-        // ƒ[ƒfƒBƒ“ƒOƒƒbƒZ[ƒW‚ğíœ
-        officeContainer.innerHTML = '';
-        
-        // select‚ğ•\¦
-        officeSelect.innerHTML = `
-            <option value="">‘I‘ğ‚µ‚Ä‚­‚¾‚³‚¢</option>
-            <option value="–{Ğ">–{Ğ</option>
-            <option value="ŠÖ“Œx“X">ŠÖ“Œx“X</option>
-            <option value="ŠÖ¼x“X">ŠÖ¼x“X</option>
-        `;
-        officeSelect.style.display = 'block';
-        
-    }
-});
-
-// ƒ†[ƒU[‚Ì‘gDî•ñ‚ğæ“¾
-async function getUserOrganization(userId) {
-    try {
-        const requestData = {
-            action: 'getUserOrganization',
-            userId: userId
-        };
-        
-        let response;
-        let result;
-        
-        try {
-            // GETƒŠƒNƒGƒXƒg‚Åƒpƒ‰ƒ[ƒ^‚Æ‚µ‚Ä‘—MiCORS‰ñ”ğj
-//            const params = new URLSearchParams(requestData);
-            const getUrl = `${config.gasUrl}?${params.toString()}`;
-            
-            response = await fetch(getUrl, {
-                method: 'GET',
-                redirect: 'follow',
-                mode: 'cors'
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            // ƒŒƒXƒ|ƒ“ƒXƒeƒLƒXƒg‚ğæ‚Éæ“¾‚µ‚ÄƒƒOo—Í
-            const responseText = await response.text();
-            
-            try {
-                result = JSON.parse(responseText);
-            } catch (parseError) {
-                    throw new Error('ƒŒƒXƒ|ƒ“ƒX‚ÌJSON‰ğÍ‚É¸”s: ' + parseError.message);
-            }
-        } catch (fetchError) {
-            throw new Error('ƒlƒbƒgƒ[ƒNƒGƒ‰[: ' + fetchError.message);
-        }
-        
-        if (result && result.orgUnitName) {
-            userOrganization = result.orgUnitName;
-            
-            // –‹ÆŠƒtƒB[ƒ‹ƒh‚ğİ’è
-            const officeContainer = document.getElementById('officeContainer');
-            const officeSelect = document.getElementById('office');
-            
-            // ƒ[ƒfƒBƒ“ƒOƒƒbƒZ[ƒW‚ğíœ
-            officeContainer.innerHTML = '';
-            
-            // æ“¾‚µ‚½‘gD‚ğƒfƒtƒHƒ‹ƒg‚Æ‚µ‚Äİ’è‚µAselect‚ğ•\¦
-            officeSelect.innerHTML = `<option value="${userOrganization}">${userOrganization}</option>`;
-            officeSelect.value = userOrganization;
-            officeSelect.style.display = 'block';
-            
-            // –‹ÆŠˆê——‚ğ”ñ“¯Šú‚Åæ“¾‚µ‚Äƒvƒ‹ƒ_ƒEƒ“‚É’Ç‰Á
-            loadOfficesFromSheet().then(() => {
-                // –‹ÆŠˆê——æ“¾ŒãAŒ»İ‚Ì‘gD‚ªæ“ª‚É•\¦‚³‚ê‚é‚æ‚¤’²®
-                if (availableOffices.length > 0) {
-                    const currentOption = `<option value="${userOrganization}" selected>${userOrganization}</option>`;
-                    const otherOptions = availableOffices
-                        .filter(office => office.value !== userOrganization)
-                        .map(office => `<option value="${office.value}">${office.name}</option>`)
-                        .join('');
-                    officeSelect.innerHTML = currentOption + otherOptions;
-                }
-            }).catch(error => {
-                console.error('–‹ÆŠˆê——‚Ìæ“¾‚É¸”s:', error);
-            });
-            
-        } else if (result && Array.isArray(result)) {
-            // ƒtƒH[ƒ‹ƒoƒbƒN: –‹ÆŠˆê——‚ğæ“¾‚µ‚½ê‡
-            loadOfficesFromAPIResponse(result);
-            
-        } else {
-            throw new Error('‘gDî•ñ‚ğæ“¾‚Å‚«‚Ü‚¹‚ñ‚Å‚µ‚½ - result: ' + JSON.stringify(result));
-        }
-        
-    } catch (error) {
-        console.error('‘gDî•ñæ“¾ƒGƒ‰[:', error);
-        // ƒtƒH[ƒ‹ƒoƒbƒN: è“®‘I‘ğ
-        await loadOfficesFromSheet();
-    }
-}
-
-// APIƒŒƒXƒ|ƒ“ƒX‚©‚ç–‹ÆŠˆê——‚ğİ’è
-function loadOfficesFromAPIResponse(offices) {
-    if (offices && Array.isArray(offices)) {
-        availableOffices = offices;
-        
-        const officeContainer = document.getElementById('officeContainer');
-        const officeSelect = document.getElementById('office');
-        
-        // ƒ[ƒfƒBƒ“ƒOƒƒbƒZ[ƒW‚ğíœ
-        officeContainer.innerHTML = '';
-        
-        // –‹ÆŠ‘I‘ğˆ‚ğİ’è
-        officeSelect.innerHTML = '<option value="">‘I‘ğ‚µ‚Ä‚­‚¾‚³‚¢</option>';
-        
-        offices.forEach(office => {
-            const option = document.createElement('option');
-            option.value = office.value;
-            option.textContent = office.name;
-            officeSelect.appendChild(option);
-        });
-        
-        officeSelect.style.display = 'block';
-    } else {
-        return loadOfficesFromSheet();
-    }
-}
-
-// Sheets‚©‚ç–‹ÆŠˆê——‚ğæ“¾i10•bƒ^ƒCƒ€ƒAƒEƒg•t‚«AGET•û®‚É•ÏXj
-async function loadOfficesFromSheet() {
-    // ƒLƒƒƒbƒVƒ…ƒ`ƒFƒbƒN
-    if (cache.offices && cache.officesExpiry && Date.now() < cache.officesExpiry) {
-        return loadOfficesFromCache();
-    }
-    
-    try {
-        // –‹ÆŠî•ñæ“¾ŠJn
-        // Promise.race‚Åƒ^ƒCƒ€ƒAƒEƒg§Œä
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('ƒ^ƒCƒ€ƒAƒEƒg: 10•bˆÈ“à‚É‰“š‚ª‚ ‚è‚Ü‚¹‚ñ‚Å‚µ‚½')), 10000);
-        });
-        
-        // GET•û®‚Åƒpƒ‰ƒ[ƒ^‘—MigetUserOrganization‚Æ“¯‚¶¬Œ÷ƒpƒ^[ƒ“j
-        const requestData = {
-            action: 'getOffices'
-        };
-        const params = new URLSearchParams(requestData);
-        const getUrl = `${config.gasUrl}?${params.toString()}`;
-        
-        const fetchPromise = fetch(getUrl, {
-            method: 'GET',
-            redirect: 'follow',
-            mode: 'cors'
-        });
-        
-        
-        const response = await Promise.race([fetchPromise, timeoutPromise]);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const offices = await response.json();
-        
-        if (offices && Array.isArray(offices)) {
-            availableOffices = offices;
-            
-            // ƒLƒƒƒbƒVƒ…‚É•Û‘¶
-            cache.offices = offices;
-            cache.officesExpiry = Date.now() + cache.CACHE_DURATION;
-            
-            console.log('? –‹ÆŠˆê——æ“¾¬Œ÷:', offices.length + 'ŒiƒLƒƒƒbƒVƒ…XVj');
-            
-            // Œ»İ‚ÌofficeSelect‚Ìó‘Ô‚ğŠm”F
-            const officeSelect = document.getElementById('office');
-            if (officeSelect.style.display === 'none') {
-                // ‚Ü‚¾•\¦‚³‚ê‚Ä‚¢‚È‚¢ê‡‚Ì‚İAƒ[ƒfƒBƒ“ƒOƒƒbƒZ[ƒW‚ğíœ
-                const officeContainer = document.getElementById('officeContainer');
-                officeContainer.innerHTML = '';
-                
-                officeSelect.innerHTML = '<option value="">‘I‘ğ‚µ‚Ä‚­‚¾‚³‚¢</option>';
-                
-                offices.forEach(office => {
-                    const option = document.createElement('option');
-                    option.value = office.value;
-                    option.textContent = office.name;
-                    officeSelect.appendChild(option);
-                });
-                
-                officeSelect.style.display = 'block';
-            }
-        } else {
-            throw new Error('–‹ÆŠƒf[ƒ^‚ª–³Œø‚ÈŒ`®‚Å‚·');
-        }
-        
-    } catch (error) {
-        console.error('–‹ÆŠî•ñæ“¾ƒGƒ‰[:', error);
-        
-        // ƒtƒH[ƒ‹ƒoƒbƒN: Šî–{“I‚È–‹ÆŠ‘I‘ğˆ‚ğ’ñ‹Ÿ
-        
-        const defaultOffices = [
-            { value: '–{Ğ', name: '–{Ğ' },
-            { value: 'ŠÖ“Œx“X', name: 'ŠÖ“Œx“X' },
-            { value: 'ŠÖ¼x“X', name: 'ŠÖ¼x“X' }
-        ];
-        
-        availableOffices = defaultOffices;
-        
-        const officeContainer = document.getElementById('officeContainer');
-        const officeSelect = document.getElementById('office');
-        
-        officeContainer.innerHTML = '';
-        officeSelect.innerHTML = '<option value="">‘I‘ğ‚µ‚Ä‚­‚¾‚³‚¢</option>';
-        
-        defaultOffices.forEach(office => {
-            const option = document.createElement('option');
-            option.value = office.value;
-            option.textContent = office.name;
-            officeSelect.appendChild(option);
-        });
-        
-        officeSelect.style.display = 'block';
-        
-        // ƒ†[ƒU[‚É’Ê’mi”ñƒuƒƒbƒLƒ“ƒOj
-        setTimeout(() => {
-            alert('–‹ÆŠî•ñ‚Ìæ“¾‚ÉŠÔ‚ª‚©‚©‚Á‚Ä‚¢‚Ü‚·BŠî–{“I‚È‘I‘ğˆ‚ğ•\¦‚µ‚Ä‚¢‚Ü‚·B');
-        }, 100);
-    }
-}
-
-// ƒLƒƒƒbƒVƒ…‚©‚ç–‹ÆŠƒf[ƒ^‚ğ“Ç‚İ‚İ
-function loadOfficesFromCache() {
-    const offices = cache.offices;
-    availableOffices = offices;
-    
-    const officeSelect = document.getElementById('office');
-    officeSelect.innerHTML = '<option value="">‘I‘ğ‚µ‚Ä‚­‚¾‚³‚¢</option>';
-    
-    offices.forEach(office => {
-        const option = document.createElement('option');
-        option.value = office.value;
-        option.textContent = office.name;
-        officeSelect.appendChild(option);
-    });
-    
-    officeSelect.style.display = 'block';
-}
-
-// •s—v‚ÈŠÖ”‚ğíœiƒvƒ‹ƒ_ƒEƒ“‘I‘ğ‚É•ÏX‚µ‚½‚½‚ßj
-
-// ƒCƒxƒ“ƒgƒŠƒXƒi[‚Ìİ’è
-function setupEventListeners() {
-    // u‚»‚Ì‘¼v—p‚Ì—˜—pÒ–¼ƒtƒB[ƒ‹ƒh‚ğ“®“I‚É‘}“ü
-    ensureOtherUserNameField();
-    // –ŒÌí—Ş‚Ì‘I‘ğ‚É‚æ‚é•\¦Ø‘Ö
-    document.querySelectorAll('input[name="accidentType"]').forEach(radio => {
-        radio.addEventListener('change', handleAccidentTypeChange);
-    });
-    
-    // ‘Î•¨‚ ‚è‚Ìê‡‚ÌÚ×•\¦
-    document.querySelectorAll('input[name="propertyDamage"]').forEach(radio => {
-        radio.addEventListener('change', handlePropertyDamageChange);
-    });
-    
-    // ‘Îl‚ ‚è‚Ìê‡‚ÌÚ×•\¦
-    document.querySelectorAll('input[name="personalInjury"]').forEach(radio => {
-        radio.addEventListener('change', handlePersonalInjuryChange);
-    });
-    
-    // êŠ•ª—Ş‚É‚æ‚éÚ×êŠ‚Ì•\¦
-    const locationCategory = document.getElementById('locationCategory');
-    if (locationCategory) {
-        locationCategory.addEventListener('change', handleLocationCategoryChange);
-    }
-    
-    // Ú×êŠ‚Å‚»‚Ì‘¼‚ğ‘I‘ğ‚µ‚½ê‡
-    const detailLocation = document.getElementById('detailLocation');
-    if (detailLocation) {
-        detailLocation.addEventListener('change', handleDetailLocationChange);
-    }
-    
-    // GPSæ“¾ƒ{ƒ^ƒ“
-    const getLocationBtn = document.getElementById('getLocationBtn');
-    if (getLocationBtn) {
-        getLocationBtn.addEventListener('click', getLocation);
-    }
-    
-    // Ê^ƒAƒbƒvƒ[ƒh
-    setupPhotoUpload('scenePhoto', 'scenePhotoUpload', 'scenePhotoPreview', 'scene');
-    setupPhotoUpload('otherVehiclePhoto', 'otherVehiclePhotoUpload', 'otherVehiclePhotoPreview', 'otherVehicle');
-    setupPhotoUpload('ownVehiclePhoto', 'ownVehiclePhotoUpload', 'ownVehiclePhotoPreview', 'ownVehicle');
-    setupPhotoUpload('propertyPhoto', 'propertyPhotoUpload', 'propertyPhotoPreview', 'property');
-    setupPhotoUpload('licensePhoto', 'licensePhotoUpload', 'licensePhotoPreview', 'license');
-    
-    // ‘—Mƒ{ƒ^ƒ“
-    const submitBtn = document.getElementById('submitBtn');
-    if (submitBtn) {
-        submitBtn.addEventListener('click', handleSubmitClick);
-    }
-    
-    // ƒ‚[ƒ_ƒ‹ƒ{ƒ^ƒ“
-    const cancelBtn = document.getElementById('cancelBtn');
-    const confirmBtn = document.getElementById('confirmBtn');
-    if (cancelBtn && confirmBtn) {
-        cancelBtn.addEventListener('click', closeModal);
-        confirmBtn.addEventListener('click', submitForm);
-    }
-    
-    // ƒGƒ‰[ƒƒbƒZ[ƒW‚ÌƒNƒŠƒA
-      document.querySelectorAll('input, select, textarea').forEach(element => {
-          element.addEventListener('input', function() {
-              clearError(this);
-        });
-        element.addEventListener('change', function() {
-            clearError(this);
-        });
-    });
-  }
-
-  // u‚»‚Ì‘¼v”­¶êŠƒZƒNƒVƒ‡ƒ“‚É—˜—pÒ–¼ƒtƒB[ƒ‹ƒh‚ğ’Ç‰Á
-  function ensureOtherUserNameField() {
-      try {
-          const otherSection = document.getElementById('otherLocationSection');
-          if (!otherSection) return;
-
-          // Šù‚É‘¶İ‚·‚éê‡‚Í‰½‚à‚µ‚È‚¢
-          if (document.getElementById('userName')) return;
-
-          const locationCategorySelect = document.getElementById('locationCategory');
-          const locationGroup = locationCategorySelect && locationCategorySelect.closest('.form-group');
-
-          const wrapper = document.createElement('div');
-          wrapper.className = 'form-group';
-          wrapper.innerHTML = [
-              '<label class="required">—˜—pÒ‚Ì–¼‘O</label>',
-              '<input type="text" id="userName" name="userName" placeholder="—˜—pÒ‚Ì–¼‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢">',
-              '<span class="error-message">—˜—pÒ‚Ì–¼‘O‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢</span>'
-          ].join('');
-
-          if (locationGroup && locationGroup.parentElement === otherSection) {
-              otherSection.insertBefore(wrapper, locationGroup);
-          } else {
-              otherSection.insertBefore(wrapper, otherSection.firstChild);
-          }
-      } catch (e) {
-          console.error('—˜—pÒ–¼ƒtƒB[ƒ‹ƒh¶¬ƒGƒ‰[:', e);
-      }
-  }
-
-  // ‘—Mƒ{ƒ^ƒ“ƒNƒŠƒbƒN‚Ìƒ‰ƒbƒp[iu‚»‚Ì‘¼v‚Ì—˜—pÒ–¼•K{ƒ`ƒFƒbƒN‚ğ’Ç‰Áj
-  function handleSubmitClick() {
-      const accidentTypeInput = document.querySelector('input[name="accidentType"]:checked');
-      if (accidentTypeInput && accidentTypeInput.value === 'other') {
-          const userNameField = document.getElementById('userName');
-          if (userNameField && !userNameField.value) {
-              showError(userNameField);
-              alert('—˜—pÒ‚Ì–¼‘O‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢');
-              return;
-          }
-      }
-
-      showConfirmModal();
-  }
-
-// –ŒÌí—Ş•ÏX‚Ìˆ—
-function handleAccidentTypeChange(e) {
-    const vehicleSection = document.getElementById('vehicleSection');
-    const otherLocationSection = document.getElementById('otherLocationSection');
-    const vehiclePhotos = document.getElementById('vehiclePhotos');
-    const locationCategory = document.getElementById('locationCategory');
-    const detailLocation = document.getElementById('detailLocation');
-    const otherLocation = document.getElementById('otherLocation');
-    const otherAccidentCategory = document.getElementById('otherAccidentCategory');
-    const detailLocationDiv = document.getElementById('detailLocationDiv');
-    const otherLocationDiv = document.getElementById('otherLocationDiv');
-
-    if (e.target.value === 'vehicle') {
-        vehicleSection.classList.add('active');
-        vehiclePhotos.classList.add('active');
-        otherLocationSection.style.display = 'none';
-
-        if (locationCategory) {
-            locationCategory.value = '';
-        }
-        if (detailLocation) {
-            detailLocation.value = '';
-            if (detailLocationDiv) {
-                detailLocationDiv.style.display = 'none';
-            }
-        }
-        if (otherLocation) {
-            otherLocation.value = '';
-            if (otherLocationDiv) {
-                otherLocationDiv.style.display = 'none';
-            }
-        }
-        if (otherAccidentCategory) {
-            otherAccidentCategory.value = '';
-        }
-    } else {
-        vehicleSection.classList.remove('active');
-        vehiclePhotos.classList.remove('active');
-        otherLocationSection.style.display = 'block';
-    }
-
-    // –ŒÌí—Ş‚É‰‚¶‚Äu–ŒÌŒ»ê‚ÌÊ^v‚Ì•K{‚ğØ‚è‘Ö‚¦
-    setScenePhotoRequired(e.target.value === 'vehicle');
-}
-
-// u–ŒÌŒ»ê‚ÌÊ^v‚ğ•K{/”CˆÓ‚ÉØ‚è‘Ö‚¦
-function setScenePhotoRequired(isRequired) {
-    const sceneInput = document.getElementById('scenePhoto');
-    // ƒ‰ƒxƒ‹‚Í scenePhotoUpload ‚Ìe(.form-group)“à‚Ì <label>
-    const sceneLabel = document.querySelector('#scenePhotoUpload')?.parentElement?.querySelector('label');
-    if (!sceneInput) return;
-    if (isRequired) {
-        sceneInput.setAttribute('required', 'required');
-        if (sceneLabel) sceneLabel.classList.add('required');
-    } else {
-        sceneInput.removeAttribute('required');
-        if (sceneLabel) sceneLabel.classList.remove('required');
-        // ”CˆÓ‚É‚µ‚½‚Æ‚«‚ÍƒGƒ‰[•\¦‚ğÁ‚·
-        clearError(sceneInput);
-    }
-}
-
-// ‘Î•¨‘I‘ğ‚Ìˆ—
-function handlePropertyDamageChange(e) {
-    const propertyDetails = document.getElementById('propertyDetails');
-    const propertyPhotoDiv = document.getElementById('propertyPhotoDiv');
-    
-    if (e.target.value === 'yes') {
-        propertyDetails.classList.add('active');
-        propertyPhotoDiv.style.display = 'block';
-    } else {
-        propertyDetails.classList.remove('active');
-        propertyPhotoDiv.style.display = 'none';
-    }
-}
-
-// ‘Îl‘I‘ğ‚Ìˆ—
-function handlePersonalInjuryChange(e) {
-    const injuryDetails = document.getElementById('injuryDetails');
-    const licensePhotoDiv = document.getElementById('licensePhotoDiv');
-    
-    if (e.target.value === 'yes') {
-        injuryDetails.classList.add('active');
-        licensePhotoDiv.style.display = 'block';
-    } else {
-        injuryDetails.classList.remove('active');
-        licensePhotoDiv.style.display = 'none';
-    }
-}
-
-// êŠ•ª—Ş•ÏX‚Ìˆ—
-function handleLocationCategoryChange(e) {
-    const detailLocationDiv = document.getElementById('detailLocationDiv');
-    const otherLocationDiv = document.getElementById('otherLocationDiv');
-    const detailLocation = document.getElementById('detailLocation');
-    
-    // ‘I‘ğˆ‚ğƒNƒŠƒA
-    detailLocation.innerHTML = '<option value="">‘I‘ğ‚µ‚Ä‚­‚¾‚³‚¢</option>';
-    
-    const locationOptions = {
-        '–KŠÅ': ['‚²—˜—pÒ‘î', '‚»‚Ì‘¼'],
-        '¬™': ['Šˆ“®ƒXƒy[ƒX', 'ƒgƒCƒŒ', '‰®ŠO', '‚»‚Ì‘¼'],
-        '{İ': ['‹º', '‹¤—LƒXƒy[ƒX', 'ƒgƒCƒŒ', '—º', '’†’ë', 'ŒºŠÖ‘O', '’“Ôê', 'ŠK’i', '‚»‚Ì‘¼']
-    };
-    
-    if (e.target.value && locationOptions[e.target.value]) {
-        detailLocationDiv.style.display = 'block';
-        otherLocationDiv.style.display = 'none';
-        
-        locationOptions[e.target.value].forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt;
-            option.textContent = opt;
-            detailLocation.appendChild(option);
-        });
-    } else {
-        detailLocationDiv.style.display = 'none';
-        otherLocationDiv.style.display = 'none';
-    }
-}
-
-// Ú×êŠ•ÏX‚Ìˆ—
-function handleDetailLocationChange(e) {
-    const otherLocationDiv = document.getElementById('otherLocationDiv');
-    if (e.target.value === '‚»‚Ì‘¼') {
-        otherLocationDiv.style.display = 'block';
-    } else {
-        otherLocationDiv.style.display = 'none';
-    }
-}
-
-// GPSˆÊ’uî•ñæ“¾
-async function getLocation() {
-    const locationInput = document.getElementById('location');
-    const loading = Utils.showLoading(locationInput.parentElement, 'GPSæ“¾’†...');
-    
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            async function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                // ZŠ‚ğæ“¾
-                try {
-                    const address = await getAddressFromCoordinates(lat, lng);
-                    if (address) {
-                        locationInput.value = address;
-                        // À•Wî•ñ‚à•Ûiƒf[ƒ^‘®«‚Æ‚µ‚Äj
-                        locationInput.setAttribute('data-lat', lat);
-                        locationInput.setAttribute('data-lng', lng);
-                    } else {
-                        // ZŠæ“¾‚É¸”s‚µ‚½ê‡‚ÍÀ•W‚ğ•\¦
-                        locationInput.value = `ˆÜ“x: ${lat.toFixed(6)}, Œo“x: ${lng.toFixed(6)}`;
-                    }
-                } catch (error) {
-                    console.error('ZŠæ“¾ƒGƒ‰[:', error);
-                    locationInput.value = `ˆÜ“x: ${lat.toFixed(6)}, Œo“x: ${lng.toFixed(6)}`;
-                }
-                
-                Utils.hideLoading(loading);
-                clearError(locationInput);
-            },
-            function(error) {
-                Utils.hideLoading(loading);
-                alert('ˆÊ’uî•ñ‚Ìæ“¾‚É¸”s‚µ‚Ü‚µ‚½Bè“®‚Å“ü—Í‚µ‚Ä‚­‚¾‚³‚¢B');
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            }
-        );
-    } else {
-        Utils.hideLoading(loading);
-        alert('‚¨g‚¢‚Ìƒuƒ‰ƒEƒU‚ÍˆÊ’uî•ñ‚ğƒTƒ|[ƒg‚µ‚Ä‚¢‚Ü‚¹‚ñB');
-    }
-}
-
-// À•W‚©‚çZŠ‚ğæ“¾‚·‚éŠÖ”
-async function getAddressFromCoordinates(lat, lng) {
-    console.log('[GPS] ZŠæ“¾ŠJn:', {lat, lng});
-    
-    // Google Maps Geocoding API ‚ğ—Dæg—piÚ×‚ÈZŠî•ñ‚ğæ“¾j
-    const googleApiKey = config.googleMapsApiKey;
-    
-    if (googleApiKey) {
-        try {
-            console.log('[GPS] Google Maps APIg—p');
-            // result_typeƒpƒ‰ƒ[ƒ^‚ÅÚ×‚ÈZŠ‚ğ—v‹‚µAzoomƒŒƒxƒ‹‘Š“–‚Ì¸“xw’è
-            const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleApiKey}&language=ja&result_type=street_address|premise|subpremise&location_type=ROOFTOP|RANGE_INTERPOLATED`
-            );
-            const data = await response.json();
-            
-            if (data.status === 'OK' && data.results.length > 0) {
-                // ‚æ‚èÚ×‚ÈZŠ‚ğ—Dæ‚µ‚Ä‘I‘ğ
-                let bestResult = data.results[0];
-                
-                // street_address ƒ^ƒCƒv‚ÌŒ‹‰Ê‚ª‚ ‚ê‚Î—Dæ
-                for (const result of data.results) {
-                    if (result.types.includes('street_address') || result.types.includes('premise')) {
-                        bestResult = result;
-                        break;
-                    }
-                }
-                
-                // Google API‚Ìformatted_address‚©‚ç“ú–{‚ğœ‹‚µ‚Äg—p
-                const formattedAddress = cleanJapaneseAddress(bestResult.formatted_address);
-                console.log('?? ZŠæ“¾Š®—¹:', formattedAddress);
-                
-                // Google Maps APIƒŒƒXƒ|ƒ“ƒX‚ğƒƒO‚É‘—M
-                try {
-                    await logGoogleMapsResponse({
-                        coordinates: { lat, lng },
-                        googleResponse: data,
-                        extractedAddress: {
-                            fullAddress: formattedAddress,
-                            originalFormatted: bestResult.formatted_address,
-                            houseNumber: extractHouseNumberFromResult(bestResult)
-                        },
-                        source: 'accident-report'
-                    });
-                } catch (logError) {
-                    // ƒƒO‘—MƒGƒ‰[‚Í•\¦‚µ‚È‚¢
-                }
-                
-                return formattedAddress;
-            }
-        } catch (error) {
-            console.error('? Google Maps APIƒGƒ‰[:', error.message);
-        }
-    }
-    
-    // ƒtƒH[ƒ‹ƒoƒbƒN: Nominatim (OpenStreetMap) ‚ğg—p
-    try {
-        const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja&zoom=19&addressdetails=1&extratags=1&namedetails=1`,
-            {
-                headers: {
-                    'User-Agent': 'Cruto-Accident-Report/1.0'
-                }
-            }
-        );
-        const data = await response.json();
-        
-        if (data && data.display_name) {
-            const detailedAddress = formatDetailedJapaneseAddress(data);
-            console.log('?? ZŠæ“¾Š®—¹ (Nominatim):', detailedAddress);
-            return detailedAddress;
-        }
-    } catch (error) {
-        console.error('? Nominatim APIƒGƒ‰[:', error.message);
-    }
-    
-    return null;
-}
-
-// Google Maps API‚Ìaddress_components‚©‚çÚ×ZŠ‚ğ\’z
-function buildDetailedAddressFromGoogle(result) {
-    if (!result.address_components) return null;
-    
-    console.log('[GPS] Google address_components‰ğÍ:', result.address_components);
-    
-    let formatted = '';
-    let streetNumber = '';
-    let route = '';
-    let sublocality = '';
-    let locality = '';
-    let administrativeArea = '';
-    let premise = '';
-    let subpremise = '';
-    let postalCode = '';
-    
-    // address_components‚©‚çŠe—v‘f‚ğ’Šoi—X•Ö”Ô†‚ÍœŠOj
-    result.address_components.forEach(component => {
-        const types = component.types;
-        console.log('[GPS] ƒRƒ“ƒ|[ƒlƒ“ƒg:', component.long_name, types);
-        
-        // —X•Ö”Ô†‚Í‹L˜^‚·‚é‚ªZŠ‚É‚ÍŠÜ‚ß‚È‚¢
-        if (types.includes('postal_code')) {
-            postalCode = component.long_name;
-            console.log('[GPS] —X•Ö”Ô†ŒŸoiœŠOj:', postalCode);
-            return; // —X•Ö”Ô†‚ÍZŠ\’z‚Ég—p‚µ‚È‚¢
-        }
-        
-        if (types.includes('street_number')) {
-            streetNumber = component.long_name; // Šî–{”Ô’n
-            console.log('[GPS] Šî–{”Ô’n:', streetNumber);
-        }
-        if (types.includes('subpremise')) {
-            subpremise = component.long_name; // Œš•¨“à”Ô†
-            console.log('[GPS] Œš•¨“à”Ô†:', subpremise);
-        }
-        if (types.includes('route')) {
-            route = component.long_name; // ’Ê‚è–¼
-        }
-        if (types.includes('premise')) {
-            premise = component.long_name; // Œš•¨–¼
-        }
-        if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
-            sublocality = component.long_name; // ’š–Ú‚È‚Ç
-        }
-        if (types.includes('locality')) {
-            locality = component.long_name; // s‹æ’¬‘º
-        }
-        if (types.includes('administrative_area_level_1')) {
-            administrativeArea = component.long_name; // “s“¹•{Œ§
-        }
-    });
-    
-    // “ú–{‚ÌZŠŒ`®‚Å\’z
-    if (administrativeArea) formatted += administrativeArea;
-    if (locality) formatted += locality;
-    if (sublocality) formatted += sublocality;
-    
-    // ”Ô’nî•ñ‚ğ\’zi‘•{‘ä4-6-6Œ`®j
-    let houseNumberPart = '';
-    if (streetNumber) {
-        houseNumberPart = streetNumber;
-        console.log('[GPS] Šî–{”Ô’nİ’è:', streetNumber);
-        
-        // subpremise‚ª‚ ‚ê‚Î’Ç‰Ái—áF4-6-6‚Ì-6-6•”•ªj
-        if (subpremise) {
-            // subpremise‚ªŠù‚ÉƒnƒCƒtƒ“‚ğŠÜ‚ñ‚Å‚¢‚é‚©ƒ`ƒFƒbƒN
-            if (subpremise.includes('-')) {
-                houseNumberPart += '-' + subpremise;
-            } else {
-                houseNumberPart += '-' + subpremise;
-            }
-            console.log('[GPS] Ú×”Ô’n’Ç‰Á:', houseNumberPart);
-        }
-        
-        formatted += houseNumberPart;
-    } else if (route && route.match(/\d+/)) {
-        // route‚É”š‚ªŠÜ‚Ü‚ê‚Ä‚¢‚éê‡‚Í”Ô’n‚Æ‚µ‚Äg—p
-        const routeNumber = route.match(/\d+/)[0];
-        formatted += routeNumber;
-        console.log('[GPS] route”Ô’n’Ç‰Á:', routeNumber);
-    }
-    
-    // Œš•¨–¼‚ª‚ ‚ê‚Î’Ç‰Á
-    if (premise) {
-        formatted += ' ' + premise;
-    }
-    
-    console.log('[GPS] Google\’zŒ‹‰Ê:', formatted);
-    console.log('[GPS] œŠO‚³‚ê‚½—X•Ö”Ô†:', postalCode);
-    return formatted || null;
-}
-
-// “ú–{‚ÌZŠŒ`®‚ÉÚ×®Œ`‚·‚éŠÖ”i”Ô’n‚Ü‚Åæ“¾j
-function formatDetailedJapaneseAddress(data) {
-    if (!data.address) return data.display_name;
-    
-    const addr = data.address;
-    let formatted = '';
-    
-    console.log('[GPS] ZŠ\‘¢‰ğÍ:', addr);
-    
-    // “s“¹•{Œ§
-    if (addr.state || addr.province) {
-        formatted += addr.state || addr.province;
-    }
-    
-    // s‹æ’¬‘º
-    if (addr.city || addr.town || addr.municipality) {
-        formatted += addr.city || addr.town || addr.municipality;
-    }
-    
-    // ‹æE“Á•Ê‹æ
-    if (addr.city_district || addr.suburb) {
-        formatted += addr.city_district || addr.suburb;
-    }
-    
-    // ’¬E’š–Úi•¡”ƒpƒ^[ƒ“‚É‘Î‰j
-    if (addr.quarter || addr.neighbourhood || addr.residential) {
-        formatted += addr.quarter || addr.neighbourhood || addr.residential;
-    }
-    
-    // ”Ô’nE†iÚ×‚ÈZŠ”Ô†j
-    let houseInfo = '';
-    
-    // house_numberi”Ô’nj
-    if (addr.house_number) {
-        houseInfo += addr.house_number;
-    }
-    
-    // postcodei—X•Ö”Ô†j‚©‚çÚ×î•ñ‚ğ„’è
-    if (addr.postcode && !houseInfo) {
-        // —X•Ö”Ô†‚ª‚ ‚éê‡A‚æ‚è‹ï‘Ì“I‚ÈˆÊ’u‚ğ¦´
-        console.log('[GPS] —X•Ö”Ô†‚©‚çˆÊ’u„’è:', addr.postcode);
-    }
-    
-    // ”Ô’nî•ñ‚ª‚È‚¢ê‡A’Ç‰Á‚Ì•û–@‚Å”Ô’n‚ğ„’è
-    if (!houseInfo) {
-        // 1. roadi“¹˜H–¼j‚©‚ç„’è
-        if (addr.road) {
-            console.log('[GPS] “¹˜H–¼‚©‚çˆÊ’u„’è:', addr.road);
-            const roadMatch = addr.road.match(/(\d+)/);
-            if (roadMatch) {
-                houseInfo = roadMatch[1];
-            }
-        }
-        
-        // 2. display_name‚©‚ç”Ô’n‚ğ’Šoi—X•Ö”Ô†‚ğœŠOj
-        if (!houseInfo && data.display_name) {
-            console.log('[GPS] display_name‚©‚ç”Ô’n’Šo:', data.display_name);
-            // —X•Ö”Ô†ƒpƒ^[ƒ“‚ğœŠO: 3Œ…-4Œ…‚Í—X•Ö”Ô†‚È‚Ì‚ÅœŠO
-            // ”Ô’nƒpƒ^[ƒ“: 1-2Œ…‚Ì”Ô’ni—á: 4-6-6, 15-23j
-            const addressMatch = data.display_name.match(/(?:^|[^\d])(\d{1,2}(?:-\d{1,2}){1,2})(?:[^\d]|$)/);
-            if (addressMatch && !addressMatch[1].match(/^\d{3}-\d{4}$/)) {
-                houseInfo = addressMatch[1];
-                console.log('[GPS] display_name‚©‚ç”Ô’n”­Œ©:', houseInfo);
-            }
-        }
-        
-        // 3. ‚æ‚èÚ×‚ÈÀ•W‚ÅÄŒŸõiÅŒã‚Ìè’ij
-        if (!houseInfo) {
-            console.log('[GPS] ”Ô’nî•ñ‚È‚µ');
-        }
-    }
-    
-    if (houseInfo) {
-        formatted += houseInfo;
-    }
-    
-    // Œš•¨–¼E{İ–¼
-    if (addr.amenity || addr.building || addr.shop || addr.office) {
-        const facilityName = addr.amenity || addr.building || addr.shop || addr.office;
-        formatted += ' ' + facilityName;
-    }
-    
-    // ‹ï‘Ì“I‚ÈêŠ‚Ì–¼‘Oinamej
-    if (data.name && data.name !== formatted) {
-        formatted += ' (' + data.name + ')';
-    }
-    
-    console.log('[GPS] ®Œ`Œ‹‰Ê:', formatted);
-    
-    return formatted || data.display_name;
-}
-
-// ]—ˆ‚ÌŠÖ”‚àc‚·iŒİŠ·«‚Ì‚½‚ßj
-function formatJapaneseAddress(data) {
-    return formatDetailedJapaneseAddress(data);
-}
-
-/**
- * –ŒÌ•ñƒf[ƒ^‚ğV‚µ‚¢\‘¢‚É•ÏŠ·
- */
-function buildReportData(formData, photoData) {
-    // –ŒÌí—Ş‚ğ“ú–{Œê‚É•ÏŠ·
-    const accidentTypeJp = formData.accidentType === 'vehicle' ? 'Ô—¼–ŒÌ' : '‚»‚Ì‘¼';
-    
-    const baseData = {
-        // Šî–{î•ñ
-        reporterName: formData.reporter,
-        office: formData.office,
-        incidentDate: formData.incidentDate,
-        incidentTime: formData.incidentTime,
-        accidentType: accidentTypeJp,
-        location: formData.location,
-        details: formData.accidentDetails,
-        
-        // Ê^ƒf[ƒ^
-        photos: {
-            scene: photoData.scene || []
-        }
-      };
-      
-      // ?g?p?l??f?[?^????
-      baseData.userName = formData.userName;
-    
-    // ğŒ•ªŠòƒf[ƒ^‚ğ’Ç‰Á
-    if (formData.accidentType === 'other') {
-        // ‚»‚Ì‘¼–ŒÌ‚Ì€–Ú
-        baseData.otherAccidentCategory = formData.otherAccidentCategory;
-        baseData.locationCategory = formData.locationCategory;
-        baseData.locationDetail = formData.detailLocation;
-        baseData.locationNote = formData.otherLocation;
-        
-    } else if (formData.accidentType === 'vehicle') {
-        // Ô—¼–ŒÌ‚Ì€–Ú
-        baseData.driverName = formData.driverName;
-        baseData.propertyDamage = formData.propertyDamage;
-        baseData.propertyDetails = formData.propertyDetailsText;
-        baseData.personalInjury = formData.personalInjury;
-        baseData.personalDetails = formData.injuryDetailsText;
-        
-        // •‰î•ñiƒ`ƒFƒbƒNƒ{ƒbƒNƒX‚Ìó‘Ô‚ğæ“¾j
-        const injurySelf = document.getElementById('injurySelf')?.checked ? '‚ ‚è' : '';
-        const injuryPassenger = document.getElementById('injuryPassenger')?.checked ? '‚ ‚è' : '';
-        const injuryOther = document.getElementById('injuryOther')?.checked ? '‚ ‚è' : '';
-        const injuryDetailsText = formData.injuryDetailsText || '';
-        
-        baseData.injury = {
-            self: injurySelf,
-            selfDetails: injurySelf ? injuryDetailsText : '',
-            passenger: injuryPassenger,
-            passengerDetails: injuryPassenger ? injuryDetailsText : '',
-            other: injuryOther,
-            otherDetails: injuryOther ? injuryDetailsText : ''
-        };
-        
-        // Ô—¼–ŒÌ‚Ì’Ç‰ÁÊ^iğŒ‚ÉŠÖŒW‚È‚­‘S‚Ä’Ç‰Áj
-        baseData.photos.property = photoData.property || [];
-        baseData.photos.otherVehicle = photoData.otherVehicle || [];
-        baseData.photos.ownVehicle = photoData.ownVehicle || [];
-        baseData.photos.license = photoData.license || [];
-    }
-    
-    // ƒf[ƒ^\’zŠ®—¹
-    
-    return baseData;
-}
-
-/**
- * Google Maps API‚Ìformatted_address‚©‚ç•s—v‚È•”•ª‚ğœ‹
- */
-function cleanJapaneseAddress(formattedAddress) {
-    if (!formattedAddress) return '';
-    
-    let cleanedAddress = formattedAddress;
-    
-    // ––”ö‚Ìu“ú–{v‚ğœ‹
-    cleanedAddress = cleanedAddress.replace(/A?\s*“ú–{$/, '');
-    
-    // æ“ª‚Ìu“ú–{Av‚àœ‹
-    cleanedAddress = cleanedAddress.replace(/^“ú–{A\s*/, '');
-    
-    // —X•Ö”Ô†ƒpƒ^[ƒ“‚ğœ‹i—áF§272-0827A272-0827j
-    cleanedAddress = cleanedAddress.replace(/§?\d{3}-?\d{4}\s*/, '');
-    
-    // æ“ª‚Ì—X•Ö”Ô†ƒpƒ^[ƒ“‚àœ‹
-    cleanedAddress = cleanedAddress.replace(/^\d{3}-?\d{4}\s*/, '');
-    
-    // —]•ª‚ÈƒXƒy[ƒX‚ÆƒJƒ“ƒ}‚ğ´Œ‰‰»
-    cleanedAddress = cleanedAddress.replace(/^\s*,?\s*/, ''); // æ“ª‚ÌƒJƒ“ƒ}‚ÆƒXƒy[ƒX
-    cleanedAddress = cleanedAddress.replace(/\s*,?\s*$/, ''); // ––”ö‚ÌƒJƒ“ƒ}‚ÆƒXƒy[ƒX
-    cleanedAddress = cleanedAddress.replace(/\s+/g, ''); // •¡”ƒXƒy[ƒX‚ğíœ
-    
-    console.log('[GPS] ZŠ´Œ‰‰»:', formattedAddress, '->', cleanedAddress);
-    return cleanedAddress;
-}
-
-/**
- * Google Maps APIƒŒƒXƒ|ƒ“ƒX‚ğGAS‚ÉƒƒO‚Æ‚µ‚Ä‘—M
- */
-async function logGoogleMapsResponse(data) {
-    try {
-        const response = await fetch(config.gasUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'logGoogleMapsResponse',
-                ...data
-            })
-        });
-        
-        const result = await response.json();
-        console.log('[GPS] ƒƒO‘—MŠ®—¹:', result);
-        return result;
-    } catch (error) {
-        console.error('[GPS] ƒƒO‘—M¸”s:', error);
-        throw error;
-    }
-}
-
-/**
- * Google Maps API‚ÌŒ‹‰Ê‚©‚ç”Ô’nihouse numberj‚ğ’Šo
- */
-function extractHouseNumberFromResult(result) {
-    if (!result || !result.address_components) return '';
-    
-    let streetNumber = '';
-    let subpremise = '';
-    let postalCode = '';
-    
-    result.address_components.forEach(component => {
-        const types = component.types;
-        
-        // —X•Ö”Ô†‚ÍœŠOiƒƒO—p‚É‹L˜^‚Ì‚İj
-        if (types.includes('postal_code')) {
-            postalCode = component.long_name;
-            return; // ”Ô’n\’z‚É‚Íg—p‚µ‚È‚¢
-        }
-        
-        if (types.includes('street_number')) {
-            streetNumber = component.long_name;
-        }
-        if (types.includes('subpremise')) {
-            subpremise = component.long_name;
-        }
-    });
-    
-    // ”Ô’n‚Ì\’zi—áF4-6-6j
-    let houseNumber = '';
-    if (streetNumber) {
-        houseNumber = streetNumber;
-        if (subpremise) {
-            // Šù‚ÉƒnƒCƒtƒ“‚ªŠÜ‚Ü‚ê‚Ä‚¢‚é‚©ƒ`ƒFƒbƒN
-            if (!subpremise.startsWith('-')) {
-                houseNumber += '-' + subpremise;
-            } else {
-                houseNumber += subpremise;
-            }
-        }
-    }
-    
-    console.log('[GPS] ’Šo‚µ‚½”Ô’n:', houseNumber, 'œŠO—X•Ö”Ô†:', postalCode);
-    return houseNumber;
-}
-
-// ‰æ‘œˆ³kİ’è
-const imageConfig = {
-    // ‚‰æ¿İ’èi‚æ‚è‘å‚«‚¢ƒTƒCƒY‚Æ‚•i¿j
-    maxWidth: 1200,    // 600 ¨ 1200
-    maxHeight: 900,    // 450 ¨ 900
-    quality: 0.85,     // 0.5 ¨ 0.85 (85%•i¿)
-    enableCompression: true  // false‚Åˆ³k–³Œø‰»‰Â”\
-};
-
-// ‰æ‘œˆ³ki‚‰æ¿‘Î‰”Åj
-async function compressImageDirect(file) {
-    // ˆ³k‚ª–³Œø‰»‚³‚ê‚Ä‚¢‚éê‡‚ÍŒ³‰æ‘œ‚ğ‚»‚Ì‚Ü‚Ü•Ô‚·
-    if (!imageConfig.enableCompression) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const base64 = event.target.result.split(",")[1];
-                resolve(base64);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
-    
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement("canvas");
-                const maxWidth = imageConfig.maxWidth;
-                const maxHeight = imageConfig.maxHeight;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
-                }
-                if (height > maxHeight) {
-                    width = Math.round((width * maxHeight) / height);
-                    height = maxHeight;
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0, width, height);
-                const compressed = canvas.toDataURL("image/jpeg", imageConfig.quality);
-                resolve(compressed.split(",")[1]);
-            };
-            img.onerror = reject;
-            img.src = event.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
-// Ê^ƒAƒbƒvƒ[ƒhİ’è
-function setupPhotoUpload(inputId, uploadDivId, previewId, photoType) {
-    const input = document.getElementById(inputId);
-    const uploadDiv = document.getElementById(uploadDivId);
-    const preview = document.getElementById(previewId);
-    
-    uploadDiv.addEventListener('click', () => input.click());
-    
-    input.addEventListener('change', async function(e) {
-        preview.innerHTML = '';
-        photoData[photoType] = [];
-        
-        for (const file of Array.from(e.target.files)) {
-            if (file.type.startsWith('image/')) {
-                try {
-                    console.log(`?? ‰æ‘œˆ—ŠJn: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
-                    
-                    // ‰æ‘œ‚ğ’¼Úˆ³kiQlƒAƒvƒŠ€‹’j
-                    const base64 = await compressImageDirect(file);
-                    const compressedSize = base64.length * 0.75 / 1024; // Base64ƒTƒCƒY‚©‚ç‚¨‚¨‚æ‚»‚ÌKB‚ğŒvZ
-                    
-                    console.log(`?? ˆ³kŠ®—¹: ${file.name} ¨ ${compressedSize.toFixed(1)}KB`);
-                    
-                    photoData[photoType].push({
-                        name: file.name,
-                        data: base64,
-                        originalSize: file.size,
-                        compressedSize: base64.length
-                    });
-                    
-                    // ƒvƒŒƒrƒ…[•\¦
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        preview.appendChild(img);
-                    };
-                    reader.readAsDataURL(file);
-                } catch (error) {
-                    console.error('‰æ‘œˆ—ƒGƒ‰[:', error);
-                }
-            }
-        }
-        
-        if (photoType === 'scene' && photoData[photoType].length > 0) {
-            clearError(input);
-        }
-    });
-}
-
-// ƒGƒ‰[•\¦ƒNƒŠƒA
-function clearError(element) {
-    const errorMsg = element.parentElement.querySelector('.error-message');
-    if (errorMsg) {
-        errorMsg.classList.remove('show');
-    }
-}
-
-// ƒGƒ‰[•\¦
-function showError(element) {
-    const errorMsg = element.parentElement.querySelector('.error-message');
-    if (errorMsg) {
-        errorMsg.classList.add('show');
-    }
-}
-
-// ƒoƒŠƒf[ƒVƒ‡ƒ“
-function validateForm() {
-    let isValid = true;
-    
-    // •K{€–Ú‚Ìƒ`ƒFƒbƒN
-    const requiredFields = ['incidentDate', 'incidentTime', 'accidentDetails'];
-    requiredFields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (!field.value) {
-            showError(field);
-            isValid = false;
-        }
-    });
-    
-    // –‹ÆŠ‚Ìƒ`ƒFƒbƒN
-    const office = document.getElementById('office').value;
-    if (!office) {
-        alert('–‹ÆŠ‚ªİ’è‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ');
-        isValid = false;
-    }
-    
-    // –ŒÌí—Ş‚Ì‘I‘ğƒ`ƒFƒbƒN
-    if (!document.querySelector('input[name="accidentType"]:checked')) {
-        const radioGroup = document.querySelector('.radio-group');
-        showError(radioGroup);
-        isValid = false;
-    }
-    
-    // –ŒÌŒ»ê‚ÌÊ^ƒ`ƒFƒbƒNiÔ—¼–ŒÌ‚Ì‚Æ‚«‚Ì‚İ•K{j
-    const selectedTypeForPhoto = document.querySelector('input[name="accidentType"]:checked')?.value;
-    if (selectedTypeForPhoto === 'vehicle' && photoData.scene.length === 0) {
-        showError(document.getElementById('scenePhoto'));
-        isValid = false;
-    }
-    
-    // Ô—¼–ŒÌ‚Ìê‡‚Ì’Ç‰Áƒ`ƒFƒbƒN
-    const accidentType = document.querySelector('input[name="accidentType"]:checked');
-    if (accidentType && accidentType.value === 'vehicle') {
-        // ‰^“]è–¼
-        const driverName = document.getElementById('driverName');
-        if (!driverName.value) {
-            showError(driverName);
-            isValid = false;
-        }
-        
-        // ‘Î•¨E‘Îl‚Ì‘I‘ğ
-        if (!document.querySelector('input[name="propertyDamage"]:checked')) {
-            isValid = false;
-        }
-        if (!document.querySelector('input[name="personalInjury"]:checked')) {
-            isValid = false;
-        }
-        
-        // ‘Î•¨‚ ‚è‚Ìê‡‚ÌÚ×
-        const propertyDamage = document.querySelector('input[name="propertyDamage"]:checked');
-        if (propertyDamage && propertyDamage.value === 'yes') {
-            const propertyDetails = document.getElementById('propertyDetailsText');
-            if (!propertyDetails.value) {
-                showError(propertyDetails);
-                isValid = false;
-            }
-        }
-        
-        // ‘Îl‚ ‚è‚Ìê‡‚ÌÚ×
-        const personalInjury = document.querySelector('input[name="personalInjury"]:checked');
-        if (personalInjury && personalInjury.value === 'yes') {
-            const injuryDetails = document.getElementById('injuryDetailsText');
-            if (!injuryDetails.value) {
-                showError(injuryDetails);
-                isValid = false;
-            }
-        }
-        
-        // ”­¶êŠ
-        const location = document.getElementById('location');
-        if (!location.value) {
-            showError(location);
-            isValid = false;
-        }
-    } else {
-        // ‚»‚Ì‘¼‚Ìê‡‚ÌêŠƒ`ƒFƒbƒN
-        const otherAccidentCategory = document.getElementById('otherAccidentCategory');
-        if (!otherAccidentCategory.value) {
-            showError(otherAccidentCategory);
-            isValid = false;
-        }
-
-        const locationCategory = document.getElementById('locationCategory');
-        if (!locationCategory.value) {
-            showError(locationCategory);
-            isValid = false;
-        }
-        
-        if (locationCategory.value) {
-            const detailLocation = document.getElementById('detailLocation');
-            if (!detailLocation.value) {
-                showError(detailLocation);
-                isValid = false;
-            }
-            
-            if (detailLocation.value === '‚»‚Ì‘¼') {
-                const otherLocation = document.getElementById('otherLocation');
-                if (!otherLocation.value) {
-                    showError(otherLocation);
-                    isValid = false;
-                }
-            }
-        }
-    }
-    
-    return isValid;
-}
-
-// Šm”Fƒ‚[ƒ_ƒ‹•\¦
-function showConfirmModal() {
-    if (!validateForm()) {
-        alert('•K{€–Ú‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢');
-        return;
-    }
-    
-    // ƒtƒH[ƒ€ƒf[ƒ^ûW
-    collectFormData();
-    
-    // Šm”F“à—e‚Ì¶¬
-    const confirmContent = document.getElementById('confirmContent');
-    confirmContent.innerHTML = generateConfirmContent();
-    
-    // ƒ‚[ƒ_ƒ‹•\¦
-    document.getElementById('confirmModal').classList.add('show');
-}
-
-// ƒtƒH[ƒ€ƒf[ƒ^ûW
-function collectFormData() {
-    const form = document.getElementById('accidentReportForm');
-    formData = Utils.formToObject(form);
-    
-    // è“®‚Å’l‚ğİ’è
-    formData.office = document.getElementById('office').value || userOrganization;
-    formData.otherAccidentCategory = document.getElementById('otherAccidentCategory')?.value || '';
-
-    // ƒ`ƒFƒbƒNƒ{ƒbƒNƒX‚Ì’l‚ğûW
-    const injuryTypes = [];
-    document.querySelectorAll('input[name="injuryType"]:checked').forEach(cb => {
-        injuryTypes.push(cb.value);
-    });
-    formData.injuryTypes = injuryTypes;
-
-    // Ê^ƒf[ƒ^‚ğ’Ç‰Á
-    formData.photos = photoData;
-}
-
-// Šm”F“à—e¶¬
-function generateConfirmContent() {
-    const accidentType = formData.accidentType === 'vehicle' ? 'Ô—¼–ŒÌ' : '‚»‚Ì‘¼';
-    const office = formData.office || userOrganization;
-    
-    let html = `
-        <p><strong>•ñÒ:</strong> ${formData.reporter}</p>
-        <p><strong>–‹ÆŠ:</strong> ${office}</p>
-        <p><strong>”­¶“ú:</strong> ${Utils.formatDate(formData.incidentDate)}</p>
-        <p><strong>”­¶:</strong> ${Utils.formatTime(formData.incidentTime)}</p>
-        <p><strong>–ŒÌí—Ş:</strong> ${accidentType}</p>
-    `;
-    
-    if (formData.accidentType === 'vehicle') {
-        html += `
-            <p><strong>‰^“]è:</strong> ${formData.driverName}</p>
-            <p><strong>‘Î•¨:</strong> ${formData.propertyDamage === 'yes' ? '‚ ‚è' : '‚È‚µ'}</p>
-            <p><strong>‘Îl:</strong> ${formData.personalInjury === 'yes' ? '‚ ‚è' : '‚È‚µ'}</p>
-            <p><strong>”­¶êŠ:</strong> ${formData.location}</p>
-        `;
-    } else {
-        const categorySelect = document.getElementById('locationCategory');
-        const locationCategory = categorySelect.options[categorySelect.selectedIndex].text;
-        const otherAccidentCategory = document.getElementById('otherAccidentCategory');
-        const accidentCategoryText = otherAccidentCategory && otherAccidentCategory.value
-            ? otherAccidentCategory.options[otherAccidentCategory.selectedIndex].text
-            : '–¢‘I‘ğ';
-
-        html += `<p><strong>–ŒÌí—Ş:</strong> ${accidentCategoryText}</p>`;
-        html += `<p><strong>–‹ÆŠ•ª—Ş:</strong> ${locationCategory}</p>`;
-
-        if (formData.detailLocation) {
-            html += `<p><strong>Ú×êŠ:</strong> ${formData.detailLocation}</p>`;
-        }
-        if (formData.otherLocation) {
-            html += `<p><strong>‚»‚Ì‘¼‚ÌêŠ:</strong> ${formData.otherLocation}</p>`;
-        }
-    }
-    
-    html += `
-        <p><strong>–ŒÌÚ×:</strong><br>${formData.accidentDetails.replace(/\n/g, '<br>')}</p>
-        <p><strong>Ê^:</strong> –ŒÌŒ»ê ${photoData.scene.length}–‡`;
-    
-    if (formData.accidentType === 'vehicle') {
-        if (photoData.otherVehicle.length > 0) {
-            html += `, ‘Šè‚ÌÔ ${photoData.otherVehicle.length}–‡`;
-        }
-        if (photoData.ownVehicle.length > 0) {
-            html += `, ©•ª‚ÌÔ ${photoData.ownVehicle.length}–‡`;
-        }
-        if (photoData.license.length > 0) {
-            html += `, –Æ‹–Ø ${photoData.license.length}–‡`;
-        }
-    }
-    
-    html += '</p>';
-    
-    return html;
-}
-
-// ƒ‚[ƒ_ƒ‹‚ğ•Â‚¶‚é
-function closeModal() {
-    document.getElementById('confirmModal').classList.remove('show');
-}
-
-// ƒtƒH[ƒ€‘—Mi‚‘¬‰»‘Î‰j
-async function submitForm() {
-    const submitBtn = document.getElementById('confirmBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const sendingMessage = document.getElementById('sendingMessage');
-    
-    submitBtn.disabled = true;
-    cancelBtn.disabled = true;
-    sendingMessage.style.display = 'block'; // ‘—M’†ƒƒbƒZ[ƒW‚ğ•\¦
-    
-    // ƒvƒƒOƒŒƒX•\¦—p
-    let progressStep = 0;
-    const progressSteps = ['ƒf[ƒ^€”õ’†...', '‰æ‘œˆ—’†...', '‘—M’†...', '•Û‘¶’†...'];
-    
-    const updateProgress = () => {
-        if (progressStep < progressSteps.length) {
-            submitBtn.textContent = progressSteps[progressStep];
-            progressStep++;
-        }
-    };
-    
-    updateProgress(); // ƒf[ƒ^€”õ’†...
-    
-    try {
-        // ƒ^ƒCƒ€ƒXƒ^ƒ“ƒv’Ç‰Á
-        formData.timestamp = new Date().toISOString();
-        
-        updateProgress(); // ‰æ‘œˆ—’†...
-        
-        // V‚µ‚¢ƒf[ƒ^\‘¢‚É•ÏŠ·
-        const reportData = buildReportData(formData, photoData);
-        
-        // ƒfƒoƒbƒO: ‘—Mƒf[ƒ^Šm”F
-        console.log('?? ‘—Mƒf[ƒ^Šm”F:', {
-            scene: photoData.scene?.length || 0,
-            property: photoData.property?.length || 0,
-            otherVehicle: photoData.otherVehicle?.length || 0,
-            ownVehicle: photoData.ownVehicle?.length || 0,
-            license: photoData.license?.length || 0
-        });
-
-        // Debug: send data overview
-        // console.log("‘—Mƒf[ƒ^Šm”F:", {
-        //     accidentType: reportData.accidentType,
-        //     // totalPhotos,
-        //     // dataSizeKB: jsonSizeKB
-        // });
-        // ƒf[ƒ^ƒTƒCƒYƒ`ƒFƒbƒN
-        const jsonSize = JSON.stringify(reportData).length;
-//        const jsonSizeKB = (jsonSize / 1024).toFixed(1);
-//        const totalPhotos = Object.values(reportData.photos).flat().length;
-        
-        
-        // ƒf[ƒ^ƒTƒCƒY§ŒÀƒ`ƒFƒbƒNi5–‡‚Ì‰æ‘œ‚Å‚à2MBˆÈ“à‚Éû‚Ü‚é‚æ‚¤’²®j
-        if (jsonSize > 2 * 1024 * 1024) { // 2MBˆÈã
-//            throw new Error(`ƒf[ƒ^ƒTƒCƒY‚ª‘å‚«‚·‚¬‚Ü‚· (${jsonSizeKB}KB)B‰æ‘œ‚ğŒ¸‚ç‚·‚©A‚æ‚è¬‚³‚¢‰æ‘œ‚ğg—p‚µ‚Ä‚­‚¾‚³‚¢B`);
-        }
-        
-        updateProgress(); // ‘—M’†...
-        
-        // URLSearchParamsŒ`®‚Å‘—MiQlƒAƒvƒŠ€‹’j
-//        const formDataParams = new URLSearchParams();
-        formDataParams.append('action', 'submitAccidentReport');
-        formDataParams.append('reporterName', reportData.reporterName || '');
-        formDataParams.append('office', reportData.office || '');
-        formDataParams.append('incidentDate', reportData.incidentDate || '');
-        formDataParams.append('incidentTime', reportData.incidentTime || '');
-        formDataParams.append('accidentType', reportData.accidentType || '');
-        formDataParams.append('location', reportData.location || '');
-        formDataParams.append('details', reportData.details || '');
-        
-        // Ô—¼–ŒÌ‚Ìê‡‚Ì’Ç‰ÁƒtƒB[ƒ‹ƒh
-        if (reportData.accidentType === 'Ô—¼–ŒÌ') {
-            formDataParams.append('driverName', reportData.driverName || '');
-            formDataParams.append('propertyDamage', reportData.propertyDamage || '');
-            formDataParams.append('propertyDetails', reportData.propertyDetails || '');
-            formDataParams.append('personalInjury', reportData.personalInjury || '');
-            formDataParams.append('personalDetails', reportData.personalDetails || '');
-            if (reportData.injury) {
-                formDataParams.append('injurySelf', reportData.injury.self || '');
-                formDataParams.append('injurySelfDetails', reportData.injury.selfDetails || '');
-                formDataParams.append('injuryPassenger', reportData.injury.passenger || '');
-                formDataParams.append('injuryPassengerDetails', reportData.injury.passengerDetails || '');
-                formDataParams.append('injuryOther', reportData.injury.other || '');
-                formDataParams.append('injuryOtherDetails', reportData.injury.otherDetails || '');
-            }
-        } else if (reportData.accidentType === '‚»‚Ì‘¼') {
-            // ‚»‚Ì‘¼–ŒÌ‚Ìê‡‚Ì’Ç‰ÁƒtƒB[ƒ‹ƒh
-            formDataParams.append('userName', reportData.userName || '');
-            formDataParams.append('otherAccidentCategory', reportData.otherAccidentCategory || '');
-            formDataParams.append('locationCategory', reportData.locationCategory || '');
-            formDataParams.append('locationDetail', reportData.locationDetail || '');
-            formDataParams.append('locationNote', reportData.locationNote || '');
-        }
-        
-        // Ê^ƒf[ƒ^‚ğŒÂ•Ê‚É’Ç‰Á
-        const photos = reportData.photos || {};
-        Object.keys(photos).forEach(photoType => {
-            if (photos[photoType] && photos[photoType].length > 0) {
-                photos[photoType].forEach((photo, index) => {
-                    formDataParams.append(`photo_${photoType}_${index}`, photo.data);
-                    formDataParams.append(`photoName_${photoType}_${index}`, photo.name);
-                });
-            }
-        });
-        
-//            Ê^–‡”: totalPhotos,
-//            ƒf[ƒ^ƒTƒCƒYKB: jsonSizeKB,
-//            URLSearchParams•¶š”: formDataParams.toString().length
-        // extra callback wrapper removed
-        
-        const response = await fetch(config.gasUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: formDataParams
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const responseText = await response.text();
-        const result = JSON.parse(responseText);
-        
-        if (result.success) {
-            updateProgress(); // •Û‘¶’†...
-            
-            // console.log("‘—MŠ®—¹:", {
-            //     reportId: result.reportId,
-            //     photoCount: result.photoCount
-            // });
-            
-            // ­‚µ‘Ò‚Á‚Ä‚©‚ç‰æ–Ê‘JˆÚiƒ†[ƒU[‚É•Û‘¶Š®—¹‚ğ‹Šo“I‚É“`‚¦‚éj
-            setTimeout(() => {
-                localStorage.setItem('reportResult', JSON.stringify({
-                    success: true,
-                    reportId: result.reportId,
-                    timestamp: reportData.timestamp
-                }));
-                window.location.href = 'result.html';
-            }, 500);
-        } else {
-            throw new Error(result.error || '‘—M‚É¸”s‚µ‚Ü‚µ‚½');
-        }
-        
-    } catch (error) {
-        console.error('? ‘—MƒGƒ‰[:', error.message);
-        alert('‘—M‚É¸”s‚µ‚Ü‚µ‚½B‚à‚¤ˆê“x‚¨‚µ‚­‚¾‚³‚¢B\nƒGƒ‰[: ' + error.message);
-        submitBtn.disabled = false;
-        cancelBtn.disabled = false;
-        submitBtn.textContent = '‘—M‚·‚é';
-        sendingMessage.style.display = 'none'; // ‘—M’†ƒƒbƒZ[ƒW‚ğ”ñ•\¦
-    }
-}
-
-
+// äº‹æ•…å ±å‘Šãƒ•ã‚©ãƒ¼ãƒ  JavaScript - URLSearchParams + ç”»è³ªæ”¹å–„ç‰ˆ v20250728001
+
+// è¨­å®š
+const config = {
+    woffId: 'EownaFs9auCN-igUa84MDA', // æœ¬ç•ªç’°å¢ƒã®WOFF ID
+   // gasUrl: 'https://script.google.com/macros/s/AKfycbxD9kzCqRreieyw1WDNADsaw_zLsmYGB6pTiue-5Vuw0-2KcViZ4MNM_TtQkeASIkN7OA/exec', // Crutoæ§˜æœ¬ç•ªç’°å¢ƒ
+    gasUrl: 'https://script.google.com/macros/s/AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj/exec', // æ‘æ¾ãƒ†ã‚¹ãƒˆ
+
+    
+    googleMapsApiKey: 'AIzaSyCdhA4t8flujiYex2OddJCkFv4u6nWvi9w' // Google Maps Geocoding API
+};
+
+
+// ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°
+let formData = {};
+let photoData = {
+    scene: [],
+    property: [],
+    otherVehicle: [],
+    ownVehicle: [],
+    license: []
+};
+let userOrganization = '';
+let availableOffices = [];
+
+// ã‚­ãƒ£ãƒƒã‚·ãƒ¥æ©Ÿèƒ½
+const cache = {
+    offices: null,
+    officesExpiry: null,
+    CACHE_DURATION: 5 * 60 * 1000 // 5åˆ†é–“ã‚­ãƒ£ãƒƒã‚·ãƒ¥
+};
+
+// å¼·åˆ¶ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã‚¯ãƒªã‚¢
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+            registration.unregister();
+        }
+    });
+}
+
+// åˆæœŸåŒ–
+document.addEventListener('DOMContentLoaded', async function() {
+    // ãƒãƒ¼ã‚¸ãƒ§ãƒ³ç¢ºèªç”¨ãƒ­ã‚°ï¼ˆç¢ºèªå¾Œå‰Šé™¤ï¼‰
+    console.log('?? Script loaded: v20250728001, DOMContentLoaded fired');
+    
+    // ãƒ•ã‚©ãƒ¼ãƒ è¦ç´ ã®å­˜åœ¨ç¢ºèª
+    const form = document.getElementById('accidentReportForm');
+    const reporter = document.getElementById('reporter');
+    const officeContainer = document.getElementById('officeContainer');
+    
+    console.log('?? Elements check:', {
+        form: !!form,
+        reporter: !!reporter,
+        officeContainer: !!officeContainer
+    });
+    
+    if (!form) {
+        console.error('? ãƒ•ã‚©ãƒ¼ãƒ è¦ç´ ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“');
+        return;
+    }
+    
+    try {
+        // ã¾ãšæœ€åˆã«ã‚¤ãƒ™ãƒ³ãƒˆãƒªã‚¹ãƒŠãƒ¼ã‚’è¨­å®šï¼ˆãƒ•ã‚©ãƒ¼ãƒ æ“ä½œã‚’å³åº§ã«æœ‰åŠ¹åŒ–ï¼‰
+        console.log('?? Setting up event listeners...');
+        setupEventListeners();
+        // åˆæœŸçŠ¶æ…‹ã§ã¯å†™çœŸã¯ä»»æ„ï¼ˆäº‹æ•…ç¨®é¡ãŒæœªé¸æŠ or ãã®ä»–ï¼‰
+        try {
+            const initialType = document.querySelector('input[name="accidentType"]:checked')?.value;
+            setScenePhotoRequired(initialType === 'vehicle');
+        } catch (_) {
+            // åˆæœŸåŒ–ä¸­ã¯ç„¡è¦–
+        }
+        console.log('? Event listeners setup complete');
+    } catch (eventError) {
+        console.error('? Event listener setup failed:', eventError);
+        return;
+    }
+    
+    try {
+        // WOFFåˆæœŸåŒ–
+        console.log('?? Starting WOFF initialization...');
+        const profile = await WOFFManager.init(config.woffId);
+        console.log('? WOFF initialization successful:', profile);
+        
+        // å ±å‘Šè€…åã‚’è¨­å®š
+        document.getElementById('reporter').value = profile.displayName;
+        console.log('?? Reporter name set:', profile.displayName);
+        
+        // ä»Šæ—¥ã®æ—¥ä»˜ã‚’è¨­å®šï¼ˆå³åº§ã«å®Ÿè¡Œï¼‰
+        const today = new Date();
+        document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
+        console.log('?? Date set:', today.toISOString().split('T')[0]);
+        
+        // ãƒ¦ãƒ¼ã‚¶ãƒ¼ã®çµ„ç¹”æƒ…å ±ã‚’éåŒæœŸã§å–å¾—ï¼ˆãƒ–ãƒ­ãƒƒã‚­ãƒ³ã‚°ã—ãªã„ï¼‰
+        console.log('?? Getting user organization...');
+        getUserOrganization(profile.userId);
+        
+        
+    } catch (error) {
+        // åˆæœŸåŒ–ã‚¨ãƒ©ãƒ¼
+        console.error('åˆæœŸåŒ–ã‚¨ãƒ©ãƒ¼:', error);
+        
+        // WOFFåˆæœŸåŒ–ã«å¤±æ•—ã—ã¦ã‚‚ã€ãƒ•ã‚©ãƒ¼ãƒ ã¯ä½¿ãˆã‚‹ã‚ˆã†ã«ã™ã‚‹
+        document.getElementById('reporter').value = 'ãƒ†ã‚¹ãƒˆãƒ¦ãƒ¼ã‚¶ãƒ¼';
+        const today = new Date();
+        document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
+        
+        // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã®äº‹æ¥­æ‰€é¸æŠè‚¢ã‚’è¡¨ç¤º
+        const officeContainer = document.getElementById('officeContainer');
+        const officeSelect = document.getElementById('office');
+        
+        // ãƒ­ãƒ¼ãƒ‡ã‚£ãƒ³ã‚°ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å‰Šé™¤
+        officeContainer.innerHTML = '';
+        
+        // selectã‚’è¡¨ç¤º
+        officeSelect.innerHTML = `
+            <option value="">é¸æŠã—ã¦ãã ã•ã„</option>
+            <option value="æœ¬ç¤¾">æœ¬ç¤¾</option>
+            <option value="é–¢æ±æ”¯åº—">é–¢æ±æ”¯åº—</option>
+            <option value="é–¢è¥¿æ”¯åº—">é–¢è¥¿æ”¯åº—</option>
+        `;
+        officeSelect.style.display = 'block';
+        
+    }
+});
+
+// ãƒ¦ãƒ¼ã‚¶ãƒ¼ã®çµ„ç¹”æƒ…å ±ã‚’å–å¾—
+async function getUserOrganization(userId) {
+    try {
+        const requestData = {
+            action: 'getUserOrganization',
+            userId: userId
+        };
+        
+        let response;
+        let result;
+        
+        try {
+            // GETãƒªã‚¯ã‚¨ã‚¹ãƒˆã§ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã¨ã—ã¦é€ä¿¡ï¼ˆCORSå›é¿ï¼‰
+//            const params = new URLSearchParams(requestData);
+            const getUrl = `${config.gasUrl}?${params.toString()}`;
+            
+            response = await fetch(getUrl, {
+                method: 'GET',
+                redirect: 'follow',
+                mode: 'cors'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            // ãƒ¬ã‚¹ãƒãƒ³ã‚¹ãƒ†ã‚­ã‚¹ãƒˆã‚’å…ˆã«å–å¾—ã—ã¦ãƒ­ã‚°å‡ºåŠ›
+            const responseText = await response.text();
+            
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                    throw new Error('ãƒ¬ã‚¹ãƒãƒ³ã‚¹ã®JSONè§£æã«å¤±æ•—: ' + parseError.message);
+            }
+        } catch (fetchError) {
+            throw new Error('ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯ã‚¨ãƒ©ãƒ¼: ' + fetchError.message);
+        }
+        
+        if (result && result.orgUnitName) {
+            userOrganization = result.orgUnitName;
+            
+            // äº‹æ¥­æ‰€ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ã‚’è¨­å®š
+            const officeContainer = document.getElementById('officeContainer');
+            const officeSelect = document.getElementById('office');
+            
+            // ãƒ­ãƒ¼ãƒ‡ã‚£ãƒ³ã‚°ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å‰Šé™¤
+            officeContainer.innerHTML = '';
+            
+            // å–å¾—ã—ãŸçµ„ç¹”ã‚’ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¨ã—ã¦è¨­å®šã—ã€selectã‚’è¡¨ç¤º
+            officeSelect.innerHTML = `<option value="${userOrganization}">${userOrganization}</option>`;
+            officeSelect.value = userOrganization;
+            officeSelect.style.display = 'block';
+            
+            // äº‹æ¥­æ‰€ä¸€è¦§ã‚’éåŒæœŸã§å–å¾—ã—ã¦ãƒ—ãƒ«ãƒ€ã‚¦ãƒ³ã«è¿½åŠ 
+            loadOfficesFromSheet().then(() => {
+                // äº‹æ¥­æ‰€ä¸€è¦§å–å¾—å¾Œã€ç¾åœ¨ã®çµ„ç¹”ãŒå…ˆé ­ã«è¡¨ç¤ºã•ã‚Œã‚‹ã‚ˆã†èª¿æ•´
+                if (availableOffices.length > 0) {
+                    const currentOption = `<option value="${userOrganization}" selected>${userOrganization}</option>`;
+                    const otherOptions = availableOffices
+                        .filter(office => office.value !== userOrganization)
+                        .map(office => `<option value="${office.value}">${office.name}</option>`)
+                        .join('');
+                    officeSelect.innerHTML = currentOption + otherOptions;
+                }
+            }).catch(error => {
+                console.error('äº‹æ¥­æ‰€ä¸€è¦§ã®å–å¾—ã«å¤±æ•—:', error);
+            });
+            
+        } else if (result && Array.isArray(result)) {
+            // ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯: äº‹æ¥­æ‰€ä¸€è¦§ã‚’å–å¾—ã—ãŸå ´åˆ
+            loadOfficesFromAPIResponse(result);
+            
+        } else {
+            throw new Error('çµ„ç¹”æƒ…å ±ã‚’å–å¾—ã§ãã¾ã›ã‚“ã§ã—ãŸ - result: ' + JSON.stringify(result));
+        }
+        
+    } catch (error) {
+        console.error('çµ„ç¹”æƒ…å ±å–å¾—ã‚¨ãƒ©ãƒ¼:', error);
+        // ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯: æ‰‹å‹•é¸æŠ
+        await loadOfficesFromSheet();
+    }
+}
+
+// APIãƒ¬ã‚¹ãƒãƒ³ã‚¹ã‹ã‚‰äº‹æ¥­æ‰€ä¸€è¦§ã‚’è¨­å®š
+function loadOfficesFromAPIResponse(offices) {
+    if (offices && Array.isArray(offices)) {
+        availableOffices = offices;
+        
+        const officeContainer = document.getElementById('officeContainer');
+        const officeSelect = document.getElementById('office');
+        
+        // ãƒ­ãƒ¼ãƒ‡ã‚£ãƒ³ã‚°ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å‰Šé™¤
+        officeContainer.innerHTML = '';
+        
+        // äº‹æ¥­æ‰€é¸æŠè‚¢ã‚’è¨­å®š
+        officeSelect.innerHTML = '<option value="">é¸æŠã—ã¦ãã ã•ã„</option>';
+        
+        offices.forEach(office => {
+            const option = document.createElement('option');
+            option.value = office.value;
+            option.textContent = office.name;
+            officeSelect.appendChild(option);
+        });
+        
+        officeSelect.style.display = 'block';
+    } else {
+        return loadOfficesFromSheet();
+    }
+}
+
+// Sheetsã‹ã‚‰äº‹æ¥­æ‰€ä¸€è¦§ã‚’å–å¾—ï¼ˆ10ç§’ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆä»˜ãã€GETæ–¹å¼ã«å¤‰æ›´ï¼‰
+async function loadOfficesFromSheet() {
+    // ã‚­ãƒ£ãƒƒã‚·ãƒ¥ãƒã‚§ãƒƒã‚¯
+    if (cache.offices && cache.officesExpiry && Date.now() < cache.officesExpiry) {
+        return loadOfficesFromCache();
+    }
+    
+    try {
+        // äº‹æ¥­æ‰€æƒ…å ±å–å¾—é–‹å§‹
+        // Promise.raceã§ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆåˆ¶å¾¡
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆ: 10ç§’ä»¥å†…ã«å¿œç­”ãŒã‚ã‚Šã¾ã›ã‚“ã§ã—ãŸ')), 10000);
+        });
+        
+        // GETæ–¹å¼ã§ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿é€ä¿¡ï¼ˆgetUserOrganizationã¨åŒã˜æˆåŠŸãƒ‘ã‚¿ãƒ¼ãƒ³ï¼‰
+        const requestData = {
+            action: 'getOffices'
+        };
+        const params = new URLSearchParams(requestData);
+        const getUrl = `${config.gasUrl}?${params.toString()}`;
+        
+        const fetchPromise = fetch(getUrl, {
+            method: 'GET',
+            redirect: 'follow',
+            mode: 'cors'
+        });
+        
+        
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const offices = await response.json();
+        
+        if (offices && Array.isArray(offices)) {
+            availableOffices = offices;
+            
+            // ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã«ä¿å­˜
+            cache.offices = offices;
+            cache.officesExpiry = Date.now() + cache.CACHE_DURATION;
+            
+            console.log('? äº‹æ¥­æ‰€ä¸€è¦§å–å¾—æˆåŠŸ:', offices.length + 'ä»¶ï¼ˆã‚­ãƒ£ãƒƒã‚·ãƒ¥æ›´æ–°ï¼‰');
+            
+            // ç¾åœ¨ã®officeSelectã®çŠ¶æ…‹ã‚’ç¢ºèª
+            const officeSelect = document.getElementById('office');
+            if (officeSelect.style.display === 'none') {
+                // ã¾ã è¡¨ç¤ºã•ã‚Œã¦ã„ãªã„å ´åˆã®ã¿ã€ãƒ­ãƒ¼ãƒ‡ã‚£ãƒ³ã‚°ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å‰Šé™¤
+                const officeContainer = document.getElementById('officeContainer');
+                officeContainer.innerHTML = '';
+                
+                officeSelect.innerHTML = '<option value="">é¸æŠã—ã¦ãã ã•ã„</option>';
+                
+                offices.forEach(office => {
+                    const option = document.createElement('option');
+                    option.value = office.value;
+                    option.textContent = office.name;
+                    officeSelect.appendChild(option);
+                });
+                
+                officeSelect.style.display = 'block';
+            }
+        } else {
+            throw new Error('äº‹æ¥­æ‰€ãƒ‡ãƒ¼ã‚¿ãŒç„¡åŠ¹ãªå½¢å¼ã§ã™');
+        }
+        
+    } catch (error) {
+        console.error('äº‹æ¥­æ‰€æƒ…å ±å–å¾—ã‚¨ãƒ©ãƒ¼:', error);
+        
+        // ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯: åŸºæœ¬çš„ãªäº‹æ¥­æ‰€é¸æŠè‚¢ã‚’æä¾›
+        
+        const defaultOffices = [
+            { value: 'æœ¬ç¤¾', name: 'æœ¬ç¤¾' },
+            { value: 'é–¢æ±æ”¯åº—', name: 'é–¢æ±æ”¯åº—' },
+            { value: 'é–¢è¥¿æ”¯åº—', name: 'é–¢è¥¿æ”¯åº—' }
+        ];
+        
+        availableOffices = defaultOffices;
+        
+        const officeContainer = document.getElementById('officeContainer');
+        const officeSelect = document.getElementById('office');
+        
+        officeContainer.innerHTML = '';
+        officeSelect.innerHTML = '<option value="">é¸æŠã—ã¦ãã ã•ã„</option>';
+        
+        defaultOffices.forEach(office => {
+            const option = document.createElement('option');
+            option.value = office.value;
+            option.textContent = office.name;
+            officeSelect.appendChild(option);
+        });
+        
+        officeSelect.style.display = 'block';
+        
+        // ãƒ¦ãƒ¼ã‚¶ãƒ¼ã«é€šçŸ¥ï¼ˆéãƒ–ãƒ­ãƒƒã‚­ãƒ³ã‚°ï¼‰
+        setTimeout(() => {
+            alert('äº‹æ¥­æ‰€æƒ…å ±ã®å–å¾—ã«æ™‚é–“ãŒã‹ã‹ã£ã¦ã„ã¾ã™ã€‚åŸºæœ¬çš„ãªé¸æŠè‚¢ã‚’è¡¨ç¤ºã—ã¦ã„ã¾ã™ã€‚');
+        }, 100);
+    }
+}
+
+// ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã‹ã‚‰äº‹æ¥­æ‰€ãƒ‡ãƒ¼ã‚¿ã‚’èª­ã¿è¾¼ã¿
+function loadOfficesFromCache() {
+    const offices = cache.offices;
+    availableOffices = offices;
+    
+    const officeSelect = document.getElementById('office');
+    officeSelect.innerHTML = '<option value="">é¸æŠã—ã¦ãã ã•ã„</option>';
+    
+    offices.forEach(office => {
+        const option = document.createElement('option');
+        option.value = office.value;
+        option.textContent = office.name;
+        officeSelect.appendChild(option);
+    });
+    
+    officeSelect.style.display = 'block';
+}
+
+// ä¸è¦ãªé–¢æ•°ã‚’å‰Šé™¤ï¼ˆãƒ—ãƒ«ãƒ€ã‚¦ãƒ³é¸æŠã«å¤‰æ›´ã—ãŸãŸã‚ï¼‰
+
+// ã‚¤ãƒ™ãƒ³ãƒˆãƒªã‚¹ãƒŠãƒ¼ã®è¨­å®š
+function setupEventListeners() {
+    // ã€Œãã®ä»–ã€ç”¨ã®åˆ©ç”¨è€…åãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ã‚’å‹•çš„ã«æŒ¿å…¥
+    ensureOtherUserNameField();
+    // äº‹æ•…ç¨®é¡ã®é¸æŠã«ã‚ˆã‚‹è¡¨ç¤ºåˆ‡æ›¿
+    document.querySelectorAll('input[name="accidentType"]').forEach(radio => {
+        radio.addEventListener('change', handleAccidentTypeChange);
+    });
+    
+    // å¯¾ç‰©ã‚ã‚Šã®å ´åˆã®è©³ç´°è¡¨ç¤º
+    document.querySelectorAll('input[name="propertyDamage"]').forEach(radio => {
+        radio.addEventListener('change', handlePropertyDamageChange);
+    });
+    
+    // å¯¾äººã‚ã‚Šã®å ´åˆã®è©³ç´°è¡¨ç¤º
+    document.querySelectorAll('input[name="personalInjury"]').forEach(radio => {
+        radio.addEventListener('change', handlePersonalInjuryChange);
+    });
+    
+    // å ´æ‰€åˆ†é¡ã«ã‚ˆã‚‹è©³ç´°å ´æ‰€ã®è¡¨ç¤º
+    const locationCategory = document.getElementById('locationCategory');
+    if (locationCategory) {
+        locationCategory.addEventListener('change', handleLocationCategoryChange);
+    }
+    
+    // è©³ç´°å ´æ‰€ã§ãã®ä»–ã‚’é¸æŠã—ãŸå ´åˆ
+    const detailLocation = document.getElementById('detailLocation');
+    if (detailLocation) {
+        detailLocation.addEventListener('change', handleDetailLocationChange);
+    }
+    
+    // GPSå–å¾—ãƒœã‚¿ãƒ³
+    const getLocationBtn = document.getElementById('getLocationBtn');
+    if (getLocationBtn) {
+        getLocationBtn.addEventListener('click', getLocation);
+    }
+    
+    // å†™çœŸã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰
+    setupPhotoUpload('scenePhoto', 'scenePhotoUpload', 'scenePhotoPreview', 'scene');
+    setupPhotoUpload('otherVehiclePhoto', 'otherVehiclePhotoUpload', 'otherVehiclePhotoPreview', 'otherVehicle');
+    setupPhotoUpload('ownVehiclePhoto', 'ownVehiclePhotoUpload', 'ownVehiclePhotoPreview', 'ownVehicle');
+    setupPhotoUpload('propertyPhoto', 'propertyPhotoUpload', 'propertyPhotoPreview', 'property');
+    setupPhotoUpload('licensePhoto', 'licensePhotoUpload', 'licensePhotoPreview', 'license');
+    
+    // é€ä¿¡ãƒœã‚¿ãƒ³
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', handleSubmitClick);
+    }
+    
+    // ãƒ¢ãƒ¼ãƒ€ãƒ«ãƒœã‚¿ãƒ³
+    const cancelBtn = document.getElementById('cancelBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
+    if (cancelBtn && confirmBtn) {
+        cancelBtn.addEventListener('click', closeModal);
+        confirmBtn.addEventListener('click', submitForm);
+    }
+    
+    // ã‚¨ãƒ©ãƒ¼ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã®ã‚¯ãƒªã‚¢
+      document.querySelectorAll('input, select, textarea').forEach(element => {
+          element.addEventListener('input', function() {
+              clearError(this);
+        });
+        element.addEventListener('change', function() {
+            clearError(this);
+        });
+    });
+  }
+
+  // ã€Œãã®ä»–ã€ç™ºç”Ÿå ´æ‰€ã‚»ã‚¯ã‚·ãƒ§ãƒ³ã«åˆ©ç”¨è€…åãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ã‚’è¿½åŠ 
+  function ensureOtherUserNameField() {
+      try {
+          const otherSection = document.getElementById('otherLocationSection');
+          if (!otherSection) return;
+
+          // æ—¢ã«å­˜åœ¨ã™ã‚‹å ´åˆã¯ä½•ã‚‚ã—ãªã„
+          if (document.getElementById('userName')) return;
+
+          const locationCategorySelect = document.getElementById('locationCategory');
+          const locationGroup = locationCategorySelect && locationCategorySelect.closest('.form-group');
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'form-group';
+          wrapper.innerHTML = [
+              '<label class="required">åˆ©ç”¨è€…ã®åå‰</label>',
+              '<input type="text" id="userName" name="userName" placeholder="åˆ©ç”¨è€…ã®æ°åã‚’å…¥åŠ›ã—ã¦ãã ã•ã„">',
+              '<span class="error-message">åˆ©ç”¨è€…ã®åå‰ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„</span>'
+          ].join('');
+
+          if (locationGroup && locationGroup.parentElement === otherSection) {
+              otherSection.insertBefore(wrapper, locationGroup);
+          } else {
+              otherSection.insertBefore(wrapper, otherSection.firstChild);
+          }
+      } catch (e) {
+          console.error('åˆ©ç”¨è€…åãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ç”Ÿæˆã‚¨ãƒ©ãƒ¼:', e);
+      }
+  }
+
+  // é€ä¿¡ãƒœã‚¿ãƒ³ã‚¯ãƒªãƒƒã‚¯æ™‚ã®ãƒ©ãƒƒãƒ‘ãƒ¼ï¼ˆã€Œãã®ä»–ã€ã®åˆ©ç”¨è€…åå¿…é ˆãƒã‚§ãƒƒã‚¯ã‚’è¿½åŠ ï¼‰
+  function handleSubmitClick() {
+      const accidentTypeInput = document.querySelector('input[name="accidentType"]:checked');
+      if (accidentTypeInput && accidentTypeInput.value === 'other') {
+          const userNameField = document.getElementById('userName');
+          if (userNameField && !userNameField.value) {
+              showError(userNameField);
+              alert('åˆ©ç”¨è€…ã®åå‰ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„');
+              return;
+          }
+      }
+
+      showConfirmModal();
+  }
+
+// äº‹æ•…ç¨®é¡å¤‰æ›´æ™‚ã®å‡¦ç†
+function handleAccidentTypeChange(e) {
+    const vehicleSection = document.getElementById('vehicleSection');
+    const otherLocationSection = document.getElementById('otherLocationSection');
+    const vehiclePhotos = document.getElementById('vehiclePhotos');
+    const locationCategory = document.getElementById('locationCategory');
+    const detailLocation = document.getElementById('detailLocation');
+    const otherLocation = document.getElementById('otherLocation');
+    const otherAccidentCategory = document.getElementById('otherAccidentCategory');
+    const detailLocationDiv = document.getElementById('detailLocationDiv');
+    const otherLocationDiv = document.getElementById('otherLocationDiv');
+
+    if (e.target.value === 'vehicle') {
+        vehicleSection.classList.add('active');
+        vehiclePhotos.classList.add('active');
+        otherLocationSection.style.display = 'none';
+
+        if (locationCategory) {
+            locationCategory.value = '';
+        }
+        if (detailLocation) {
+            detailLocation.value = '';
+            if (detailLocationDiv) {
+                detailLocationDiv.style.display = 'none';
+            }
+        }
+        if (otherLocation) {
+            otherLocation.value = '';
+            if (otherLocationDiv) {
+                otherLocationDiv.style.display = 'none';
+            }
+        }
+        if (otherAccidentCategory) {
+            otherAccidentCategory.value = '';
+        }
+    } else {
+        vehicleSection.classList.remove('active');
+        vehiclePhotos.classList.remove('active');
+        otherLocationSection.style.display = 'block';
+    }
+
+    // äº‹æ•…ç¨®é¡ã«å¿œã˜ã¦ã€Œäº‹æ•…ç¾å ´ã®å†™çœŸã€ã®å¿…é ˆã‚’åˆ‡ã‚Šæ›¿ãˆ
+    setScenePhotoRequired(e.target.value === 'vehicle');
+}
+
+// ã€Œäº‹æ•…ç¾å ´ã®å†™çœŸã€ã‚’å¿…é ˆ/ä»»æ„ã«åˆ‡ã‚Šæ›¿ãˆ
+function setScenePhotoRequired(isRequired) {
+    const sceneInput = document.getElementById('scenePhoto');
+    // ãƒ©ãƒ™ãƒ«ã¯ scenePhotoUpload ã®è¦ª(.form-group)å†…ã® <label>
+    const sceneLabel = document.querySelector('#scenePhotoUpload')?.parentElement?.querySelector('label');
+    if (!sceneInput) return;
+    if (isRequired) {
+        sceneInput.setAttribute('required', 'required');
+        if (sceneLabel) sceneLabel.classList.add('required');
+    } else {
+        sceneInput.removeAttribute('required');
+        if (sceneLabel) sceneLabel.classList.remove('required');
+        // ä»»æ„ã«ã—ãŸã¨ãã¯ã‚¨ãƒ©ãƒ¼è¡¨ç¤ºã‚’æ¶ˆã™
+        clearError(sceneInput);
+    }
+}
+
+// å¯¾ç‰©é¸æŠæ™‚ã®å‡¦ç†
+function handlePropertyDamageChange(e) {
+    const propertyDetails = document.getElementById('propertyDetails');
+    const propertyPhotoDiv = document.getElementById('propertyPhotoDiv');
+    
+    if (e.target.value === 'yes') {
+        propertyDetails.classList.add('active');
+        propertyPhotoDiv.style.display = 'block';
+    } else {
+        propertyDetails.classList.remove('active');
+        propertyPhotoDiv.style.display = 'none';
+    }
+}
+
+// å¯¾äººé¸æŠæ™‚ã®å‡¦ç†
+function handlePersonalInjuryChange(e) {
+    const injuryDetails = document.getElementById('injuryDetails');
+    const licensePhotoDiv = document.getElementById('licensePhotoDiv');
+    
+    if (e.target.value === 'yes') {
+        injuryDetails.classList.add('active');
+        licensePhotoDiv.style.display = 'block';
+    } else {
+        injuryDetails.classList.remove('active');
+        licensePhotoDiv.style.display = 'none';
+    }
+}
+
+// å ´æ‰€åˆ†é¡å¤‰æ›´æ™‚ã®å‡¦ç†
+function handleLocationCategoryChange(e) {
+    const detailLocationDiv = document.getElementById('detailLocationDiv');
+    const otherLocationDiv = document.getElementById('otherLocationDiv');
+    const detailLocation = document.getElementById('detailLocation');
+    
+    // é¸æŠè‚¢ã‚’ã‚¯ãƒªã‚¢
+    detailLocation.innerHTML = '<option value="">é¸æŠã—ã¦ãã ã•ã„</option>';
+    
+    const locationOptions = {
+        'è¨ªçœ‹': ['ã”åˆ©ç”¨è€…å®…', 'ãã®ä»–'],
+        'å°å…': ['æ´»å‹•ã‚¹ãƒšãƒ¼ã‚¹', 'ãƒˆã‚¤ãƒ¬', 'å±‹å¤–', 'ãã®ä»–'],
+        'æ–½è¨­': ['å±…å®¤', 'å…±æœ‰ã‚¹ãƒšãƒ¼ã‚¹', 'ãƒˆã‚¤ãƒ¬', 'æµ´å®¤', 'ä¸­åº­', 'ç„é–¢å‰', 'é§è»Šå ´', 'éšæ®µ', 'ãã®ä»–']
+    };
+    
+    if (e.target.value && locationOptions[e.target.value]) {
+        detailLocationDiv.style.display = 'block';
+        otherLocationDiv.style.display = 'none';
+        
+        locationOptions[e.target.value].forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            detailLocation.appendChild(option);
+        });
+    } else {
+        detailLocationDiv.style.display = 'none';
+        otherLocationDiv.style.display = 'none';
+    }
+}
+
+// è©³ç´°å ´æ‰€å¤‰æ›´æ™‚ã®å‡¦ç†
+function handleDetailLocationChange(e) {
+    const otherLocationDiv = document.getElementById('otherLocationDiv');
+    if (e.target.value === 'ãã®ä»–') {
+        otherLocationDiv.style.display = 'block';
+    } else {
+        otherLocationDiv.style.display = 'none';
+    }
+}
+
+// GPSä½ç½®æƒ…å ±å–å¾—
+async function getLocation() {
+    const locationInput = document.getElementById('location');
+    const loading = Utils.showLoading(locationInput.parentElement, 'GPSå–å¾—ä¸­...');
+    
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                // ä½æ‰€ã‚’å–å¾—
+                try {
+                    const address = await getAddressFromCoordinates(lat, lng);
+                    if (address) {
+                        locationInput.value = address;
+                        // åº§æ¨™æƒ…å ±ã‚‚ä¿æŒï¼ˆãƒ‡ãƒ¼ã‚¿å±æ€§ã¨ã—ã¦ï¼‰
+                        locationInput.setAttribute('data-lat', lat);
+                        locationInput.setAttribute('data-lng', lng);
+                    } else {
+                        // ä½æ‰€å–å¾—ã«å¤±æ•—ã—ãŸå ´åˆã¯åº§æ¨™ã‚’è¡¨ç¤º
+                        locationInput.value = `ç·¯åº¦: ${lat.toFixed(6)}, çµŒåº¦: ${lng.toFixed(6)}`;
+                    }
+                } catch (error) {
+                    console.error('ä½æ‰€å–å¾—ã‚¨ãƒ©ãƒ¼:', error);
+                    locationInput.value = `ç·¯åº¦: ${lat.toFixed(6)}, çµŒåº¦: ${lng.toFixed(6)}`;
+                }
+                
+                Utils.hideLoading(loading);
+                clearError(locationInput);
+            },
+            function(error) {
+                Utils.hideLoading(loading);
+                alert('ä½ç½®æƒ…å ±ã®å–å¾—ã«å¤±æ•—ã—ã¾ã—ãŸã€‚æ‰‹å‹•ã§å…¥åŠ›ã—ã¦ãã ã•ã„ã€‚');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    } else {
+        Utils.hideLoading(loading);
+        alert('ãŠä½¿ã„ã®ãƒ–ãƒ©ã‚¦ã‚¶ã¯ä½ç½®æƒ…å ±ã‚’ã‚µãƒãƒ¼ãƒˆã—ã¦ã„ã¾ã›ã‚“ã€‚');
+    }
+}
+
+// åº§æ¨™ã‹ã‚‰ä½æ‰€ã‚’å–å¾—ã™ã‚‹é–¢æ•°
+async function getAddressFromCoordinates(lat, lng) {
+    console.log('[GPS] ä½æ‰€å–å¾—é–‹å§‹:', {lat, lng});
+    
+    // Google Maps Geocoding API ã‚’å„ªå…ˆä½¿ç”¨ï¼ˆè©³ç´°ãªä½æ‰€æƒ…å ±ã‚’å–å¾—ï¼‰
+    const googleApiKey = config.googleMapsApiKey;
+    
+    if (googleApiKey) {
+        try {
+            console.log('[GPS] Google Maps APIä½¿ç”¨');
+            // result_typeãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã§è©³ç´°ãªä½æ‰€ã‚’è¦æ±‚ã—ã€zoomãƒ¬ãƒ™ãƒ«ç›¸å½“ã®ç²¾åº¦æŒ‡å®š
+            const response = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleApiKey}&language=ja&result_type=street_address|premise|subpremise&location_type=ROOFTOP|RANGE_INTERPOLATED`
+            );
+            const data = await response.json();
+            
+            if (data.status === 'OK' && data.results.length > 0) {
+                // ã‚ˆã‚Šè©³ç´°ãªä½æ‰€ã‚’å„ªå…ˆã—ã¦é¸æŠ
+                let bestResult = data.results[0];
+                
+                // street_address ã‚¿ã‚¤ãƒ—ã®çµæœãŒã‚ã‚Œã°å„ªå…ˆ
+                for (const result of data.results) {
+                    if (result.types.includes('street_address') || result.types.includes('premise')) {
+                        bestResult = result;
+                        break;
+                    }
+                }
+                
+                // Google APIã®formatted_addressã‹ã‚‰æ—¥æœ¬ã‚’é™¤å»ã—ã¦ä½¿ç”¨
+                const formattedAddress = cleanJapaneseAddress(bestResult.formatted_address);
+                console.log('?? ä½æ‰€å–å¾—å®Œäº†:', formattedAddress);
+                
+                // Google Maps APIãƒ¬ã‚¹ãƒãƒ³ã‚¹ã‚’ãƒ­ã‚°ã«é€ä¿¡
+                try {
+                    await logGoogleMapsResponse({
+                        coordinates: { lat, lng },
+                        googleResponse: data,
+                        extractedAddress: {
+                            fullAddress: formattedAddress,
+                            originalFormatted: bestResult.formatted_address,
+                            houseNumber: extractHouseNumberFromResult(bestResult)
+                        },
+                        source: 'accident-report'
+                    });
+                } catch (logError) {
+                    // ãƒ­ã‚°é€ä¿¡ã‚¨ãƒ©ãƒ¼ã¯è¡¨ç¤ºã—ãªã„
+                }
+                
+                return formattedAddress;
+            }
+        } catch (error) {
+            console.error('? Google Maps APIã‚¨ãƒ©ãƒ¼:', error.message);
+        }
+    }
+    
+    // ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯: Nominatim (OpenStreetMap) ã‚’ä½¿ç”¨
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja&zoom=19&addressdetails=1&extratags=1&namedetails=1`,
+            {
+                headers: {
+                    'User-Agent': 'Cruto-Accident-Report/1.0'
+                }
+            }
+        );
+        const data = await response.json();
+        
+        if (data && data.display_name) {
+            const detailedAddress = formatDetailedJapaneseAddress(data);
+            console.log('?? ä½æ‰€å–å¾—å®Œäº† (Nominatim):', detailedAddress);
+            return detailedAddress;
+        }
+    } catch (error) {
+        console.error('? Nominatim APIã‚¨ãƒ©ãƒ¼:', error.message);
+    }
+    
+    return null;
+}
+
+// Google Maps APIã®address_componentsã‹ã‚‰è©³ç´°ä½æ‰€ã‚’æ§‹ç¯‰
+function buildDetailedAddressFromGoogle(result) {
+    if (!result.address_components) return null;
+    
+    console.log('[GPS] Google address_componentsè§£æ:', result.address_components);
+    
+    let formatted = '';
+    let streetNumber = '';
+    let route = '';
+    let sublocality = '';
+    let locality = '';
+    let administrativeArea = '';
+    let premise = '';
+    let subpremise = '';
+    let postalCode = '';
+    
+    // address_componentsã‹ã‚‰å„è¦ç´ ã‚’æŠ½å‡ºï¼ˆéƒµä¾¿ç•ªå·ã¯é™¤å¤–ï¼‰
+    result.address_components.forEach(component => {
+        const types = component.types;
+        console.log('[GPS] ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆ:', component.long_name, types);
+        
+        // éƒµä¾¿ç•ªå·ã¯è¨˜éŒ²ã™ã‚‹ãŒä½æ‰€ã«ã¯å«ã‚ãªã„
+        if (types.includes('postal_code')) {
+            postalCode = component.long_name;
+            console.log('[GPS] éƒµä¾¿ç•ªå·æ¤œå‡ºï¼ˆé™¤å¤–ï¼‰:', postalCode);
+            return; // éƒµä¾¿ç•ªå·ã¯ä½æ‰€æ§‹ç¯‰ã«ä½¿ç”¨ã—ãªã„
+        }
+        
+        if (types.includes('street_number')) {
+            streetNumber = component.long_name; // åŸºæœ¬ç•ªåœ°
+            console.log('[GPS] åŸºæœ¬ç•ªåœ°:', streetNumber);
+        }
+        if (types.includes('subpremise')) {
+            subpremise = component.long_name; // å»ºç‰©å†…ç•ªå·
+            console.log('[GPS] å»ºç‰©å†…ç•ªå·:', subpremise);
+        }
+        if (types.includes('route')) {
+            route = component.long_name; // é€šã‚Šå
+        }
+        if (types.includes('premise')) {
+            premise = component.long_name; // å»ºç‰©å
+        }
+        if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
+            sublocality = component.long_name; // ä¸ç›®ãªã©
+        }
+        if (types.includes('locality')) {
+            locality = component.long_name; // å¸‚åŒºç”ºæ‘
+        }
+        if (types.includes('administrative_area_level_1')) {
+            administrativeArea = component.long_name; // éƒ½é“åºœçœŒ
+        }
+    });
+    
+    // æ—¥æœ¬ã®ä½æ‰€å½¢å¼ã§æ§‹ç¯‰
+    if (administrativeArea) formatted += administrativeArea;
+    if (locality) formatted += locality;
+    if (sublocality) formatted += sublocality;
+    
+    // ç•ªåœ°æƒ…å ±ã‚’æ§‹ç¯‰ï¼ˆå›½åºœå°4-6-6å½¢å¼ï¼‰
+    let houseNumberPart = '';
+    if (streetNumber) {
+        houseNumberPart = streetNumber;
+        console.log('[GPS] åŸºæœ¬ç•ªåœ°è¨­å®š:', streetNumber);
+        
+        // subpremiseãŒã‚ã‚Œã°è¿½åŠ ï¼ˆä¾‹ï¼š4-6-6ã®-6-6éƒ¨åˆ†ï¼‰
+        if (subpremise) {
+            // subpremiseãŒæ—¢ã«ãƒã‚¤ãƒ•ãƒ³ã‚’å«ã‚“ã§ã„ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
+            if (subpremise.includes('-')) {
+                houseNumberPart += '-' + subpremise;
+            } else {
+                houseNumberPart += '-' + subpremise;
+            }
+            console.log('[GPS] è©³ç´°ç•ªåœ°è¿½åŠ :', houseNumberPart);
+        }
+        
+        formatted += houseNumberPart;
+    } else if (route && route.match(/\d+/)) {
+        // routeã«æ•°å­—ãŒå«ã¾ã‚Œã¦ã„ã‚‹å ´åˆã¯ç•ªåœ°ã¨ã—ã¦ä½¿ç”¨
+        const routeNumber = route.match(/\d+/)[0];
+        formatted += routeNumber;
+        console.log('[GPS] routeç•ªåœ°è¿½åŠ :', routeNumber);
+    }
+    
+    // å»ºç‰©åãŒã‚ã‚Œã°è¿½åŠ 
+    if (premise) {
+        formatted += ' ' + premise;
+    }
+    
+    console.log('[GPS] Googleæ§‹ç¯‰çµæœ:', formatted);
+    console.log('[GPS] é™¤å¤–ã•ã‚ŒãŸéƒµä¾¿ç•ªå·:', postalCode);
+    return formatted || null;
+}
+
+// æ—¥æœ¬ã®ä½æ‰€å½¢å¼ã«è©³ç´°æ•´å½¢ã™ã‚‹é–¢æ•°ï¼ˆç•ªåœ°ã¾ã§å–å¾—ï¼‰
+function formatDetailedJapaneseAddress(data) {
+    if (!data.address) return data.display_name;
+    
+    const addr = data.address;
+    let formatted = '';
+    
+    console.log('[GPS] ä½æ‰€æ§‹é€ è§£æ:', addr);
+    
+    // éƒ½é“åºœçœŒ
+    if (addr.state || addr.province) {
+        formatted += addr.state || addr.province;
+    }
+    
+    // å¸‚åŒºç”ºæ‘
+    if (addr.city || addr.town || addr.municipality) {
+        formatted += addr.city || addr.town || addr.municipality;
+    }
+    
+    // åŒºãƒ»ç‰¹åˆ¥åŒº
+    if (addr.city_district || addr.suburb) {
+        formatted += addr.city_district || addr.suburb;
+    }
+    
+    // ç”ºãƒ»ä¸ç›®ï¼ˆè¤‡æ•°ãƒ‘ã‚¿ãƒ¼ãƒ³ã«å¯¾å¿œï¼‰
+    if (addr.quarter || addr.neighbourhood || addr.residential) {
+        formatted += addr.quarter || addr.neighbourhood || addr.residential;
+    }
+    
+    // ç•ªåœ°ãƒ»å·ï¼ˆè©³ç´°ãªä½æ‰€ç•ªå·ï¼‰
+    let houseInfo = '';
+    
+    // house_numberï¼ˆç•ªåœ°ï¼‰
+    if (addr.house_number) {
+        houseInfo += addr.house_number;
+    }
+    
+    // postcodeï¼ˆéƒµä¾¿ç•ªå·ï¼‰ã‹ã‚‰è©³ç´°æƒ…å ±ã‚’æ¨å®š
+    if (addr.postcode && !houseInfo) {
+        // éƒµä¾¿ç•ªå·ãŒã‚ã‚‹å ´åˆã€ã‚ˆã‚Šå…·ä½“çš„ãªä½ç½®ã‚’ç¤ºå”†
+        console.log('[GPS] éƒµä¾¿ç•ªå·ã‹ã‚‰ä½ç½®æ¨å®š:', addr.postcode);
+    }
+    
+    // ç•ªåœ°æƒ…å ±ãŒãªã„å ´åˆã€è¿½åŠ ã®æ–¹æ³•ã§ç•ªåœ°ã‚’æ¨å®š
+    if (!houseInfo) {
+        // 1. roadï¼ˆé“è·¯åï¼‰ã‹ã‚‰æ¨å®š
+        if (addr.road) {
+            console.log('[GPS] é“è·¯åã‹ã‚‰ä½ç½®æ¨å®š:', addr.road);
+            const roadMatch = addr.road.match(/(\d+)/);
+            if (roadMatch) {
+                houseInfo = roadMatch[1];
+            }
+        }
+        
+        // 2. display_nameã‹ã‚‰ç•ªåœ°ã‚’æŠ½å‡ºï¼ˆéƒµä¾¿ç•ªå·ã‚’é™¤å¤–ï¼‰
+        if (!houseInfo && data.display_name) {
+            console.log('[GPS] display_nameã‹ã‚‰ç•ªåœ°æŠ½å‡º:', data.display_name);
+            // éƒµä¾¿ç•ªå·ãƒ‘ã‚¿ãƒ¼ãƒ³ã‚’é™¤å¤–: 3æ¡-4æ¡ã¯éƒµä¾¿ç•ªå·ãªã®ã§é™¤å¤–
+            // ç•ªåœ°ãƒ‘ã‚¿ãƒ¼ãƒ³: 1-2æ¡ã®ç•ªåœ°ï¼ˆä¾‹: 4-6-6, 15-23ï¼‰
+            const addressMatch = data.display_name.match(/(?:^|[^\d])(\d{1,2}(?:-\d{1,2}){1,2})(?:[^\d]|$)/);
+            if (addressMatch && !addressMatch[1].match(/^\d{3}-\d{4}$/)) {
+                houseInfo = addressMatch[1];
+                console.log('[GPS] display_nameã‹ã‚‰ç•ªåœ°ç™ºè¦‹:', houseInfo);
+            }
+        }
+        
+        // 3. ã‚ˆã‚Šè©³ç´°ãªåº§æ¨™ã§å†æ¤œç´¢ï¼ˆæœ€å¾Œã®æ‰‹æ®µï¼‰
+        if (!houseInfo) {
+            console.log('[GPS] ç•ªåœ°æƒ…å ±ãªã—');
+        }
+    }
+    
+    if (houseInfo) {
+        formatted += houseInfo;
+    }
+    
+    // å»ºç‰©åãƒ»æ–½è¨­å
+    if (addr.amenity || addr.building || addr.shop || addr.office) {
+        const facilityName = addr.amenity || addr.building || addr.shop || addr.office;
+        formatted += ' ' + facilityName;
+    }
+    
+    // å…·ä½“çš„ãªå ´æ‰€ã®åå‰ï¼ˆnameï¼‰
+    if (data.name && data.name !== formatted) {
+        formatted += ' (' + data.name + ')';
+    }
+    
+    console.log('[GPS] æ•´å½¢çµæœ:', formatted);
+    
+    return formatted || data.display_name;
+}
+
+// å¾“æ¥ã®é–¢æ•°ã‚‚æ®‹ã™ï¼ˆäº’æ›æ€§ã®ãŸã‚ï¼‰
+function formatJapaneseAddress(data) {
+    return formatDetailedJapaneseAddress(data);
+}
+
+/**
+ * äº‹æ•…å ±å‘Šãƒ‡ãƒ¼ã‚¿ã‚’æ–°ã—ã„æ§‹é€ ã«å¤‰æ›
+ */
+function buildReportData(formData, photoData) {
+    // äº‹æ•…ç¨®é¡ã‚’æ—¥æœ¬èªã«å¤‰æ›
+    const accidentTypeJp = formData.accidentType === 'vehicle' ? 'è»Šä¸¡äº‹æ•…' : 'ãã®ä»–';
+    
+    const baseData = {
+        // åŸºæœ¬æƒ…å ±
+        reporterName: formData.reporter,
+        office: formData.office,
+        incidentDate: formData.incidentDate,
+        incidentTime: formData.incidentTime,
+        accidentType: accidentTypeJp,
+        location: formData.location,
+        details: formData.accidentDetails,
+        
+        // å†™çœŸãƒ‡ãƒ¼ã‚¿
+        photos: {
+            scene: photoData.scene || []
+        }
+      };
+      
+      // ?g?p?l??f?[?^????
+      baseData.userName = formData.userName;
+    
+    // æ¡ä»¶åˆ†å²ãƒ‡ãƒ¼ã‚¿ã‚’è¿½åŠ 
+    if (formData.accidentType === 'other') {
+        // ãã®ä»–äº‹æ•…ã®é …ç›®
+        baseData.otherAccidentCategory = formData.otherAccidentCategory;
+        baseData.locationCategory = formData.locationCategory;
+        baseData.locationDetail = formData.detailLocation;
+        baseData.locationNote = formData.otherLocation;
+        
+    } else if (formData.accidentType === 'vehicle') {
+        // è»Šä¸¡äº‹æ•…ã®é …ç›®
+        baseData.driverName = formData.driverName;
+        baseData.propertyDamage = formData.propertyDamage;
+        baseData.propertyDetails = formData.propertyDetailsText;
+        baseData.personalInjury = formData.personalInjury;
+        baseData.personalDetails = formData.injuryDetailsText;
+        
+        // è² å‚·æƒ…å ±ï¼ˆãƒã‚§ãƒƒã‚¯ãƒœãƒƒã‚¯ã‚¹ã®çŠ¶æ…‹ã‚’å–å¾—ï¼‰
+        const injurySelf = document.getElementById('injurySelf')?.checked ? 'ã‚ã‚Š' : '';
+        const injuryPassenger = document.getElementById('injuryPassenger')?.checked ? 'ã‚ã‚Š' : '';
+        const injuryOther = document.getElementById('injuryOther')?.checked ? 'ã‚ã‚Š' : '';
+        const injuryDetailsText = formData.injuryDetailsText || '';
+        
+        baseData.injury = {
+            self: injurySelf,
+            selfDetails: injurySelf ? injuryDetailsText : '',
+            passenger: injuryPassenger,
+            passengerDetails: injuryPassenger ? injuryDetailsText : '',
+            other: injuryOther,
+            otherDetails: injuryOther ? injuryDetailsText : ''
+        };
+        
+        // è»Šä¸¡äº‹æ•…ã®è¿½åŠ å†™çœŸï¼ˆæ¡ä»¶ã«é–¢ä¿‚ãªãå…¨ã¦è¿½åŠ ï¼‰
+        baseData.photos.property = photoData.property || [];
+        baseData.photos.otherVehicle = photoData.otherVehicle || [];
+        baseData.photos.ownVehicle = photoData.ownVehicle || [];
+        baseData.photos.license = photoData.license || [];
+    }
+    
+    // ãƒ‡ãƒ¼ã‚¿æ§‹ç¯‰å®Œäº†
+    
+    return baseData;
+}
+
+/**
+ * Google Maps APIã®formatted_addressã‹ã‚‰ä¸è¦ãªéƒ¨åˆ†ã‚’é™¤å»
+ */
+function cleanJapaneseAddress(formattedAddress) {
+    if (!formattedAddress) return '';
+    
+    let cleanedAddress = formattedAddress;
+    
+    // æœ«å°¾ã®ã€Œæ—¥æœ¬ã€ã‚’é™¤å»
+    cleanedAddress = cleanedAddress.replace(/ã€?\s*æ—¥æœ¬$/, '');
+    
+    // å…ˆé ­ã®ã€Œæ—¥æœ¬ã€ã€ã‚‚é™¤å»
+    cleanedAddress = cleanedAddress.replace(/^æ—¥æœ¬ã€\s*/, '');
+    
+    // éƒµä¾¿ç•ªå·ãƒ‘ã‚¿ãƒ¼ãƒ³ã‚’é™¤å»ï¼ˆä¾‹ï¼šã€’272-0827ã€272-0827ï¼‰
+    cleanedAddress = cleanedAddress.replace(/ã€’?\d{3}-?\d{4}\s*/, '');
+    
+    // å…ˆé ­ã®éƒµä¾¿ç•ªå·ãƒ‘ã‚¿ãƒ¼ãƒ³ã‚‚é™¤å»
+    cleanedAddress = cleanedAddress.replace(/^\d{3}-?\d{4}\s*/, '');
+    
+    // ä½™åˆ†ãªã‚¹ãƒšãƒ¼ã‚¹ã¨ã‚«ãƒ³ãƒã‚’æ¸…æ½”åŒ–
+    cleanedAddress = cleanedAddress.replace(/^\s*,?\s*/, ''); // å…ˆé ­ã®ã‚«ãƒ³ãƒã¨ã‚¹ãƒšãƒ¼ã‚¹
+    cleanedAddress = cleanedAddress.replace(/\s*,?\s*$/, ''); // æœ«å°¾ã®ã‚«ãƒ³ãƒã¨ã‚¹ãƒšãƒ¼ã‚¹
+    cleanedAddress = cleanedAddress.replace(/\s+/g, ''); // è¤‡æ•°ã‚¹ãƒšãƒ¼ã‚¹ã‚’å‰Šé™¤
+    
+    console.log('[GPS] ä½æ‰€æ¸…æ½”åŒ–:', formattedAddress, '->', cleanedAddress);
+    return cleanedAddress;
+}
+
+/**
+ * Google Maps APIãƒ¬ã‚¹ãƒãƒ³ã‚¹ã‚’GASã«ãƒ­ã‚°ã¨ã—ã¦é€ä¿¡
+ */
+async function logGoogleMapsResponse(data) {
+    try {
+        const response = await fetch(config.gasUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'logGoogleMapsResponse',
+                ...data
+            })
+        });
+        
+        const result = await response.json();
+        console.log('[GPS] ãƒ­ã‚°é€ä¿¡å®Œäº†:', result);
+        return result;
+    } catch (error) {
+        console.error('[GPS] ãƒ­ã‚°é€ä¿¡å¤±æ•—:', error);
+        throw error;
+    }
+}
+
+/**
+ * Google Maps APIã®çµæœã‹ã‚‰ç•ªåœ°ï¼ˆhouse numberï¼‰ã‚’æŠ½å‡º
+ */
+function extractHouseNumberFromResult(result) {
+    if (!result || !result.address_components) return '';
+    
+    let streetNumber = '';
+    let subpremise = '';
+    let postalCode = '';
+    
+    result.address_components.forEach(component => {
+        const types = component.types;
+        
+        // éƒµä¾¿ç•ªå·ã¯é™¤å¤–ï¼ˆãƒ­ã‚°ç”¨ã«è¨˜éŒ²ã®ã¿ï¼‰
+        if (types.includes('postal_code')) {
+            postalCode = component.long_name;
+            return; // ç•ªåœ°æ§‹ç¯‰ã«ã¯ä½¿ç”¨ã—ãªã„
+        }
+        
+        if (types.includes('street_number')) {
+            streetNumber = component.long_name;
+        }
+        if (types.includes('subpremise')) {
+            subpremise = component.long_name;
+        }
+    });
+    
+    // ç•ªåœ°ã®æ§‹ç¯‰ï¼ˆä¾‹ï¼š4-6-6ï¼‰
+    let houseNumber = '';
+    if (streetNumber) {
+        houseNumber = streetNumber;
+        if (subpremise) {
+            // æ—¢ã«ãƒã‚¤ãƒ•ãƒ³ãŒå«ã¾ã‚Œã¦ã„ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
+            if (!subpremise.startsWith('-')) {
+                houseNumber += '-' + subpremise;
+            } else {
+                houseNumber += subpremise;
+            }
+        }
+    }
+    
+    console.log('[GPS] æŠ½å‡ºã—ãŸç•ªåœ°:', houseNumber, 'é™¤å¤–éƒµä¾¿ç•ªå·:', postalCode);
+    return houseNumber;
+}
+
+// ç”»åƒåœ§ç¸®è¨­å®š
+const imageConfig = {
+    // é«˜ç”»è³ªè¨­å®šï¼ˆã‚ˆã‚Šå¤§ãã„ã‚µã‚¤ã‚ºã¨é«˜å“è³ªï¼‰
+    maxWidth: 1200,    // 600 â†’ 1200
+    maxHeight: 900,    // 450 â†’ 900
+    quality: 0.85,     // 0.5 â†’ 0.85 (85%å“è³ª)
+    enableCompression: true  // falseã§åœ§ç¸®ç„¡åŠ¹åŒ–å¯èƒ½
+};
+
+// ç”»åƒåœ§ç¸®ï¼ˆé«˜ç”»è³ªå¯¾å¿œç‰ˆï¼‰
+async function compressImageDirect(file) {
+    // åœ§ç¸®ãŒç„¡åŠ¹åŒ–ã•ã‚Œã¦ã„ã‚‹å ´åˆã¯å…ƒç”»åƒã‚’ãã®ã¾ã¾è¿”ã™
+    if (!imageConfig.enableCompression) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const base64 = event.target.result.split(",")[1];
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const maxWidth = imageConfig.maxWidth;
+                const maxHeight = imageConfig.maxHeight;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = Math.round((width * maxHeight) / height);
+                    height = maxHeight;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+                const compressed = canvas.toDataURL("image/jpeg", imageConfig.quality);
+                resolve(compressed.split(",")[1]);
+            };
+            img.onerror = reject;
+            img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// å†™çœŸã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰è¨­å®š
+function setupPhotoUpload(inputId, uploadDivId, previewId, photoType) {
+    const input = document.getElementById(inputId);
+    const uploadDiv = document.getElementById(uploadDivId);
+    const preview = document.getElementById(previewId);
+    
+    uploadDiv.addEventListener('click', () => input.click());
+    
+    input.addEventListener('change', async function(e) {
+        preview.innerHTML = '';
+        photoData[photoType] = [];
+        
+        for (const file of Array.from(e.target.files)) {
+            if (file.type.startsWith('image/')) {
+                try {
+                    console.log(`?? ç”»åƒå‡¦ç†é–‹å§‹: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+                    
+                    // ç”»åƒã‚’ç›´æ¥åœ§ç¸®ï¼ˆå‚è€ƒã‚¢ãƒ—ãƒªæº–æ‹ ï¼‰
+                    const base64 = await compressImageDirect(file);
+                    const compressedSize = base64.length * 0.75 / 1024; // Base64ã‚µã‚¤ã‚ºã‹ã‚‰ãŠãŠã‚ˆãã®KBã‚’è¨ˆç®—
+                    
+                    console.log(`?? åœ§ç¸®å®Œäº†: ${file.name} â†’ ${compressedSize.toFixed(1)}KB`);
+                    
+                    photoData[photoType].push({
+                        name: file.name,
+                        data: base64,
+                        originalSize: file.size,
+                        compressedSize: base64.length
+                    });
+                    
+                    // ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼è¡¨ç¤º
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        preview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                } catch (error) {
+                    console.error('ç”»åƒå‡¦ç†ã‚¨ãƒ©ãƒ¼:', error);
+                }
+            }
+        }
+        
+        if (photoType === 'scene' && photoData[photoType].length > 0) {
+            clearError(input);
+        }
+    });
+}
+
+// ã‚¨ãƒ©ãƒ¼è¡¨ç¤ºã‚¯ãƒªã‚¢
+function clearError(element) {
+    const errorMsg = element.parentElement.querySelector('.error-message');
+    if (errorMsg) {
+        errorMsg.classList.remove('show');
+    }
+}
+
+// ã‚¨ãƒ©ãƒ¼è¡¨ç¤º
+function showError(element) {
+    const errorMsg = element.parentElement.querySelector('.error-message');
+    if (errorMsg) {
+        errorMsg.classList.add('show');
+    }
+}
+
+// ãƒãƒªãƒ‡ãƒ¼ã‚·ãƒ§ãƒ³
+function validateForm() {
+    let isValid = true;
+    
+    // å¿…é ˆé …ç›®ã®ãƒã‚§ãƒƒã‚¯
+    const requiredFields = ['incidentDate', 'incidentTime', 'accidentDetails'];
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (!field.value) {
+            showError(field);
+            isValid = false;
+        }
+    });
+    
+    // äº‹æ¥­æ‰€ã®ãƒã‚§ãƒƒã‚¯
+    const office = document.getElementById('office').value;
+    if (!office) {
+        alert('äº‹æ¥­æ‰€ãŒè¨­å®šã•ã‚Œã¦ã„ã¾ã›ã‚“');
+        isValid = false;
+    }
+    
+    // äº‹æ•…ç¨®é¡ã®é¸æŠãƒã‚§ãƒƒã‚¯
+    if (!document.querySelector('input[name="accidentType"]:checked')) {
+        const radioGroup = document.querySelector('.radio-group');
+        showError(radioGroup);
+        isValid = false;
+    }
+    
+    // äº‹æ•…ç¾å ´ã®å†™çœŸãƒã‚§ãƒƒã‚¯ï¼ˆè»Šä¸¡äº‹æ•…ã®ã¨ãã®ã¿å¿…é ˆï¼‰
+    const selectedTypeForPhoto = document.querySelector('input[name="accidentType"]:checked')?.value;
+    if (selectedTypeForPhoto === 'vehicle' && photoData.scene.length === 0) {
+        showError(document.getElementById('scenePhoto'));
+        isValid = false;
+    }
+    
+    // è»Šä¸¡äº‹æ•…ã®å ´åˆã®è¿½åŠ ãƒã‚§ãƒƒã‚¯
+    const accidentType = document.querySelector('input[name="accidentType"]:checked');
+    if (accidentType && accidentType.value === 'vehicle') {
+        // é‹è»¢æ‰‹å
+        const driverName = document.getElementById('driverName');
+        if (!driverName.value) {
+            showError(driverName);
+            isValid = false;
+        }
+        
+        // å¯¾ç‰©ãƒ»å¯¾äººã®é¸æŠ
+        if (!document.querySelector('input[name="propertyDamage"]:checked')) {
+            isValid = false;
+        }
+        if (!document.querySelector('input[name="personalInjury"]:checked')) {
+            isValid = false;
+        }
+        
+        // å¯¾ç‰©ã‚ã‚Šã®å ´åˆã®è©³ç´°
+        const propertyDamage = document.querySelector('input[name="propertyDamage"]:checked');
+        if (propertyDamage && propertyDamage.value === 'yes') {
+            const propertyDetails = document.getElementById('propertyDetailsText');
+            if (!propertyDetails.value) {
+                showError(propertyDetails);
+                isValid = false;
+            }
+        }
+        
+        // å¯¾äººã‚ã‚Šã®å ´åˆã®è©³ç´°
+        const personalInjury = document.querySelector('input[name="personalInjury"]:checked');
+        if (personalInjury && personalInjury.value === 'yes') {
+            const injuryDetails = document.getElementById('injuryDetailsText');
+            if (!injuryDetails.value) {
+                showError(injuryDetails);
+                isValid = false;
+            }
+        }
+        
+        // ç™ºç”Ÿå ´æ‰€
+        const location = document.getElementById('location');
+        if (!location.value) {
+            showError(location);
+            isValid = false;
+        }
+    } else {
+        // ãã®ä»–ã®å ´åˆã®å ´æ‰€ãƒã‚§ãƒƒã‚¯
+        const otherAccidentCategory = document.getElementById('otherAccidentCategory');
+        if (!otherAccidentCategory.value) {
+            showError(otherAccidentCategory);
+            isValid = false;
+        }
+
+        const locationCategory = document.getElementById('locationCategory');
+        if (!locationCategory.value) {
+            showError(locationCategory);
+            isValid = false;
+        }
+        
+        if (locationCategory.value) {
+            const detailLocation = document.getElementById('detailLocation');
+            if (!detailLocation.value) {
+                showError(detailLocation);
+                isValid = false;
+            }
+            
+            if (detailLocation.value === 'ãã®ä»–') {
+                const otherLocation = document.getElementById('otherLocation');
+                if (!otherLocation.value) {
+                    showError(otherLocation);
+                    isValid = false;
+                }
+            }
+        }
+    }
+    
+    return isValid;
+}
+
+// ç¢ºèªãƒ¢ãƒ¼ãƒ€ãƒ«è¡¨ç¤º
+function showConfirmModal() {
+    if (!validateForm()) {
+        alert('å¿…é ˆé …ç›®ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„');
+        return;
+    }
+    
+    // ãƒ•ã‚©ãƒ¼ãƒ ãƒ‡ãƒ¼ã‚¿åé›†
+    collectFormData();
+    
+    // ç¢ºèªå†…å®¹ã®ç”Ÿæˆ
+    const confirmContent = document.getElementById('confirmContent');
+    confirmContent.innerHTML = generateConfirmContent();
+    
+    // ãƒ¢ãƒ¼ãƒ€ãƒ«è¡¨ç¤º
+    document.getElementById('confirmModal').classList.add('show');
+}
+
+// ãƒ•ã‚©ãƒ¼ãƒ ãƒ‡ãƒ¼ã‚¿åé›†
+function collectFormData() {
+    const form = document.getElementById('accidentReportForm');
+    formData = Utils.formToObject(form);
+    
+    // æ‰‹å‹•ã§å€¤ã‚’è¨­å®š
+    formData.office = document.getElementById('office').value || userOrganization;
+    formData.otherAccidentCategory = document.getElementById('otherAccidentCategory')?.value || '';
+
+    // ãƒã‚§ãƒƒã‚¯ãƒœãƒƒã‚¯ã‚¹ã®å€¤ã‚’åé›†
+    const injuryTypes = [];
+    document.querySelectorAll('input[name="injuryType"]:checked').forEach(cb => {
+        injuryTypes.push(cb.value);
+    });
+    formData.injuryTypes = injuryTypes;
+
+    // å†™çœŸãƒ‡ãƒ¼ã‚¿ã‚’è¿½åŠ 
+    formData.photos = photoData;
+}
+
+// ç¢ºèªå†…å®¹ç”Ÿæˆ
+function generateConfirmContent() {
+    const accidentType = formData.accidentType === 'vehicle' ? 'è»Šä¸¡äº‹æ•…' : 'ãã®ä»–';
+    const office = formData.office || userOrganization;
+    
+    let html = `
+        <p><strong>å ±å‘Šè€…:</strong> ${formData.reporter}</p>
+        <p><strong>äº‹æ¥­æ‰€:</strong> ${office}</p>
+        <p><strong>ç™ºç”Ÿæ—¥:</strong> ${Utils.formatDate(formData.incidentDate)}</p>
+        <p><strong>ç™ºç”Ÿæ™‚åˆ»:</strong> ${Utils.formatTime(formData.incidentTime)}</p>
+        <p><strong>äº‹æ•…ç¨®é¡:</strong> ${accidentType}</p>
+    `;
+    
+    if (formData.accidentType === 'vehicle') {
+        html += `
+            <p><strong>é‹è»¢æ‰‹:</strong> ${formData.driverName}</p>
+            <p><strong>å¯¾ç‰©:</strong> ${formData.propertyDamage === 'yes' ? 'ã‚ã‚Š' : 'ãªã—'}</p>
+            <p><strong>å¯¾äºº:</strong> ${formData.personalInjury === 'yes' ? 'ã‚ã‚Š' : 'ãªã—'}</p>
+            <p><strong>ç™ºç”Ÿå ´æ‰€:</strong> ${formData.location}</p>
+        `;
+    } else {
+        const categorySelect = document.getElementById('locationCategory');
+        const locationCategory = categorySelect.options[categorySelect.selectedIndex].text;
+        const otherAccidentCategory = document.getElementById('otherAccidentCategory');
+        const accidentCategoryText = otherAccidentCategory && otherAccidentCategory.value
+            ? otherAccidentCategory.options[otherAccidentCategory.selectedIndex].text
+            : 'æœªé¸æŠ';
+
+        html += `<p><strong>äº‹æ•…ç¨®é¡:</strong> ${accidentCategoryText}</p>`;
+        html += `<p><strong>äº‹æ¥­æ‰€åˆ†é¡:</strong> ${locationCategory}</p>`;
+
+        if (formData.detailLocation) {
+            html += `<p><strong>è©³ç´°å ´æ‰€:</strong> ${formData.detailLocation}</p>`;
+        }
+        if (formData.otherLocation) {
+            html += `<p><strong>ãã®ä»–ã®å ´æ‰€:</strong> ${formData.otherLocation}</p>`;
+        }
+    }
+    
+    html += `
+        <p><strong>äº‹æ•…è©³ç´°:</strong><br>${formData.accidentDetails.replace(/\n/g, '<br>')}</p>
+        <p><strong>å†™çœŸ:</strong> äº‹æ•…ç¾å ´ ${photoData.scene.length}æš`;
+    
+    if (formData.accidentType === 'vehicle') {
+        if (photoData.otherVehicle.length > 0) {
+            html += `, ç›¸æ‰‹ã®è»Š ${photoData.otherVehicle.length}æš`;
+        }
+        if (photoData.ownVehicle.length > 0) {
+            html += `, è‡ªåˆ†ã®è»Š ${photoData.ownVehicle.length}æš`;
+        }
+        if (photoData.license.length > 0) {
+            html += `, å…è¨±è¨¼ ${photoData.license.length}æš`;
+        }
+    }
+    
+    html += '</p>';
+    
+    return html;
+}
+
+// ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹
+function closeModal() {
+    document.getElementById('confirmModal').classList.remove('show');
+}
+
+// ãƒ•ã‚©ãƒ¼ãƒ é€ä¿¡ï¼ˆé«˜é€ŸåŒ–å¯¾å¿œï¼‰
+async function submitForm() {
+    const submitBtn = document.getElementById('confirmBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const sendingMessage = document.getElementById('sendingMessage');
+    
+    submitBtn.disabled = true;
+    cancelBtn.disabled = true;
+    sendingMessage.style.display = 'block'; // é€ä¿¡ä¸­ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’è¡¨ç¤º
+    
+    // ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹è¡¨ç¤ºç”¨
+    let progressStep = 0;
+    const progressSteps = ['ãƒ‡ãƒ¼ã‚¿æº–å‚™ä¸­...', 'ç”»åƒå‡¦ç†ä¸­...', 'é€ä¿¡ä¸­...', 'ä¿å­˜ä¸­...'];
+    
+    const updateProgress = () => {
+        if (progressStep < progressSteps.length) {
+            submitBtn.textContent = progressSteps[progressStep];
+            progressStep++;
+        }
+    };
+    
+    updateProgress(); // ãƒ‡ãƒ¼ã‚¿æº–å‚™ä¸­...
+    
+    try {
+        // ã‚¿ã‚¤ãƒ ã‚¹ã‚¿ãƒ³ãƒ—è¿½åŠ 
+        formData.timestamp = new Date().toISOString();
+        
+        updateProgress(); // ç”»åƒå‡¦ç†ä¸­...
+        
+        // æ–°ã—ã„ãƒ‡ãƒ¼ã‚¿æ§‹é€ ã«å¤‰æ›
+        const reportData = buildReportData(formData, photoData);
+        
+        // ãƒ‡ãƒãƒƒã‚°: é€ä¿¡ãƒ‡ãƒ¼ã‚¿ç¢ºèª
+        console.log('?? é€ä¿¡ãƒ‡ãƒ¼ã‚¿ç¢ºèª:', {
+            scene: photoData.scene?.length || 0,
+            property: photoData.property?.length || 0,
+            otherVehicle: photoData.otherVehicle?.length || 0,
+            ownVehicle: photoData.ownVehicle?.length || 0,
+            license: photoData.license?.length || 0
+        });
+
+        // Debug: send data overview
+        // console.log("é€ä¿¡ãƒ‡ãƒ¼ã‚¿ç¢ºèª:", {
+        //     accidentType: reportData.accidentType,
+        //     // totalPhotos,
+        //     // dataSizeKB: jsonSizeKB
+        // });
+        // ãƒ‡ãƒ¼ã‚¿ã‚µã‚¤ã‚ºãƒã‚§ãƒƒã‚¯
+        const jsonSize = JSON.stringify(reportData).length;
+//        const jsonSizeKB = (jsonSize / 1024).toFixed(1);
+//        const totalPhotos = Object.values(reportData.photos).flat().length;
+        
+        
+        // ãƒ‡ãƒ¼ã‚¿ã‚µã‚¤ã‚ºåˆ¶é™ãƒã‚§ãƒƒã‚¯ï¼ˆ5æšã®ç”»åƒã§ã‚‚2MBä»¥å†…ã«åã¾ã‚‹ã‚ˆã†èª¿æ•´ï¼‰
+        if (jsonSize > 2 * 1024 * 1024) { // 2MBä»¥ä¸Š
+//            throw new Error(`ãƒ‡ãƒ¼ã‚¿ã‚µã‚¤ã‚ºãŒå¤§ãã™ãã¾ã™ (${jsonSizeKB}KB)ã€‚ç”»åƒã‚’æ¸›ã‚‰ã™ã‹ã€ã‚ˆã‚Šå°ã•ã„ç”»åƒã‚’ä½¿ç”¨ã—ã¦ãã ã•ã„ã€‚`);
+        }
+        
+        updateProgress(); // é€ä¿¡ä¸­...
+        
+        // URLSearchParamså½¢å¼ã§é€ä¿¡ï¼ˆå‚è€ƒã‚¢ãƒ—ãƒªæº–æ‹ ï¼‰
+//        const formDataParams = new URLSearchParams();
+        formDataParams.append('action', 'submitAccidentReport');
+        formDataParams.append('reporterName', reportData.reporterName || '');
+        formDataParams.append('office', reportData.office || '');
+        formDataParams.append('incidentDate', reportData.incidentDate || '');
+        formDataParams.append('incidentTime', reportData.incidentTime || '');
+        formDataParams.append('accidentType', reportData.accidentType || '');
+        formDataParams.append('location', reportData.location || '');
+        formDataParams.append('details', reportData.details || '');
+        
+        // è»Šä¸¡äº‹æ•…ã®å ´åˆã®è¿½åŠ ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰
+        if (reportData.accidentType === 'è»Šä¸¡äº‹æ•…') {
+            formDataParams.append('driverName', reportData.driverName || '');
+            formDataParams.append('propertyDamage', reportData.propertyDamage || '');
+            formDataParams.append('propertyDetails', reportData.propertyDetails || '');
+            formDataParams.append('personalInjury', reportData.personalInjury || '');
+            formDataParams.append('personalDetails', reportData.personalDetails || '');
+            if (reportData.injury) {
+                formDataParams.append('injurySelf', reportData.injury.self || '');
+                formDataParams.append('injurySelfDetails', reportData.injury.selfDetails || '');
+                formDataParams.append('injuryPassenger', reportData.injury.passenger || '');
+                formDataParams.append('injuryPassengerDetails', reportData.injury.passengerDetails || '');
+                formDataParams.append('injuryOther', reportData.injury.other || '');
+                formDataParams.append('injuryOtherDetails', reportData.injury.otherDetails || '');
+            }
+        } else if (reportData.accidentType === 'ãã®ä»–') {
+            // ãã®ä»–äº‹æ•…ã®å ´åˆã®è¿½åŠ ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰
+            formDataParams.append('userName', reportData.userName || '');
+            formDataParams.append('otherAccidentCategory', reportData.otherAccidentCategory || '');
+            formDataParams.append('locationCategory', reportData.locationCategory || '');
+            formDataParams.append('locationDetail', reportData.locationDetail || '');
+            formDataParams.append('locationNote', reportData.locationNote || '');
+        }
+        
+        // å†™çœŸãƒ‡ãƒ¼ã‚¿ã‚’å€‹åˆ¥ã«è¿½åŠ 
+        const photos = reportData.photos || {};
+        Object.keys(photos).forEach(photoType => {
+            if (photos[photoType] && photos[photoType].length > 0) {
+                photos[photoType].forEach((photo, index) => {
+                    formDataParams.append(`photo_${photoType}_${index}`, photo.data);
+                    formDataParams.append(`photoName_${photoType}_${index}`, photo.name);
+                });
+            }
+        });
+        
+//            å†™çœŸæšæ•°: totalPhotos,
+//            ãƒ‡ãƒ¼ã‚¿ã‚µã‚¤ã‚ºKB: jsonSizeKB,
+//            URLSearchParamsæ–‡å­—æ•°: formDataParams.toString().length
+        // extra callback wrapper removed
+        
+        const response = await fetch(config.gasUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formDataParams
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const responseText = await response.text();
+        const result = JSON.parse(responseText);
+        
+        if (result.success) {
+            updateProgress(); // ä¿å­˜ä¸­...
+            
+            // console.log("é€ä¿¡å®Œäº†:", {
+            //     reportId: result.reportId,
+            //     photoCount: result.photoCount
+            // });
+            
+            // å°‘ã—å¾…ã£ã¦ã‹ã‚‰ç”»é¢é·ç§»ï¼ˆãƒ¦ãƒ¼ã‚¶ãƒ¼ã«ä¿å­˜å®Œäº†ã‚’è¦–è¦šçš„ã«ä¼ãˆã‚‹ï¼‰
+            setTimeout(() => {
+                localStorage.setItem('reportResult', JSON.stringify({
+                    success: true,
+                    reportId: result.reportId,
+                    timestamp: reportData.timestamp
+                }));
+                window.location.href = 'result.html';
+            }, 500);
+        } else {
+            throw new Error(result.error || 'é€ä¿¡ã«å¤±æ•—ã—ã¾ã—ãŸ');
+        }
+        
+    } catch (error) {
+        console.error('? é€ä¿¡ã‚¨ãƒ©ãƒ¼:', error.message);
+        alert('é€ä¿¡ã«å¤±æ•—ã—ã¾ã—ãŸã€‚ã‚‚ã†ä¸€åº¦ãŠè©¦ã—ãã ã•ã„ã€‚\nã‚¨ãƒ©ãƒ¼: ' + error.message);
+        submitBtn.disabled = false;
+        cancelBtn.disabled = false;
+        submitBtn.textContent = 'é€ä¿¡ã™ã‚‹';
+        sendingMessage.style.display = 'none'; // é€ä¿¡ä¸­ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’éè¡¨ç¤º
+    }
+}
+
+
