@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta http-equiv="Last-Modified" content="Mon, 27 Jan 2025 14:00:00 GMT">
-    <title>事故報告フォーム</title>
+    <title>莠区腐蝣ｱ蜻翫ヵ繧ｩ繝ｼ繝</title>
     <link rel="stylesheet" href="../common/css/base.css?v=20251004001">
     <link rel="stylesheet" href="css/accident-report.css?v=20251004001">
     <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.7.1/woff.js"></script>
@@ -25,253 +25,252 @@
 </head>
 <body>
     <div class="container">
-        <h1>事故報告フォーム</h1>
+        <h1>莠区腐蝣ｱ蜻翫ヵ繧ｩ繝ｼ繝</h1>
 
         <form id="accidentReportForm">
-            <!-- 基本情報 -->
+            <!-- 蝓ｺ譛ｬ諠・ｱ -->
             <div class="form-section">
-                <h2>基本情報</h2>
+                <h2>蝓ｺ譛ｬ諠・ｱ</h2>
                 
                 <div class="form-group">
-                    <label>報告者</label>
+                    <label>蝣ｱ蜻願・/label>
                     <input type="text" id="reporter" name="reporter" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label class="required">事業所</label>
+                    <label class="required">莠区･ｭ謇</label>
                     <div id="officeContainer">
                         <div class="loading-message">
-                            <span class="loading-icon">⌛</span> 取得中...しばらくお待ちください
+                            <span class="loading-icon">竚・/span> 蜿門ｾ嶺ｸｭ...縺励・繧峨￥縺雁ｾ・■縺上□縺輔＞
                         </div>
                     </div>
                     <select id="office" name="office" style="display: none;" required>
-                        <option value="">選択してください</option>
+                        <option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>
                     </select>
-                    <span class="error-message">事業所を選択してください</span>
+                    <span class="error-message">莠区･ｭ謇繧帝∈謚槭＠縺ｦ縺上□縺輔＞</span>
                 </div>
 
                 <div class="form-group">
-                    <label class="required">発生日</label>
+                    <label class="required">逋ｺ逕滓律</label>
                     <input type="date" id="incidentDate" name="incidentDate" required>
-                    <span class="error-message">発生日を入力してください</span>
+                    <span class="error-message">逋ｺ逕滓律繧貞・蜉帙＠縺ｦ縺上□縺輔＞</span>
                 </div>
 
                 <div class="form-group">
-                    <label class="required">発生時刻</label>
+                    <label class="required">逋ｺ逕滓凾蛻ｻ</label>
                     <input type="time" id="incidentTime" name="incidentTime" required>
-                    <span class="error-message">発生時刻を入力してください</span>
+                    <span class="error-message">逋ｺ逕滓凾蛻ｻ繧貞・蜉帙＠縺ｦ縺上□縺輔＞</span>
                 </div>
             </div>
 
-            <!-- 事故種類 -->
+            <!-- 莠区腐遞ｮ鬘・-->
             <div class="form-section">
-                <h2>事故種類</h2>
+                <h2>莠区腐遞ｮ鬘・/h2>
                 
                 <div class="form-group">
-                    <label class="required">事故の種類を選択してください</label>
+                    <label class="required">莠区腐縺ｮ遞ｮ鬘槭ｒ驕ｸ謚槭＠縺ｦ縺上□縺輔＞</label>
                     <div class="radio-group">
                         <div class="radio-item">
                             <input type="radio" id="typeVehicle" name="accidentType" value="vehicle" required>
-                            <label for="typeVehicle">車両事故</label>
+                            <label for="typeVehicle">霆贋ｸ｡莠区腐</label>
                         </div>
                         <div class="radio-item">
                             <input type="radio" id="typeOther" name="accidentType" value="other" required>
-                            <label for="typeOther">その他</label>
+                            <label for="typeOther">縺昴・莉・/label>
                         </div>
                     </div>
-                    <span class="error-message">事故種類を選択してください</span>
+                    <span class="error-message">莠区腐遞ｮ鬘槭ｒ驕ｸ謚槭＠縺ｦ縺上□縺輔＞</span>
                 </div>
 
-                <!-- 車両事故の場合の追加項目 -->
+                <!-- 霆贋ｸ｡莠区腐縺ｮ蝣ｴ蜷医・霑ｽ蜉鬆・岼 -->
                 <div id="vehicleSection" class="conditional-section">
                     <div class="form-group">
-                        <label class="required">運転手の名前</label>
-                        <input type="text" id="driverName" name="driverName" placeholder="運転手の氏名を入力">
-                        <span class="error-message">運転手の名前を入力してください</span>
+                        <label class="required">驕玖ｻ｢謇九・蜷榊燕</label>
+                        <input type="text" id="driverName" name="driverName" placeholder="驕玖ｻ｢謇九・豌丞錐繧貞・蜉・>
+                        <span class="error-message">驕玖ｻ｢謇九・蜷榊燕繧貞・蜉帙＠縺ｦ縺上□縺輔＞</span>
                     </div>
 
                     <div class="form-group">
-                        <label class="required">対物</label>
+                        <label class="required">蟇ｾ迚ｩ</label>
                         <div class="radio-group">
                             <div class="radio-item">
                                 <input type="radio" id="propertyYes" name="propertyDamage" value="yes">
-                                <label for="propertyYes">あり</label>
+                                <label for="propertyYes">縺ゅｊ</label>
                             </div>
                             <div class="radio-item">
                                 <input type="radio" id="propertyNo" name="propertyDamage" value="no">
-                                <label for="propertyNo">なし</label>
+                                <label for="propertyNo">縺ｪ縺・/label>
                             </div>
                         </div>
                     </div>
 
                     <div id="propertyDetails" class="conditional-section">
                         <div class="form-group">
-                            <label class="required">対物詳細</label>
-                            <textarea id="propertyDetailsText" name="propertyDetailsText" placeholder="対物の詳細を入力してください"></textarea>
-                            <span class="error-message">対物詳細を入力してください</span>
+                            <label class="required">蟇ｾ迚ｩ隧ｳ邏ｰ</label>
+                            <textarea id="propertyDetailsText" name="propertyDetailsText" placeholder="蟇ｾ迚ｩ縺ｮ隧ｳ邏ｰ繧貞・蜉帙＠縺ｦ縺上□縺輔＞"></textarea>
+                            <span class="error-message">蟇ｾ迚ｩ隧ｳ邏ｰ繧貞・蜉帙＠縺ｦ縺上□縺輔＞</span>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="required">対人</label>
+                        <label class="required">蟇ｾ莠ｺ</label>
                         <div class="radio-group">
                             <div class="radio-item">
                                 <input type="radio" id="personalYes" name="personalInjury" value="yes">
-                                <label for="personalYes">あり</label>
+                                <label for="personalYes">縺ゅｊ</label>
                             </div>
                             <div class="radio-item">
                                 <input type="radio" id="personalNo" name="personalInjury" value="no">
-                                <label for="personalNo">なし</label>
+                                <label for="personalNo">縺ｪ縺・/label>
                             </div>
                         </div>
                     </div>
 
                     <div id="injuryDetails" class="conditional-section">
                         <div class="form-group">
-                            <label>負傷者（複数選択可）</label>
+                            <label>雋蛯ｷ閠・ｼ郁､・焚驕ｸ謚槫庄・・/label>
                             <div class="checkbox-group">
                                 <div class="checkbox-item">
                                     <input type="checkbox" id="injurySelf" name="injuryType" value="self">
-                                    <label for="injurySelf">本人</label>
+                                    <label for="injurySelf">譛ｬ莠ｺ</label>
                                 </div>
                                 <div class="checkbox-item">
                                     <input type="checkbox" id="injuryPassenger" name="injuryType" value="passenger">
-                                    <label for="injuryPassenger">同乗者</label>
+                                    <label for="injuryPassenger">蜷御ｹ苓・/label>
                                 </div>
                                 <div class="checkbox-item">
                                     <input type="checkbox" id="injuryOther" name="injuryType" value="other">
-                                    <label for="injuryOther">対人</label>
+                                    <label for="injuryOther">蟇ｾ莠ｺ</label>
                                 </div>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label class="required">負傷詳細</label>
-                            <textarea id="injuryDetailsText" name="injuryDetailsText" placeholder="負傷の詳細を入力してください"></textarea>
-                            <span class="error-message">負傷詳細を入力してください</span>
+                            <label class="required">雋蛯ｷ隧ｳ邏ｰ</label>
+                            <textarea id="injuryDetailsText" name="injuryDetailsText" placeholder="雋蛯ｷ縺ｮ隧ｳ邏ｰ繧貞・蜉帙＠縺ｦ縺上□縺輔＞"></textarea>
+                            <span class="error-message">雋蛯ｷ隧ｳ邏ｰ繧貞・蜉帙＠縺ｦ縺上□縺輔＞</span>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="required">発生場所</label>
+                        <label class="required">逋ｺ逕溷ｴ謇</label>
                         <div class="location-input">
-                            <input type="text" id="location" name="location" placeholder="住所または場所名">
+                            <input type="text" id="location" name="location" placeholder="菴乗園縺ｾ縺溘・蝣ｴ謇蜷・>
                             <button type="button" class="btn-location" id="getLocationBtn">
-                                📍 位置情報取得
-                            </button>
+                                桃 菴咲ｽｮ諠・ｱ蜿門ｾ・                            </button>
                         </div>
-                        <span class="help-text">位置情報取得または手動で入力してください</span>
-                        <span class="error-message">発生場所を入力してください</span>
+                        <span class="help-text">菴咲ｽｮ諠・ｱ蜿門ｾ励∪縺溘・謇句虚縺ｧ蜈･蜉帙＠縺ｦ縺上□縺輔＞</span>
+                        <span class="error-message">逋ｺ逕溷ｴ謇繧貞・蜉帙＠縺ｦ縺上□縺輔＞</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 発生場所（その他の場合） -->
+            <!-- 逋ｺ逕溷ｴ謇・医◎縺ｮ莉悶・蝣ｴ蜷茨ｼ・-->
             <div id="otherLocationSection" class="form-section" style="display: none;">
-                <h2>発生場所</h2>
+                <h2>逋ｺ逕溷ｴ謇</h2>
                 
                 <div class="form-group">
-                    <label class="required">事業所分類</label>
+                    <label class="required">莠区･ｭ謇蛻・｡・/label>
                     <select id="locationCategory" name="locationCategory">
-                        <option value="">選択してください</option>
-                        <option value="訪看">訪看</option>
-                        <option value="小児">小児</option>
-                        <option value="施設">施設</option>
+                        <option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>
+                        <option value="險ｪ逵・>險ｪ逵・/option>
+                        <option value="蟆丞・">蟆丞・</option>
+                        <option value="譁ｽ險ｭ">譁ｽ險ｭ</option>
                     </select>
-                    <span class="error-message">事業所分類を選択してください</span>
+                    <span class="error-message">莠区･ｭ謇蛻・｡槭ｒ驕ｸ謚槭＠縺ｦ縺上□縺輔＞</span>
                 </div>
 
                 <div class="form-group">
-                    <label class="required">事故種類</label>
+                    <label class="required">莠区腐遞ｮ鬘・/label>
                     <select id="otherAccidentCategory" name="otherAccidentCategory">
-                        <option value="">選択してください</option>
-                        <option value="転倒・転落">転倒・転落</option>
-                        <option value="誤嚥・窒息">誤嚥・窒息</option>
-                        <option value="医療処置関連">医療処置関連</option>
-                        <option value="感染症関連">感染症関連</option>
-                        <option value="離設（徘徊・行方不明）">離設（徘徊・行方不明）</option>
-                        <option value="他害・自傷">他害・自傷</option>
-                        <option value="食中毒・異物混入">食中毒・異物混入</option>
-                        <option value="火災・事故による外傷">火災・事故による外傷</option>
+                        <option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>
+                        <option value="霆｢蛟偵・霆｢關ｽ">霆｢蛟偵・霆｢關ｽ</option>
+                        <option value="隱､蝴･繝ｻ遯呈・">隱､蝴･繝ｻ遯呈・</option>
+                        <option value="蛹ｻ逋ょ・鄂ｮ髢｢騾｣">蛹ｻ逋ょ・鄂ｮ髢｢騾｣</option>
+                        <option value="諢滓沒逞・未騾｣">諢滓沒逞・未騾｣</option>
+                        <option value="髮｢險ｭ・亥ｾ伜ｾ翫・陦梧婿荳肴・・・>髮｢險ｭ・亥ｾ伜ｾ翫・陦梧婿荳肴・・・/option>
+                        <option value="莉門ｮｳ繝ｻ閾ｪ蛯ｷ">莉門ｮｳ繝ｻ閾ｪ蛯ｷ</option>
+                        <option value="鬟滉ｸｭ豈偵・逡ｰ迚ｩ豺ｷ蜈･">鬟滉ｸｭ豈偵・逡ｰ迚ｩ豺ｷ蜈･</option>
+                        <option value="轣ｫ轣ｽ繝ｻ莠区腐縺ｫ繧医ｋ螟門す">轣ｫ轣ｽ繝ｻ莠区腐縺ｫ繧医ｋ螟門す</option>
                     </select>
-                    <span class="error-message">事故種類を選択してください</span>
+                    <span class="error-message">莠区腐遞ｮ鬘槭ｒ驕ｸ謚槭＠縺ｦ縺上□縺輔＞</span>
                 </div>
 
                 <div id="detailLocationDiv" class="form-group" style="display: none;">
-                    <label class="required">詳細場所</label>
+                    <label class="required">隧ｳ邏ｰ蝣ｴ謇</label>
                     <select id="detailLocation" name="detailLocation">
-                        <option value="">選択してください</option>
+                        <option value="">驕ｸ謚槭＠縺ｦ縺上□縺輔＞</option>
                     </select>
-                    <span class="error-message">詳細場所を選択してください</span>
+                    <span class="error-message">隧ｳ邏ｰ蝣ｴ謇繧帝∈謚槭＠縺ｦ縺上□縺輔＞</span>
                 </div>
 
                 <div id="otherLocationDiv" class="form-group" style="display: none;">
-                    <label class="required">その他の場所</label>
-                    <input type="text" id="otherLocation" name="otherLocation" placeholder="場所を入力してください">
-                    <span class="error-message">場所を入力してください</span>
+                    <label class="required">縺昴・莉悶・蝣ｴ謇</label>
+                    <input type="text" id="otherLocation" name="otherLocation" placeholder="蝣ｴ謇繧貞・蜉帙＠縺ｦ縺上□縺輔＞">
+                    <span class="error-message">蝣ｴ謇繧貞・蜉帙＠縺ｦ縺上□縺輔＞</span>
                 </div>
             </div>
 
-            <!-- 事故内容詳細 -->
+            <!-- 莠区腐蜀・ｮｹ隧ｳ邏ｰ -->
             <div class="form-section">
-                <h2>事故内容詳細</h2>
+                <h2>莠区腐蜀・ｮｹ隧ｳ邏ｰ</h2>
                 
                 <div class="form-group">
-                    <label class="required">詳細</label>
-                    <textarea id="accidentDetails" name="accidentDetails" rows="5" placeholder="事故の詳細を入力してください" required></textarea>
-                    <span class="help-text">できるだけ詳しく記入してください（いつ、どこで、何が、どのように）</span>
-                    <span class="error-message">事故の詳細を入力してください</span>
+                    <label class="required">隧ｳ邏ｰ</label>
+                    <textarea id="accidentDetails" name="accidentDetails" rows="5" placeholder="莠区腐縺ｮ隧ｳ邏ｰ繧貞・蜉帙＠縺ｦ縺上□縺輔＞" required></textarea>
+                    <span class="help-text">縺ｧ縺阪ｋ縺縺題ｩｳ縺励￥險伜・縺励※縺上□縺輔＞・医＞縺､縲√←縺薙〒縲∽ｽ輔′縲√←縺ｮ繧医≧縺ｫ・・/span>
+                    <span class="error-message">莠区腐縺ｮ隧ｳ邏ｰ繧貞・蜉帙＠縺ｦ縺上□縺輔＞</span>
                 </div>
             </div>
 
-            <!-- 写真アップロード -->
+            <!-- 蜀咏悄繧｢繝・・繝ｭ繝ｼ繝・-->
             <div class="form-section">
-                <h2>写真アップロード</h2>
+                <h2>蜀咏悄繧｢繝・・繝ｭ繝ｼ繝・/h2>
                 
                 <div class="form-group">
-                    <label class="required">事故現場の写真</label>
+                    <label class="required">莠区腐迴ｾ蝣ｴ縺ｮ蜀咏悄</label>
                     <div class="photo-upload" id="scenePhotoUpload">
-                        <p>📷 写真を選択</p>
-                        <p class="help-text">複数枚可</p>
+                        <p>胴 蜀咏悄繧帝∈謚・/p>
+                        <p class="help-text">隍・焚譫壼庄</p>
                     </div>
                     <input type="file" id="scenePhoto" name="scenePhoto" accept="image/*" multiple style="display: none;" required>
                     <div class="photo-preview" id="scenePhotoPreview"></div>
-                    <span class="error-message">事故現場の写真を1枚以上アップロードしてください</span>
+                    <span class="error-message">莠区腐迴ｾ蝣ｴ縺ｮ蜀咏悄繧・譫壻ｻ･荳翫い繝・・繝ｭ繝ｼ繝峨＠縺ｦ縺上□縺輔＞</span>
                 </div>
 
-                <!-- 車両事故の場合の追加写真 -->
+                <!-- 霆贋ｸ｡莠区腐縺ｮ蝣ｴ蜷医・霑ｽ蜉蜀咏悄 -->
                 <div id="vehiclePhotos" class="conditional-section">
                     <div class="form-group">
-                        <label>相手の車の写真</label>
+                        <label>逶ｸ謇九・霆翫・蜀咏悄</label>
                         <div class="photo-upload" id="otherVehiclePhotoUpload">
-                            <p>📷 写真を選択</p>
+                            <p>胴 蜀咏悄繧帝∈謚・/p>
                         </div>
                         <input type="file" id="otherVehiclePhoto" name="otherVehiclePhoto" accept="image/*" multiple style="display: none;">
                         <div class="photo-preview" id="otherVehiclePhotoPreview"></div>
                     </div>
 
                     <div class="form-group">
-                        <label>自分の車の写真</label>
+                        <label>閾ｪ蛻・・霆翫・蜀咏悄</label>
                         <div class="photo-upload" id="ownVehiclePhotoUpload">
-                            <p>📷 写真を選択</p>
+                            <p>胴 蜀咏悄繧帝∈謚・/p>
                         </div>
                         <input type="file" id="ownVehiclePhoto" name="ownVehiclePhoto" accept="image/*" multiple style="display: none;">
                         <div class="photo-preview" id="ownVehiclePhotoPreview"></div>
                     </div>
 
                     <div id="propertyPhotoDiv" class="form-group" style="display: none;">
-                        <label>対物の写真</label>
+                        <label>蟇ｾ迚ｩ縺ｮ蜀咏悄</label>
                         <div class="photo-upload" id="propertyPhotoUpload">
-                            <p>📷 写真を選択</p>
+                            <p>胴 蜀咏悄繧帝∈謚・/p>
                         </div>
                         <input type="file" id="propertyPhoto" name="propertyPhoto" accept="image/*" multiple style="display: none;">
                         <div class="photo-preview" id="propertyPhotoPreview"></div>
                     </div>
 
                     <div id="licensePhotoDiv" class="form-group" style="display: none;">
-                        <label>相手の免許証の写真</label>
+                        <label>逶ｸ謇九・蜈崎ｨｱ險ｼ縺ｮ蜀咏悄</label>
                         <div class="photo-upload" id="licensePhotoUpload">
-                            <p>📷 写真を選択</p>
+                            <p>胴 蜀咏悄繧帝∈謚・/p>
                         </div>
                         <input type="file" id="licensePhoto" name="licensePhoto" accept="image/*" style="display: none;">
                         <div class="photo-preview" id="licensePhotoPreview"></div>
@@ -281,31 +280,30 @@
         </form>
     </div>
 
-    <!-- 送信ボタン -->
+    <!-- 騾∽ｿ｡繝懊ち繝ｳ -->
     <div class="submit-section">
         <button type="button" class="btn-submit" id="submitBtn">
-            送信内容を確認
-        </button>
+            騾∽ｿ｡蜀・ｮｹ繧堤｢ｺ隱・        </button>
     </div>
 
-    <!-- 確認モーダル -->
+    <!-- 遒ｺ隱阪Δ繝ｼ繝繝ｫ -->
     <div id="confirmModal" class="modal">
         <div class="modal-content">
-            <h3>送信内容の確認</h3>
+            <h3>騾∽ｿ｡蜀・ｮｹ縺ｮ遒ｺ隱・/h3>
             <div id="confirmContent">
-                <!-- 確認内容がここに表示される -->
+                <!-- 遒ｺ隱榊・螳ｹ縺後％縺薙↓陦ｨ遉ｺ縺輔ｌ繧・-->
             </div>
             <div class="modal-buttons">
-                <button type="button" class="btn-cancel" id="cancelBtn">修正する</button>
-                <button type="button" class="btn-confirm" id="confirmBtn">送信する</button>
+                <button type="button" class="btn-cancel" id="cancelBtn">菫ｮ豁｣縺吶ｋ</button>
+                <button type="button" class="btn-confirm" id="confirmBtn">騾∽ｿ｡縺吶ｋ</button>
             </div>
             <div id="sendingMessage" style="display: none; color: red; font-weight: bold; text-align: center; margin-top: 10px;">
-                送信中、お待ちください...
+                騾∽ｿ｡荳ｭ縲√♀蠕・■縺上□縺輔＞...
             </div>
         </div>
     </div>
 
     <script src="../common/js/woff-init.js?cachebust=20251004001"></script>
-    <script src="js/accident-report.js?cachebust=20251004002"></script>
+    <script src="js/accident-report.js?cachebust=20251122001"></script>
 </body>
 </html>
