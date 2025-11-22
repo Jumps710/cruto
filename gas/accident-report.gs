@@ -283,6 +283,8 @@ function saveAccidentReportToSheet(data, reportId, timestamp, photoInfo) {
     new Date()
   ];
   
+  // �V�K��H��: ���̑��̏ꍇ�̂݁u���p�l�v��挿入�iH�z��E���j
+  row.splice(7, 0, data.accidentType === 'その他' ? (data.userName || '') : '');
   sheet.appendRow(row);
   
   return { reportId, rowData: row };
@@ -343,8 +345,19 @@ function getOffices() {
 }
 
 function getAccidentUserOrganization(userId) {
+  appendLog([
+    new Date(),
+    'accident_org_fetch',
+    'START',
+    userId || '',
+    '',
+    'Organization lookup start',
+    '',
+    '',
+    ''
+  ]);
+
   try {
-    // LINE WORKS API設定
     const CLIENT_ID = ENV.LINE_WORKS.CLIENT_ID;
     const CLIENT_SECRET = ENV.LINE_WORKS.CLIENT_SECRET;
     const SERVICE_ACCOUNT = ENV.LINE_WORKS.SERVICE_ACCOUNT;
@@ -352,41 +365,81 @@ function getAccidentUserOrganization(userId) {
     const PRIVATE_KEY = getPrivateKeyFromFile(ENV.LINE_WORKS.PRIVATE_KEY_FILE);
 
     try {
-      // JWTトークンを生成
       const jwt = generateAccidentJWT(CLIENT_ID, SERVICE_ACCOUNT, PRIVATE_KEY);
-      
-      // アクセストークンを取得
       const accessToken = getAccidentAccessToken(jwt, CLIENT_ID, CLIENT_SECRET);
-      
-      // ユーザー情報を取得
       const userInfo = getAccidentUserInfo(accessToken, DOMAIN_ID, userId);
-      
-      // 組織情報を適切に取得
+
+      appendLog([
+        new Date(),
+        'accident_org_fetch',
+        'USER_INFO',
+        userId || '',
+        '',
+        userInfo ? 'organizations:' + (userInfo.organizations ? userInfo.organizations.length : 0) : 'userInfo null',
+        '',
+        '',
+        ''
+      ]);
+
       let orgUnitName = null;
       if (userInfo && userInfo.organizations && userInfo.organizations.length > 0) {
-        const targetOrg = userInfo.organizations.find(org => org.domainId === 10000389);
+        const targetOrg = userInfo.organizations.find(function(org) {
+          return org.domainId === Number(DOMAIN_ID);
+        });
         if (targetOrg && targetOrg.orgUnits && targetOrg.orgUnits.length > 0) {
-          const primaryOrgUnit = targetOrg.orgUnits.find(unit => unit.primary === true) || targetOrg.orgUnits[0];
-          orgUnitName = primaryOrgUnit.orgUnitName;
+          const primaryOrgUnit = targetOrg.orgUnits.find(function(unit) { return unit.primary === true; }) || targetOrg.orgUnits[0];
+          orgUnitName = primaryOrgUnit && primaryOrgUnit.orgUnitName;
         }
       }
-      
+
+      appendLog([
+        new Date(),
+        'accident_org_fetch',
+        'RESULT',
+        userId || '',
+        '',
+        orgUnitName ? orgUnitName : 'organization not resolved',
+        '',
+        '',
+        ''
+      ]);
+
       if (orgUnitName) {
         return {
           orgUnitName: orgUnitName
         };
       } else {
-        throw new Error('組織情報が取得できませんでした');
+        throw new Error('Organization unit not found');
       }
-      
     } catch (apiError) {
-      // フォールバック: 事業所シートから取得
+      appendLog([
+        new Date(),
+        'accident_org_fetch',
+        'FALLBACK',
+        userId || '',
+        '',
+        apiError && apiError.message ? apiError.message : String(apiError),
+        '',
+        '',
+        ''
+      ]);
       const fallbackOffices = getOffices();
       return fallbackOffices;
     }
-    
+
   } catch (error) {
-    throw new Error("組織情報の取得に失敗しました: " + error.toString());
+    appendLog([
+      new Date(),
+      'accident_org_fetch',
+      'ERROR',
+      userId || '',
+      '',
+      error && error.message ? error.message : String(error),
+      error && error.stack ? error.stack.substring(0, 250) : '',
+      '',
+      ''
+    ]);
+    throw new Error('????????????: ' + error.toString());
   }
 }
 
@@ -456,7 +509,18 @@ function getAccidentAccessToken(jwt, clientId, clientSecret) {
 // ユーザー情報取得（事故報告専用）
 function getAccidentUserInfo(accessToken, domainId, userId) {
   const url = `https://www.worksapis.com/v1.0/users/${userId}`;
-  
+  appendLog([
+    new Date(),
+    'accident_user_info',
+    'REQUEST',
+    userId || '',
+    '',
+    'LINE WORKS user info fetch start',
+    `domainId:${domainId}`,
+    `url:${url}`,
+    ''
+  ]);
+
   try {
     const options = {
       'method': 'GET',
@@ -466,19 +530,40 @@ function getAccidentUserInfo(accessToken, domainId, userId) {
       },
       'muteHttpExceptions': true
     };
-    
+
     const response = UrlFetchApp.fetch(url, options);
     const responseCode = response.getResponseCode();
     const responseText = response.getContentText();
-    
+
+    appendLog([
+      new Date(),
+      'accident_user_info',
+      'RESPONSE',
+      userId || '',
+      '',
+      `status:${responseCode}`,
+      responseText ? responseText.substring(0, 200) : '',
+      responseText && responseText.length > 200 ? '...truncated...' : '',
+      ''
+    ]);
+
     if (responseCode === 200) {
-      const data = JSON.parse(responseText);
-      return data;
+      return JSON.parse(responseText);
     } else {
-      throw new Error(`ユーザー情報の取得に失敗しました: HTTP ${responseCode}`);
+      throw new Error('LINE WORKS user fetch failed: HTTP ' + responseCode + ' ' + responseText);
     }
   } catch (error) {
-    console.error("ユーザー情報取得エラー:", error);
+    appendLog([
+      new Date(),
+      'accident_user_info',
+      'ERROR',
+      userId || '',
+      '',
+      error && error.message ? error.message : String(error),
+      error && error.stack ? error.stack.substring(0, 250) : '',
+      ''
+    ]);
+    console.error('LINE WORKS user fetch error:', error);
     throw error;
   }
 }
@@ -491,15 +576,16 @@ function handleAccidentReportFromParams(params) {
     // ログ記録は削除（handleAccidentReportで記録される）
     
     // URLSearchParamsからフォームデータを構築
-    const formData = {
-      reporterId: params.reporterId || '',
-      reporterName: params.reporterName || '',
-      office: params.office || '',
-      incidentDate: params.incidentDate || '',
-      incidentTime: params.incidentTime || '',
-      accidentType: params.accidentType || '',
-      location: params.location || '',
-      details: params.details || '',
+      const formData = {
+        reporterId: params.reporterId || '',
+        reporterName: params.reporterName || '',
+        office: params.office || '',
+        incidentDate: params.incidentDate || '',
+        incidentTime: params.incidentTime || '',
+        accidentType: params.accidentType || '',
+        location: params.location || '',
+        details: params.details || '',
+        userName: params.userName || '',
       
       // 車両事故の追加フィールド
       driverName: params.driverName || '',
