@@ -4,14 +4,13 @@
  */
 
 // 設定
-// フォルダIDはENVで管理
-const PHOTO_FOLDER_ID = ENV.PHOTO_FOLDER_ID;
+const PHOTO_FOLDER_ID = "11r9PGtZKBuX22TnA6cIRHru6zlNYD9T_"; // 事故報告フォルダ
 const PHOTO_COLUMNS = {
-  SCENE: 23,     // Column W: 事故現場写真
-  PROPERTY: 24,  // Column X: 対物写真
-  OTHER_VEHICLE: 25, // Column Y: 相手の車の写真
-  OWN_VEHICLE: 26,   // Column Z: 自分の車の写真
-  LICENSE: 27        // Column AA: 相手の免許証写真
+  SCENE: 22,     // V列: 事故現場写真
+  PROPERTY: 23,  // W列: 対物写真
+  OTHER_VEHICLE: 24, // X列: 相手の車の写真
+  OWN_VEHICLE: 25,   // Y列: 自分の車の写真
+  LICENSE: 26        // Z列: 相手の免許証写真
 };
 
 /**
@@ -46,7 +45,7 @@ function onAccidentPhotoEditTrigger(e) {
     const reportId = sheet.getRange(row, 1).getValue();
     if (reportId && typeof reportId === 'string' && reportId.startsWith('AC')) {
       // 写真処理ステータスをチェック
-      const photoStatus = sheet.getRange(row, 28).getValue(); // Column AB: 写真処理ステータス
+      const photoStatus = sheet.getRange(row, 27).getValue(); // AA列
       
       if (photoStatus !== "写真UL処理完了") {
         console.log(`新しい事故報告を検出: ${reportId}, 写真アップロード処理開始`);
@@ -57,7 +56,7 @@ function onAccidentPhotoEditTrigger(e) {
     console.error("onEditTriggerエラー:", error);
     
     // エラーログをシートに記録
-    const logSheet = getLogSheet();
+    const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
     if (logSheet) {
       logSheet.appendRow([
         new Date(),
@@ -79,7 +78,7 @@ function onAccidentPhotoEditTrigger(e) {
  */
 function checkForUnprocessedPhotos() {
   try {
-    const sheet = getSheet(ENV.SHEETS.ACCIDENT);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事故報告");
     if (!sheet) {
       console.log("事故報告シートが見つかりません");
       return;
@@ -96,7 +95,7 @@ function checkForUnprocessedPhotos() {
     for (let i = startRow; i < values.length; i++) {
       const row = i + 1;
       const reportId = values[i][0]; // A列
-      const photoStatus = values[i][27]; // Column AB: 写真処理ステータス
+      const photoStatus = values[i][26]; // AA列
       
       if (reportId && typeof reportId === 'string' && reportId.startsWith('AC')) {
         if (!photoStatus || photoStatus === '未処理') {
@@ -125,7 +124,7 @@ function checkForUnprocessedPhotos() {
  */
 function testAccidentPhotoUpload() {
   try {
-    const sheet = getSheet(ENV.SHEETS.ACCIDENT);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事故報告");
     const lastRow = sheet.getLastRow();
     
     if (lastRow > 1) {
@@ -144,7 +143,7 @@ function testAccidentPhotoUpload() {
  */
 function uploadAccidentPhotosByReportId(reportId) {
   try {
-    const sheet = getSheet(ENV.SHEETS.ACCIDENT);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事故報告");
     const dataRange = sheet.getDataRange();
     const values = dataRange.getValues();
     
@@ -168,7 +167,7 @@ function uploadAccidentPhotosByReportId(reportId) {
  * 写真アップロード処理のメイン関数
  */
 function processAccidentPhotoUpload(sheet, row) {
-  const logSheet = getLogSheet();
+  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
   const timestamp = new Date();
   
   try {
@@ -222,14 +221,14 @@ function processAccidentPhotoUpload(sheet, row) {
     
     // ステータス更新
     if (uploadCount > 0) {
-      // Column AB: 写真処理ステータスを更新
-      sheet.getRange(row, 28).setValue("写真UL処理完了"); // Column AB: 写真処理ステータス
+      // AA列: 写真処理ステータスを更新
+      sheet.getRange(row, 27).setValue("写真UL処理完了");
       
-      // Column AC: フォルダIDを記録
-      sheet.getRange(row, 29).setValue(caseFolder.getId()); // Column AC: Drive folder ID
+      // AB列: フォルダIDを記録
+      sheet.getRange(row, 28).setValue(caseFolder.getId());
       
-      // Column AD: 処理完了日時を記録
-      sheet.getRange(row, 30).setValue(timestamp); // Column AD: 処理日時
+      // AC列: 処理完了日時を記録
+      sheet.getRange(row, 29).setValue(timestamp);
       
       // 成功ログ（簡潔版）
       // 報告者名と事業所を取得
@@ -251,8 +250,8 @@ function processAccidentPhotoUpload(sheet, row) {
       console.log(`写真アップロード完了: ${reportId}, ${uploadCount}枚アップロード`);
     } else {
       // 写真がない場合もステータス更新
-      sheet.getRange(row, 28).setValue("写真なし"); // Column AB: 写真処理ステータス
-      sheet.getRange(row, 30).setValue(timestamp); // Column AD: 処理日時
+      sheet.getRange(row, 27).setValue("写真なし");
+      sheet.getRange(row, 29).setValue(timestamp);
       
       console.log(`写真なし: ${reportId}`);
     }
@@ -277,8 +276,8 @@ function processAccidentPhotoUpload(sheet, row) {
     ]);
     
     // ステータスをエラーに設定
-    sheet.getRange(row, 28).setValue("写真ULエラー"); // Column AB: 写真処理ステータス
-    sheet.getRange(row, 30).setValue(timestamp); // Column AD: 処理日時
+    sheet.getRange(row, 27).setValue("写真ULエラー");
+    sheet.getRange(row, 29).setValue(timestamp);
   }
 }
 
@@ -428,7 +427,7 @@ function setupAccidentPhotoTriggers() {
   });
   
   // スプレッドシート編集時のトリガーを作成
-  const spreadsheet = getSpreadsheet();
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   ScriptApp.newTrigger('onAccidentPhotoEditTrigger')
     .timeBased()
     .everyMinutes(1) // 1分ごとにチェック
@@ -441,49 +440,8 @@ function setupAccidentPhotoTriggers() {
 /**
  * 全ての未処理レコードを処理（メンテナンス用）
  */
-/**
- * 既存行の写真ステータス列をAB〜AD列へ移行するワンタイムユーティリティ
- */
-function migrateAccidentPhotoStatusColumns() {
-  const sheet = getSheet(ENV.SHEETS.ACCIDENT);
-  if (!sheet) {
-    console.log('事故報告シートが見つかりません');
-    return;
-  }
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) {
-    console.log('データ行がありません');
-    return;
-  }
-
-  const dataRowCount = lastRow - 1;
-  const oldRange = sheet.getRange(2, 27, dataRowCount, 3); // AA〜AC列
-  const newRange = sheet.getRange(2, 28, dataRowCount, 3); // AB〜AD列
-
-  const oldValues = oldRange.getValues();
-  const newValues = newRange.getValues();
-
-  let migrated = 0;
-  for (let i = 0; i < dataRowCount; i++) {
-    const hasNew = newValues[i].some(value => value !== '' && value !== null);
-    const hasOld = oldValues[i].some(value => value !== '' && value !== null);
-
-    if (!hasNew && hasOld) {
-      newValues[i] = oldValues[i].slice();
-      migrated++;
-    }
-  }
-
-  if (migrated > 0) {
-    newRange.setValues(newValues);
-  }
-
-  oldRange.clearContent();
-  console.log(`migrateAccidentPhotoStatusColumns: 移行済み ${migrated} 行`);
-}
 function processAllPendingAccidentPhotoUploads() {
-  const sheet = getSheet(ENV.SHEETS.ACCIDENT);
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("事故報告");
   const dataRange = sheet.getDataRange();
   const values = dataRange.getValues();
   
@@ -492,7 +450,7 @@ function processAllPendingAccidentPhotoUploads() {
   for (let i = 1; i < values.length; i++) { // ヘッダー行をスキップ
     const row = i + 1;
     const reportId = values[i][0]; // A列
-    const photoStatus = values[i][27]; // Column AB: 写真処理ステータス
+    const photoStatus = values[i][26]; // AA列
     
     if (reportId && typeof reportId === 'string' && reportId.startsWith('AC')) {
       if (!photoStatus || photoStatus === '未処理') {

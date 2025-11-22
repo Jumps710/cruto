@@ -6,8 +6,7 @@ const SalesSearchPipeline = {
     }
     SalesLogger.log('target_select', { target: params.target, lat: params.lat, lng: params.lng });
     const ranked = SalesRankingService.rankWithDistance(items, params.lat, params.lng);
-    const limited = SalesRankingService.pickTopByDistance(ranked, 10);
-    const messages = SalesResponseBuilder.buildBatches(limited, params, 0);
+    const messages = SalesResponseBuilder.buildBatches(ranked, params, 0);
     const intro = createTextMessage('\u5951\u7d04\u7387\u4e0a\u4f4d\u304b\u3089\u8a2a\u554f\u5019\u88dc\u3092\u3054\u6848\u5185\u3057\u307e\u3059\u3002');
     return [intro].concat(messages);
   },
@@ -19,8 +18,7 @@ const SalesSearchPipeline = {
     }
     SalesLogger.log('more_request', { target: params.target, lat: params.lat, lng: params.lng, offset: params.offset });
     const ranked = SalesRankingService.rankWithDistance(items, params.lat, params.lng);
-    const limited = SalesRankingService.pickTopByDistance(ranked, 10);
-    const messages = SalesResponseBuilder.buildBatches(limited, params, params.offset || 0);
+    const messages = SalesResponseBuilder.buildBatches(ranked, params, params.offset || 0);
     return messages;
   }
 };

@@ -1,0 +1,220 @@
+warning: in the working copy of 'accident-report/js/accident-report.js', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/accident-report/js/accident-report.js b/accident-report/js/accident-report.js[m
+[1mindex 5c0a6fa..38f2eb8 100644[m
+[1m--- a/accident-report/js/accident-report.js[m
+[1m+++ b/accident-report/js/accident-report.js[m
+[36m@@ -1,12 +1,16 @@[m
+[31m-// 事故報告フォーム JavaScript - URLSearchParams + 画質改善版 v20250728001[m
+[32m+[m[32m﻿// 事故報告フォーム JavaScript - URLSearchParams + 画質改善版 v20250728001[m
+ [m
+ // 設定[m
+ const config = {[m
+     woffId: 'k7_SVZ1p8vy45jQkIRvOUw', // 本番環境のWOFF ID[m
+[31m-    gasUrl: 'https://script.google.com/macros/s/AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj/exec',[m
+[32m+[m[32m   // gasUrl: 'https://script.google.com/macros/s/AKfycbxD9kzCqRreieyw1WDNADsaw_zLsmYGB6pTiue-5Vuw0-2KcViZ4MNM_TtQkeASIkN7OA/exec', // Cruto様本番環境[m
+[32m+[m[32m    gasUrl: 'https://script.google.com/macros/s/AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj/exec', // 村松テスト[m
+[32m+[m
+[32m+[m[41m    [m
+     googleMapsApiKey: 'AIzaSyCdhA4t8flujiYex2OddJCkFv4u6nWvi9w' // Google Maps Geocoding API[m
+ };[m
+ [m
+[32m+[m
+ // グローバル変数[m
+ let formData = {};[m
+ let photoData = {[m
+[36m@@ -60,6 +64,13 @@[m [mdocument.addEventListener('DOMContentLoaded', async function() {[m
+         // まず最初にイベントリスナーを設定（フォーム操作を即座に有効化）[m
+         console.log('⚙️ Setting up event listeners...');[m
+         setupEventListeners();[m
+[32m+[m[32m        // 初期状態では写真は任意（事故種類が未選択 or その他）[m
+[32m+[m[32m        try {[m
+[32m+[m[32m            const initialType = document.querySelector('input[name="accidentType"]:checked')?.value;[m
+[32m+[m[32m            setScenePhotoRequired(initialType === 'vehicle');[m
+[32m+[m[32m        } catch (_) {[m
+[32m+[m[32m            // 初期化中は無視[m
+[32m+[m[32m        }[m
+         console.log('✅ Event listeners setup complete');[m
+     } catch (eventError) {[m
+         console.error('❌ Event listener setup failed:', eventError);[m
+[36m@@ -348,6 +359,8 @@[m [mfunction loadOfficesFromCache() {[m
+ [m
+ // イベントリスナーの設定[m
+ function setupEventListeners() {[m
+[32m+[m[32m    // 「その他」用の利用者名フィールドを動的に挿入[m
+[32m+[m[32m    ensureOtherUserNameField();[m
+     // 事故種類の選択による表示切替[m
+     document.querySelectorAll('input[name="accidentType"]').forEach(radio => {[m
+         radio.addEventListener('change', handleAccidentTypeChange);[m
+[36m@@ -391,7 +404,7 @@[m [mfunction setupEventListeners() {[m
+     // 送信ボタン[m
+     const submitBtn = document.getElementById('submitBtn');[m
+     if (submitBtn) {[m
+[31m-        submitBtn.addEventListener('click', showConfirmModal);[m
+[32m+[m[32m        submitBtn.addEventListener('click', handleSubmitClick);[m
+     }[m
+     [m
+     // モーダルボタン[m
+[36m@@ -403,15 +416,60 @@[m [mfunction setupEventListeners() {[m
+     }[m
+     [m
+     // エラーメッセージのクリア[m
+[31m-    document.querySelectorAll('input, select, textarea').forEach(element => {[m
+[31m-        element.addEventListener('input', function() {[m
+[31m-            clearError(this);[m
+[32m+[m[32m      document.querySelectorAll('input, select, textarea').forEach(element => {[m
+[32m+[m[32m          element.addEventListener('input', function() {[m
+[32m+[m[32m              clearError(this);[m
+         });[m
+         element.addEventListener('change', function() {[m
+             clearError(this);[m
+         });[m
+     });[m
+[31m-}[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  // 「その他」発生場所セクションに利用者名フィールドを追加[m
+[32m+[m[32m  function ensureOtherUserNameField() {[m
+[32m+[m[32m      try {[m
+[32m+[m[32m          const otherSection = document.getElementById('otherLocationSection');[m
+[32m+[m[32m          if (!otherSection) return;[m
+[32m+[m
+[32m+[m[32m          // 既に存在する場合は何もしない[m
+[32m+[m[32m          if (document.getElementById('userName')) return;[m
+[32m+[m
+[32m+[m[32m          const locationCategorySelect = document.getElementById('locationCategory');[m
+[32m+[m[32m          const locationGroup = locationCategorySelect && locationCategorySelect.closest('.form-group');[m
+[32m+[m
+[32m+[m[32m          const wrapper = document.createElement('div');[m
+[32m+[m[32m          wrapper.className = 'form-group';[m
+[32m+[m[32m          wrapper.innerHTML = [[m
+[32m+[m[32m              '<label class="required">利用者の名前</label>',[m
+[32m+[m[32m              '<input type="text" id="userName" name="userName" placeholder="利用者の氏名を入力してください">',[m
+[32m+[m[32m              '<span class="error-message">利用者の名前を入力してください</span>'[m
+[32m+[m[32m          ].join('');[m
+[32m+[m
+[32m+[m[32m          if (locationGroup && locationGroup.parentElement === otherSection) {[m
+[32m+[m[32m              otherSection.insertBefore(wrapper, locationGroup);[m
+[32m+[m[32m          } else {[m
+[32m+[m[32m              otherSection.insertBefore(wrapper, otherSection.firstChild);[m
+[32m+[m[32m          }[m
+[32m+[m[32m      } catch (e) {[m
+[32m+[m[32m          console.error('利用者名フィールド生成エラー:', e);[m
+[32m+[m[32m      }[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  // 送信ボタンクリック時のラッパー（「その他」の利用者名必須チェックを追加）[m
+[32m+[m[32m  function handleSubmitClick() {[m
+[32m+[m[32m      const accidentTypeInput = document.querySelector('input[name="accidentType"]:checked');[m
+[32m+[m[32m      if (accidentTypeInput && accidentTypeInput.value === 'other') {[m
+[32m+[m[32m          const userNameField = document.getElementById('userName');[m
+[32m+[m[32m          if (userNameField && !userNameField.value) {[m
+[32m+[m[32m              showError(userNameField);[m
+[32m+[m[32m              alert('利用者の名前を入力してください');[m
+[32m+[m[32m              return;[m
+[32m+[m[32m          }[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      showConfirmModal();[m
+[32m+[m[32m  }[m
+ [m
+ // 事故種類変更時の処理[m
+ function handleAccidentTypeChange(e) {[m
+[36m@@ -453,6 +511,26 @@[m [mfunction handleAccidentTypeChange(e) {[m
+         vehiclePhotos.classList.remove('active');[m
+         otherLocationSection.style.display = 'block';[m
+     }[m
+[32m+[m
+[32m+[m[32m    // 事故種類に応じて「事故現場の写真」の必須を切り替え[m
+[32m+[m[32m    setScenePhotoRequired(e.target.value === 'vehicle');[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m// 「事故現場の写真」を必須/任意に切り替え[m
+[32m+[m[32mfunction setScenePhotoRequired(isRequired) {[m
+[32m+[m[32m    const sceneInput = document.getElementById('scenePhoto');[m
+[32m+[m[32m    // ラベルは scenePhotoUpload の親(.form-group)内の <label>[m
+[32m+[m[32m    const sceneLabel = document.querySelector('#scenePhotoUpload')?.parentElement?.querySelector('label');[m
+[32m+[m[32m    if (!sceneInput) return;[m
+[32m+[m[32m    if (isRequired) {[m
+[32m+[m[32m        sceneInput.setAttribute('required', 'required');[m
+[32m+[m[32m        if (sceneLabel) sceneLabel.classList.add('required');[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m        sceneInput.removeAttribute('required');[m
+[32m+[m[32m        if (sceneLabel) sceneLabel.classList.remove('required');[m
+[32m+[m[32m        // 任意にしたときはエラー表示を消す[m
+[32m+[m[32m        clearError(sceneInput);[m
+[32m+[m[32m    }[m
+ }[m
+ [m
+ // 対物選択時の処理[m
+[36m@@ -861,7 +939,10 @@[m [mfunction buildReportData(formData, photoData) {[m
+         photos: {[m
+             scene: photoData.scene || [][m
+         }[m
+[31m-    };[m
+[32m+[m[32m      };[m
+[32m+[m[41m      [m
+[32m+[m[32m      // �g�p�l��f�[�^�ɒǉ�[m
+[32m+[m[32m      baseData.userName = formData.userName;[m
+     [m
+     // 条件分岐データを追加[m
+     if (formData.accidentType === 'other') {[m
+[36m@@ -1158,8 +1239,9 @@[m [mfunction validateForm() {[m
+         isValid = false;[m
+     }[m
+     [m
+[31m-    // 事故現場の写真チェック[m
+[31m-    if (photoData.scene.length === 0) {[m
+[32m+[m[32m    // 事故現場の写真チェック（車両事故のときのみ必須）[m
+[32m+[m[32m    const selectedTypeForPhoto = document.querySelector('input[name="accidentType"]:checked')?.value;[m
+[32m+[m[32m    if (selectedTypeForPhoto === 'vehicle' && photoData.scene.length === 0) {[m
+         showError(document.getElementById('scenePhoto'));[m
+         isValid = false;[m
+     }[m
+[36m@@ -1377,24 +1459,26 @@[m [masync function submitForm() {[m
+         // 新しいデータ構造に変換[m
+         const reportData = buildReportData(formData, photoData);[m
+         [m
+[31m-        // デバッグ: 送信データを確認[m
+[32m+[m[32m        // デバッグ: 送信データ確認[m
+[32m+[m[32m        console.log('🚚 送信データ確認:', {[m
+             scene: photoData.scene?.length || 0,[m
+             property: photoData.property?.length || 0,[m
+             otherVehicle: photoData.otherVehicle?.length || 0,[m
+             ownVehicle: photoData.ownVehicle?.length || 0,[m
+             license: photoData.license?.length || 0[m
+         });[m
+[31m-        [m
+[32m+[m
+[32m+[m[32m        console.log('📝 事故報告送信開始:', {[m
+[32m+[m[32m            事故種別: reportData.accidentType,[m
+[32m+[m[32m            写真枚数: totalPhotos,[m
+[32m+[m[32m            データサイズ: `${jsonSizeKB}KB`[m
+[32m+[m[32m        });[m
+[32m+[m
+         // データサイズチェック[m
+         const jsonSize = JSON.stringify(reportData).length;[m
+         const jsonSizeKB = (jsonSize / 1024).toFixed(1);[m
+         const totalPhotos = Object.values(reportData.photos).flat().length;[m
+         [m
+[31m-        console.log('📝 事故報告送信開始:', { [m
+[31m-            事故種類: reportData.accidentType, [m
+[31m-            写真枚数: totalPhotos,[m
+[31m-            データサイズ: `${jsonSizeKB}KB`[m
+[31m-        });[m
+         [m
+         // データサイズ制限チェック（5枚の画像でも2MB以内に収まるよう調整）[m
+         if (jsonSize > 2 * 1024 * 1024) { // 2MB以上[m
+[36m@@ -1431,6 +1515,7 @@[m [masync function submitForm() {[m
+             }[m
+         } else if (reportData.accidentType === 'その他') {[m
+             // その他事故の場合の追加フィールド[m
+[32m+[m[32m            formDataParams.append('userName', reportData.userName || '');[m
+             formDataParams.append('otherAccidentCategory', reportData.otherAccidentCategory || '');[m
+             formDataParams.append('locationCategory', reportData.locationCategory || '');[m
+             formDataParams.append('locationDetail', reportData.locationDetail || '');[m
+[36m@@ -1498,3 +1583,5 @@[m [masync function submitForm() {[m
+         sendingMessage.style.display = 'none'; // 送信中メッセージを非表示[m
+     }[m
+ }[m
+[41m+[m
+[41m+[m

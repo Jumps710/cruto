@@ -10,8 +10,8 @@
     </script>
     <script>
         // 動的にCSSを読み込む
-        document.write('<link rel="stylesheet" href="../common/css/base.css?v=' + window.cacheTimestamp + '">');
-        document.write('<link rel="stylesheet" href="css/hospital-report.css?v=' + window.cacheTimestamp + '">');
+        document.write('<link rel="stylesheet" href="base.css?v=' + window.cacheTimestamp + '">');
+        document.write('<link rel="stylesheet" href="hospital-report.css?v=' + window.cacheTimestamp + '">');
     </script>
     <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.7.1/woff.js"></script>
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
@@ -209,6 +209,9 @@
             <div id="confirmContent">
                 <!-- 確認内容がここに表示される -->
             </div>
+            <div id="sendingMessage" style="display: none; color: #FF8F00; font-weight: 600; text-align: center; margin: 16px 0;">
+                送信中です。しばらくお待ちください…
+            </div>
             <div class="modal-buttons">
                 <button type="button" class="btn-cancel" id="cancelBtn">修正する</button>
                 <button type="button" class="btn-confirm" id="confirmBtn">送信する</button>
@@ -232,8 +235,8 @@
 
     <script>
         // 動的にキャッシュバスターを追加
-        document.write('<script src="../common/js/woff-init.js?v=' + window.cacheTimestamp + '"><\/script>');
-        document.write('<script src="js/hospital-report.js?v=' + window.cacheTimestamp + '"><\/script>');
+        document.write('<script src="woff-init.js?v=' + window.cacheTimestamp + '"><\/script>');
+        document.write('<script src="hospital-report.js?v=' + window.cacheTimestamp + '"><\/script>');
     </script>
 </body>
 </html>

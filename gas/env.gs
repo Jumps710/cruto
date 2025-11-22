@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 環境設定 (DEV / PROD を手動で切り替え)
  * CURRENT_ENV の値を変更して使用します。
  */
@@ -24,6 +24,13 @@ const CRUTO_ENVIRONMENTS = Object.freeze({
       BOT_ID: '10724480',
       CHANNEL_ID: '76524c45-5ef0-4673-e4f5-e4710590fa62',
       SPREADSHEET_URL: 'https://docs.google.com/spreadsheets/d/14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0/edit?gid=1986088926#gid=1986088926'
+    }),
+    PDF_SENDER: Object.freeze({
+      BOT_ID: '9946034',
+      CHANNEL_ID: '10187e68-8393-c94b-7ee2-0576afc9d5d4',
+      SPREADSHEET_ID: '1oP-gLA5OQxL0Tm4mXTSQgJy3bPCuoZ75hJwZMoh2ZpU',
+      SHEET_NAME: '相談シート',
+      RANGE_A1: null
     }),
     HOSPITAL: Object.freeze({
       BOT_ID: '9946034',
@@ -55,6 +62,13 @@ const CRUTO_ENVIRONMENTS = Object.freeze({
       BOT_ID: '10724480',
       CHANNEL_ID: '76524c45-5ef0-4673-e4f5-e4710590fa62',
       SPREADSHEET_URL: 'https://docs.google.com/spreadsheets/d/14tWh6likEQcFxTFmpMhCwmap1p5qub-MG5Oxff6YJY0/edit?gid=1986088926#gid=1986088926'
+    }),
+    PDF_SENDER: Object.freeze({
+      BOT_ID: '9946034',
+      CHANNEL_ID: '10187e68-8393-c94b-7ee2-0576afc9d5d4',
+      SPREADSHEET_ID: '1oP-gLA5OQxL0Tm4mXTSQgJy3bPCuoZ75hJwZMoh2ZpU',
+      SHEET_NAME: '相談シート',
+      RANGE_A1: null
     }),
     HOSPITAL: Object.freeze({
       BOT_ID: '9946034',

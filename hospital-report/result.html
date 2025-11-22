@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>送信完了 - 入退院報告</title>
-  <link rel="stylesheet" href="../common/css/base.css">
+  <title>騾∽ｿ｡螳御ｺ・- 蜈･騾髯｢蝣ｱ蜻・/title>
+  <link rel="stylesheet" href="base.css">
   <style>
     .success-container {
       text-align: center;
@@ -136,60 +136,55 @@
 <body>
   <div class="container">
     <div class="success-container">
-      <div class="success-icon">📋</div>
-      <h2 class="success-title">送信が完了しました</h2>
+      <div class="success-icon">搭</div>
+      <h2 class="success-title">騾∽ｿ｡縺悟ｮ御ｺ・＠縺ｾ縺励◆</h2>
       <p class="success-message">
-        入退院報告を受け付けました。<br>
-        ご報告いただき、ありがとうございました。
-      </p>
+        蜈･騾髯｢蝣ｱ蜻翫ｒ蜿励￠莉倥￠縺ｾ縺励◆縲・br>
+        縺泌ｱ蜻翫＞縺溘□縺阪√≠繧翫′縺ｨ縺・＃縺悶＞縺ｾ縺励◆縲・      </p>
       
       <div class="important-notice">
-        <h4>⚠️ 重要なお知らせ</h4>
-        <p>入退院管理システムのN列が自動更新されます。契約状況の変更も反映されますので、関係部署にご確認ください。</p>
+        <h4>笞・・驥崎ｦ√↑縺顔衍繧峨○</h4>
+        <p>蜈･騾髯｢邂｡逅・す繧ｹ繝・Β縺ｮN蛻励′閾ｪ蜍墓峩譁ｰ縺輔ｌ縺ｾ縺吶ょ･醍ｴ・憾豕√・螟画峩繧ょ渚譏縺輔ｌ縺ｾ縺吶・縺ｧ縲・未菫るΚ鄂ｲ縺ｫ縺皮｢ｺ隱阪￥縺縺輔＞縲・/p>
       </div>
       
       <div class="next-steps">
-        <h3>今後の流れ</h3>
+        <h3>莉雁ｾ後・豬√ｌ</h3>
         <ul>
-          <li>報告内容は関係部署に共有されます</li>
-          <li>入退院管理シートが自動更新されます</li>
-          <li>契約終了の場合は事務手続きが開始されます</li>
-          <li>退院・再開予定日が近づきましたら改めてご連絡いたします</li>
+          <li>蝣ｱ蜻雁・螳ｹ縺ｯ髢｢菫るΚ鄂ｲ縺ｫ蜈ｱ譛峨＆繧後∪縺・/li>
+          <li>蜈･騾髯｢邂｡逅・す繝ｼ繝医′閾ｪ蜍墓峩譁ｰ縺輔ｌ縺ｾ縺・/li>
+          <li>螂醍ｴ・ｵゆｺ・・蝣ｴ蜷医・莠句漁謇狗ｶ壹″縺碁幕蟋九＆繧後∪縺・/li>
+          <li>騾髯｢繝ｻ蜀埼幕莠亥ｮ壽律縺瑚ｿ代▼縺阪∪縺励◆繧画隼繧√※縺秘｣邨｡縺・◆縺励∪縺・/li>
         </ul>
       </div>
       
       <div class="action-buttons">
-        <button class="btn-close" onclick="closeApp()">アプリを閉じる</button>
-        <a href="index.html" class="btn-new-report">新しい報告を作成</a>
+        <button class="btn-close" onclick="closeApp()">繧｢繝励Μ繧帝哩縺倥ｋ</button>
+        <a href="index.html" class="btn-new-report">譁ｰ縺励＞蝣ｱ蜻翫ｒ菴懈・</a>
       </div>
     </div>
   </div>
 
   <script>
-    // URLパラメータから報告IDを取得（オプション）
-    const urlParams = new URLSearchParams(window.location.search);
+    // URL繝代Λ繝｡繝ｼ繧ｿ縺九ｉ蝣ｱ蜻蟹D繧貞叙蠕暦ｼ医が繝励す繝ｧ繝ｳ・・    const urlParams = new URLSearchParams(window.location.search);
     const reportId = urlParams.get('id');
     
     if (reportId) {
       const message = document.querySelector('.success-message');
-      message.innerHTML += `<br><small>報告ID: ${reportId}</small>`;
+      message.innerHTML += `<br><small>蝣ｱ蜻蟹D: ${reportId}</small>`;
     }
     
-    // アプリを閉じる機能
+    // 繧｢繝励Μ繧帝哩縺倥ｋ讖溯・
     function closeApp() {
-      // LINE WORKSアプリの場合は閉じる
-      if (typeof woff !== 'undefined' && woff.isInClient()) {
+      // LINE WORKS繧｢繝励Μ縺ｮ蝣ｴ蜷医・髢峨§繧・      if (typeof woff !== 'undefined' && woff.isInClient()) {
         woff.closeWindow();
       } else {
-        // ブラウザの場合は前のページに戻る
-        window.history.back();
+        // 繝悶Λ繧ｦ繧ｶ縺ｮ蝣ｴ蜷医・蜑阪・繝壹・繧ｸ縺ｫ謌ｻ繧・        window.history.back();
       }
     }
     
-    // 自動閉じる機能（オプション）
-    // 45秒後に自動的にアプリを閉じる
+    // 閾ｪ蜍暮哩縺倥ｋ讖溯・・医が繝励す繝ｧ繝ｳ・・    // 45遘貞ｾ後↓閾ｪ蜍慕噪縺ｫ繧｢繝励Μ繧帝哩縺倥ｋ
     setTimeout(() => {
-      const autoClose = confirm('45秒が経過しました。アプリを閉じますか？');
+      const autoClose = confirm('45遘偵′邨碁℃縺励∪縺励◆縲ゅい繝励Μ繧帝哩縺倥∪縺吶°・・);
       if (autoClose) {
         closeApp();
       }

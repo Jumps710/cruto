@@ -1212,8 +1212,18 @@ function closeModal() {
 // フォーム送信
 async function submitForm() {
     const submitBtn = document.getElementById('confirmBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const sendingMessage = document.getElementById('sendingMessage');
     submitBtn.disabled = true;
     submitBtn.textContent = '送信中...';
+
+    if (cancelBtn) {
+        cancelBtn.disabled = true;
+    }
+    if (sendingMessage) {
+        sendingMessage.style.display = 'block';
+    }
+
     
     try {
         // タイムスタンプ追加
@@ -1255,6 +1265,12 @@ async function submitForm() {
     } catch (error) {
         console.error('[ERROR] submit error object:', error);
         alert('送信に失敗しました。もう一度お試しください。\nエラー: ' + error.message);
+        if (cancelBtn) {
+            cancelBtn.disabled = false;
+        }
+        if (sendingMessage) {
+            sendingMessage.style.display = 'none';
+        }
         submitBtn.disabled = false;
         submitBtn.textContent = '送信する';
     }
