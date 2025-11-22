@@ -2,8 +2,7 @@
 
 // 設定
 const config = {
-    // woffId: 'k7_SVZ1p8vy45jQkIRvOUw', // 本番環境のWOFF 
-    woffId: 'EownaFs9auCN-igUa84MDA',// テスト環境のWOFF 
+    woffId: 'k7_SVZ1p8vy45jQkIRvOUw', // 本番環境のWOFF ID
    // gasUrl: 'https://script.google.com/macros/s/AKfycbxD9kzCqRreieyw1WDNADsaw_zLsmYGB6pTiue-5Vuw0-2KcViZ4MNM_TtQkeASIkN7OA/exec', // Cruto様本番環境
     gasUrl: 'https://script.google.com/macros/s/AKfycby5fRaVu5vISA3dvflBAaYXtWtBGXRyWt9HpWYlAiWbqqHzyBxSAt6vpWn6NuWFk8Gj/exec', // 村松テスト
 
@@ -43,27 +42,27 @@ if ('serviceWorker' in navigator) {
 // 初期化
 document.addEventListener('DOMContentLoaded', async function() {
     // バージョン確認用ログ（確認後削除）
-    console.log('🔄 Script loaded: v20250728001, DOMContentLoaded fired');
+    console.log('?? Script loaded: v20250728001, DOMContentLoaded fired');
     
     // フォーム要素の存在確認
     const form = document.getElementById('accidentReportForm');
     const reporter = document.getElementById('reporter');
     const officeContainer = document.getElementById('officeContainer');
     
-    console.log('📋 Elements check:', {
+    console.log('?? Elements check:', {
         form: !!form,
         reporter: !!reporter,
         officeContainer: !!officeContainer
     });
     
     if (!form) {
-        console.error('❌ フォーム要素が見つかりません');
+        console.error('? フォーム要素が見つかりません');
         return;
     }
     
     try {
         // まず最初にイベントリスナーを設定（フォーム操作を即座に有効化）
-        console.log('⚙️ Setting up event listeners...');
+        console.log('?? Setting up event listeners...');
         setupEventListeners();
         // 初期状態では写真は任意（事故種類が未選択 or その他）
         try {
@@ -72,29 +71,29 @@ document.addEventListener('DOMContentLoaded', async function() {
         } catch (_) {
             // 初期化中は無視
         }
-        console.log('✅ Event listeners setup complete');
+        console.log('? Event listeners setup complete');
     } catch (eventError) {
-        console.error('❌ Event listener setup failed:', eventError);
+        console.error('? Event listener setup failed:', eventError);
         return;
     }
     
     try {
         // WOFF初期化
-        console.log('🔄 Starting WOFF initialization...');
+        console.log('?? Starting WOFF initialization...');
         const profile = await WOFFManager.init(config.woffId);
-        console.log('✅ WOFF initialization successful:', profile);
+        console.log('? WOFF initialization successful:', profile);
         
         // 報告者名を設定
         document.getElementById('reporter').value = profile.displayName;
-        console.log('👤 Reporter name set:', profile.displayName);
+        console.log('?? Reporter name set:', profile.displayName);
         
         // 今日の日付を設定（即座に実行）
         const today = new Date();
         document.getElementById('incidentDate').value = today.toISOString().split('T')[0];
-        console.log('📅 Date set:', today.toISOString().split('T')[0]);
+        console.log('?? Date set:', today.toISOString().split('T')[0]);
         
         // ユーザーの組織情報を非同期で取得（ブロッキングしない）
-        console.log('🏢 Getting user organization...');
+        console.log('?? Getting user organization...');
         getUserOrganization(profile.userId);
         
         
@@ -139,7 +138,7 @@ async function getUserOrganization(userId) {
         
         try {
             // GETリクエストでパラメータとして送信（CORS回避）
-            const params = new URLSearchParams(requestData);
+//            const params = new URLSearchParams(requestData);
             const getUrl = `${config.gasUrl}?${params.toString()}`;
             
             response = await fetch(getUrl, {
@@ -254,7 +253,7 @@ async function loadOfficesFromSheet() {
         const requestData = {
             action: 'getOffices'
         };
-        const params = new URLSearchParams(requestData);
+//        const params = new URLSearchParams(requestData);
         const getUrl = `${config.gasUrl}?${params.toString()}`;
         
         const fetchPromise = fetch(getUrl, {
@@ -279,7 +278,7 @@ async function loadOfficesFromSheet() {
             cache.offices = offices;
             cache.officesExpiry = Date.now() + cache.CACHE_DURATION;
             
-            console.log('✅ 事業所一覧取得成功:', offices.length + '件（キャッシュ更新）');
+            console.log('? 事業所一覧取得成功:', offices.length + '件（キャッシュ更新）');
             
             // 現在のofficeSelectの状態を確認
             const officeSelect = document.getElementById('office');
@@ -680,7 +679,7 @@ async function getAddressFromCoordinates(lat, lng) {
                 
                 // Google APIのformatted_addressから日本を除去して使用
                 const formattedAddress = cleanJapaneseAddress(bestResult.formatted_address);
-                console.log('📍 住所取得完了:', formattedAddress);
+                console.log('?? 住所取得完了:', formattedAddress);
                 
                 // Google Maps APIレスポンスをログに送信
                 try {
@@ -701,7 +700,7 @@ async function getAddressFromCoordinates(lat, lng) {
                 return formattedAddress;
             }
         } catch (error) {
-            console.error('❌ Google Maps APIエラー:', error.message);
+            console.error('? Google Maps APIエラー:', error.message);
         }
     }
     
@@ -719,11 +718,11 @@ async function getAddressFromCoordinates(lat, lng) {
         
         if (data && data.display_name) {
             const detailedAddress = formatDetailedJapaneseAddress(data);
-            console.log('📍 住所取得完了 (Nominatim):', detailedAddress);
+            console.log('?? 住所取得完了 (Nominatim):', detailedAddress);
             return detailedAddress;
         }
     } catch (error) {
-        console.error('❌ Nominatim APIエラー:', error.message);
+        console.error('? Nominatim APIエラー:', error.message);
     }
     
     return null;
@@ -942,7 +941,7 @@ function buildReportData(formData, photoData) {
         }
       };
       
-      // �g�p�l��f�[�^�ɒǉ�
+      // ?g?p?l??f?[?^????
       baseData.userName = formData.userName;
     
     // 条件分岐データを追加
@@ -1161,13 +1160,13 @@ function setupPhotoUpload(inputId, uploadDivId, previewId, photoType) {
         for (const file of Array.from(e.target.files)) {
             if (file.type.startsWith('image/')) {
                 try {
-                    console.log(`📷 画像処理開始: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+                    console.log(`?? 画像処理開始: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
                     
                     // 画像を直接圧縮（参考アプリ準拠）
                     const base64 = await compressImageDirect(file);
                     const compressedSize = base64.length * 0.75 / 1024; // Base64サイズからおおよそのKBを計算
                     
-                    console.log(`📷 圧縮完了: ${file.name} → ${compressedSize.toFixed(1)}KB`);
+                    console.log(`?? 圧縮完了: ${file.name} → ${compressedSize.toFixed(1)}KB`);
                     
                     photoData[photoType].push({
                         name: file.name,
@@ -1461,7 +1460,7 @@ async function submitForm() {
         const reportData = buildReportData(formData, photoData);
         
         // デバッグ: 送信データ確認
-        console.log('🚚 送信データ確認:', {
+        console.log('?? 送信データ確認:', {
             scene: photoData.scene?.length || 0,
             property: photoData.property?.length || 0,
             otherVehicle: photoData.otherVehicle?.length || 0,
@@ -1469,27 +1468,27 @@ async function submitForm() {
             license: photoData.license?.length || 0
         });
 
-        console.log('📝 事故報告送信開始:', {
+        console.log('?? 事故報告送信開始:', {
             事故種別: reportData.accidentType,
-            写真枚数: totalPhotos,
-            データサイズ: `${jsonSizeKB}KB`
+//            写真枚数: totalPhotos,
+//            データサイズ: `${jsonSizeKB}KB`
         });
 
         // データサイズチェック
         const jsonSize = JSON.stringify(reportData).length;
-        const jsonSizeKB = (jsonSize / 1024).toFixed(1);
-        const totalPhotos = Object.values(reportData.photos).flat().length;
+//        const jsonSizeKB = (jsonSize / 1024).toFixed(1);
+//        const totalPhotos = Object.values(reportData.photos).flat().length;
         
         
         // データサイズ制限チェック（5枚の画像でも2MB以内に収まるよう調整）
         if (jsonSize > 2 * 1024 * 1024) { // 2MB以上
-            throw new Error(`データサイズが大きすぎます (${jsonSizeKB}KB)。画像を減らすか、より小さい画像を使用してください。`);
+//            throw new Error(`データサイズが大きすぎます (${jsonSizeKB}KB)。画像を減らすか、より小さい画像を使用してください。`);
         }
         
         updateProgress(); // 送信中...
         
         // URLSearchParams形式で送信（参考アプリ準拠）
-        const formDataParams = new URLSearchParams();
+//        const formDataParams = new URLSearchParams();
         formDataParams.append('action', 'submitAccidentReport');
         formDataParams.append('reporterName', reportData.reporterName || '');
         formDataParams.append('office', reportData.office || '');
@@ -1534,9 +1533,9 @@ async function submitForm() {
             }
         });
         
-            写真枚数: totalPhotos,
-            データサイズKB: jsonSizeKB,
-            URLSearchParams文字数: formDataParams.toString().length
+//            写真枚数: totalPhotos,
+//            データサイズKB: jsonSizeKB,
+//            URLSearchParams文字数: formDataParams.toString().length
         });
         
         const response = await fetch(config.gasUrl, {
@@ -1557,7 +1556,7 @@ async function submitForm() {
         if (result.success) {
             updateProgress(); // 保存中...
             
-            console.log('✅ 事故報告送信完了:', { 
+            console.log('? 事故報告送信完了:', { 
                 報告ID: result.reportId, 
                 写真数: result.photoCount 
             });
@@ -1576,7 +1575,7 @@ async function submitForm() {
         }
         
     } catch (error) {
-        console.error('❌ 送信エラー:', error.message);
+        console.error('? 送信エラー:', error.message);
         alert('送信に失敗しました。もう一度お試しください。\nエラー: ' + error.message);
         submitBtn.disabled = false;
         cancelBtn.disabled = false;
