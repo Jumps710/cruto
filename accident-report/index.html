@@ -13,10 +13,10 @@
     <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.7.1/woff.js"></script>
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
-        var vConsole = new VConsole();
-        console.log('[SYSTEM] vConsole初期化完亁E- GPS改喁E�� 20250722');
-        
-        // 強制キャチE��ュクリア
+        window.vConsole = new VConsole();
+        console.log('[SYSTEM] vConsole初期化完了 - GPS対応版 20250722');
+
+        // 強制キャッシュクリア
         if ('caches' in window) {
             caches.keys().then(names => {
                 names.forEach(name => {
@@ -31,12 +31,12 @@
         <h1>事故報告フォーム</h1>
 
         <form id="accidentReportForm">
-            <!-- 基本惁E�� -->
+            <!-- 基本情報 -->
             <div class="form-section">
-                <h2>基本惁E��</h2>
-                
+                <h2>基本情報</h2>
+
                 <div class="form-group">
-                    <label>報告老E/label>
+                    <label>報告者</label>
                     <input type="text" id="reporter" name="reporter" readonly>
                 </div>
 
@@ -44,10 +44,10 @@
                     <label class="required">事業所</label>
                     <div id="officeContainer">
                         <div class="loading-message">
-                            <span class="loading-icon">⌁E/span> 取得中...し�Eらくお征E��ください
+                            <span class="loading-icon">⌛</span> 取得中...しばらくお待ちください
                         </div>
                     </div>
-                    <select id="office" name="office" style="display: none;" required>
+                    <select id="office" name="office" style="display:none;" required>
                         <option value="">選択してください</option>
                     </select>
                     <span class="error-message">事業所を選択してください</span>
@@ -56,20 +56,20 @@
                 <div class="form-group">
                     <label class="required">発生日</label>
                     <input type="date" id="incidentDate" name="incidentDate" required>
-                    <span class="error-message">発生日を�E力してください</span>
+                    <span class="error-message">発生日を入力してください</span>
                 </div>
 
                 <div class="form-group">
                     <label class="required">発生時刻</label>
                     <input type="time" id="incidentTime" name="incidentTime" required>
-                    <span class="error-message">発生時刻を�E力してください</span>
+                    <span class="error-message">発生時刻を入力してください</span>
                 </div>
             </div>
 
-            <!-- 事故種顁E-->
+            <!-- 事故種類 -->
             <div class="form-section">
-                <h2>事故種顁E/h2>
-                
+                <h2>事故種類</h2>
+
                 <div class="form-group">
                     <label class="required">事故の種類を選択してください</label>
                     <div class="radio-group">
@@ -79,18 +79,18 @@
                         </div>
                         <div class="radio-item">
                             <input type="radio" id="typeOther" name="accidentType" value="other" required>
-                            <label for="typeOther">そ�E仁E/label>
+                            <label for="typeOther">その他</label>
                         </div>
                     </div>
                     <span class="error-message">事故種類を選択してください</span>
                 </div>
 
-                <!-- 車両事故の場合�E追加頁E�� -->
+                <!-- 車両事故の場合の追加項目 -->
                 <div id="vehicleSection" class="conditional-section">
                     <div class="form-group">
-                        <label class="required">運転手�E名前</label>
-                        <input type="text" id="driverName" name="driverName" placeholder="運転手�E氏名を�E劁E>
-                        <span class="error-message">運転手�E名前を�E力してください</span>
+                        <label class="required">運転手の名前</label>
+                        <input type="text" id="driverName" name="driverName" placeholder="運転手の氏名を入力してください">
+                        <span class="error-message">運転手の名前を入力してください</span>
                     </div>
 
                     <div class="form-group">
@@ -102,7 +102,7 @@
                             </div>
                             <div class="radio-item">
                                 <input type="radio" id="propertyNo" name="propertyDamage" value="no">
-                                <label for="propertyNo">なぁE/label>
+                                <label for="propertyNo">なし</label>
                             </div>
                         </div>
                     </div>
@@ -110,8 +110,8 @@
                     <div id="propertyDetails" class="conditional-section">
                         <div class="form-group">
                             <label class="required">対物詳細</label>
-                            <textarea id="propertyDetailsText" name="propertyDetailsText" placeholder="対物の詳細を�E力してください"></textarea>
-                            <span class="error-message">対物詳細を�E力してください</span>
+                            <textarea id="propertyDetailsText" name="propertyDetailsText" placeholder="対物の詳細を入力してください"></textarea>
+                            <span class="error-message">対物詳細を入力してください</span>
                         </div>
                     </div>
 
@@ -124,14 +124,14 @@
                             </div>
                             <div class="radio-item">
                                 <input type="radio" id="personalNo" name="personalInjury" value="no">
-                                <label for="personalNo">なぁE/label>
+                                <label for="personalNo">なし</label>
                             </div>
                         </div>
                     </div>
 
                     <div id="injuryDetails" class="conditional-section">
                         <div class="form-group">
-                            <label>負傷老E��褁E��選択可�E�E/label>
+                            <label>負傷者（複数選択可）</label>
                             <div class="checkbox-group">
                                 <div class="checkbox-item">
                                     <input type="checkbox" id="injurySelf" name="injuryType" value="self">
@@ -139,7 +139,7 @@
                                 </div>
                                 <div class="checkbox-item">
                                     <input type="checkbox" id="injuryPassenger" name="injuryType" value="passenger">
-                                    <label for="injuryPassenger">同乗老E/label>
+                                    <label for="injuryPassenger">同乗者</label>
                                 </div>
                                 <div class="checkbox-item">
                                     <input type="checkbox" id="injuryOther" name="injuryType" value="other">
@@ -150,40 +150,53 @@
 
                         <div class="form-group">
                             <label class="required">負傷詳細</label>
-                            <textarea id="injuryDetailsText" name="injuryDetailsText" placeholder="負傷の詳細を�E力してください"></textarea>
-                            <span class="error-message">負傷詳細を�E力してください</span>
+                            <textarea id="injuryDetailsText" name="injuryDetailsText" placeholder="負傷の詳細を入力してください"></textarea>
+                            <span class="error-message">負傷詳細を入力してください</span>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="required">発生場所</label>
                         <div class="location-input">
-                            <input type="text" id="location" name="location" placeholder="住所また�E場所吁E>
+                            <input type="text" id="location" name="location" placeholder="住所または場所を入力してください">
                             <button type="button" class="btn-location" id="getLocationBtn">
-                                📍 位置惁E��取征E                            </button>
+                                📍 位置情報取得
+                            </button>
                         </div>
-                        <span class="help-text">位置惁E��取得また�E手動で入力してください</span>
-                        <span class="error-message">発生場所を�E力してください</span>
+                        <span class="help-text">位置情報を取得または手動で入力してください</span>
+                        <span class="error-message">発生場所を入力してください</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 発生場所�E�その他�E場合！E-->
-            <div id="otherLocationSection" class="form-section" style="display: none;">
+            <!-- 発生場所（その他の場合） -->
+            <div id="otherLocationSection" class="form-section" style="display:none;">
                 <h2>発生場所</h2>
-                
+
                 <div class="form-group">
-                    <label class="required">場所刁E��E/label>
-                    <select id="locationCategory" name="locationCategory">
+                    <label class="required">事故種類（その他）</label>
+                    <select id="otherAccidentCategory" name="otherAccidentCategory">
                         <option value="">選択してください</option>
-                        <option value="訪省E>訪省E/option>
-                        <option value="小�E">小�E</option>
-                        <option value="施設">施設</option>
+                        <option value="転倒・転落">転倒・転落</option>
+                        <option value="接触・衝突">接触・衝突</option>
+                        <option value="誤薬・誤飲">誤薬・誤飲</option>
+                        <option value="その他">その他</option>
                     </select>
-                    <span class="error-message">場所刁E��を選択してください</span>
+                    <span class="error-message">事故種類を選択してください</span>
                 </div>
 
-                <div id="detailLocationDiv" class="form-group" style="display: none;">
+                <div class="form-group">
+                    <label class="required">場所区分</label>
+                    <select id="locationCategory" name="locationCategory">
+                        <option value="">選択してください</option>
+                        <option value="訪看">訪問看護</option>
+                        <option value="小児">小児</option>
+                        <option value="施設">施設</option>
+                    </select>
+                    <span class="error-message">場所区分を選択してください</span>
+                </div>
+
+                <div id="detailLocationDiv" class="form-group" style="display:none;">
                     <label class="required">詳細場所</label>
                     <select id="detailLocation" name="detailLocation">
                         <option value="">選択してください</option>
@@ -191,75 +204,75 @@
                     <span class="error-message">詳細場所を選択してください</span>
                 </div>
 
-                <div id="otherLocationDiv" class="form-group" style="display: none;">
-                    <label class="required">そ�E他�E場所</label>
-                    <input type="text" id="otherLocation" name="otherLocation" placeholder="場所を�E力してください">
-                    <span class="error-message">場所を�E力してください</span>
+                <div id="otherLocationDiv" class="form-group" style="display:none;">
+                    <label class="required">その他の場所</label>
+                    <input type="text" id="otherLocation" name="otherLocation" placeholder="場所を入力してください">
+                    <span class="error-message">場所を入力してください</span>
                 </div>
             </div>
 
-            <!-- 事故冁E��詳細 -->
+            <!-- 事故内容の詳細 -->
             <div class="form-section">
-                <h2>事故冁E��詳細</h2>
-                
+                <h2>事故内容の詳細</h2>
+
                 <div class="form-group">
                     <label class="required">詳細</label>
-                    <textarea id="accidentDetails" name="accidentDetails" rows="5" placeholder="事故の詳細を�E力してください" required></textarea>
-                    <span class="help-text">できるだけ詳しく記�Eしてください�E�いつ、どこで、何が、どのように�E�E/span>
-                    <span class="error-message">事故の詳細を�E力してください</span>
+                    <textarea id="accidentDetails" name="accidentDetails" rows="5" placeholder="事故の詳細を入力してください" required></textarea>
+                    <span class="help-text">できるだけ詳しく記載してください（いつ、どこで、何が、どのように）</span>
+                    <span class="error-message">事故の詳細を入力してください</span>
                 </div>
             </div>
 
-            <!-- 写真アチE�EローチE-->
+            <!-- 写真アップロード -->
             <div class="form-section">
-                <h2>写真アチE�EローチE/h2>
-                
+                <h2>写真アップロード</h2>
+
                 <div class="form-group">
                     <label class="required">事故現場の写真</label>
                     <div class="photo-upload" id="scenePhotoUpload">
-                        <p>📷 写真を選抁E/p>
-                        <p class="help-text">褁E��枚可</p>
+                        <p>📷 写真を選択</p>
+                        <p class="help-text">最大5枚まで</p>
                     </div>
-                    <input type="file" id="scenePhoto" name="scenePhoto" accept="image/*" multiple style="display: none;" required>
+                    <input type="file" id="scenePhoto" name="scenePhoto" accept="image/*" multiple style="display:none;" required>
                     <div class="photo-preview" id="scenePhotoPreview"></div>
-                    <span class="error-message">事故現場の写真めE枚以上アチE�Eロードしてください</span>
+                    <span class="error-message">事故現場の写真を1枚以上アップロードしてください</span>
                 </div>
 
-                <!-- 車両事故の場合�E追加写真 -->
+                <!-- 車両事故の場合の追加写真 -->
                 <div id="vehiclePhotos" class="conditional-section">
                     <div class="form-group">
-                        <label>相手�E車�E写真</label>
+                        <label>相手の車の写真</label>
                         <div class="photo-upload" id="otherVehiclePhotoUpload">
-                            <p>📷 写真を選抁E/p>
+                            <p>📷 写真を選択</p>
                         </div>
-                        <input type="file" id="otherVehiclePhoto" name="otherVehiclePhoto" accept="image/*" multiple style="display: none;">
+                        <input type="file" id="otherVehiclePhoto" name="otherVehiclePhoto" accept="image/*" multiple style="display:none;">
                         <div class="photo-preview" id="otherVehiclePhotoPreview"></div>
                     </div>
 
                     <div class="form-group">
-                        <label>自刁E�E車�E写真</label>
+                        <label>自分の車の写真</label>
                         <div class="photo-upload" id="ownVehiclePhotoUpload">
-                            <p>📷 写真を選抁E/p>
+                            <p>📷 写真を選択</p>
                         </div>
-                        <input type="file" id="ownVehiclePhoto" name="ownVehiclePhoto" accept="image/*" multiple style="display: none;">
+                        <input type="file" id="ownVehiclePhoto" name="ownVehiclePhoto" accept="image/*" multiple style="display:none;">
                         <div class="photo-preview" id="ownVehiclePhotoPreview"></div>
                     </div>
 
-                    <div id="propertyPhotoDiv" class="form-group" style="display: none;">
+                    <div id="propertyPhotoDiv" class="form-group" style="display:none;">
                         <label>対物の写真</label>
                         <div class="photo-upload" id="propertyPhotoUpload">
-                            <p>📷 写真を選抁E/p>
+                            <p>📷 写真を選択</p>
                         </div>
-                        <input type="file" id="propertyPhoto" name="propertyPhoto" accept="image/*" multiple style="display: none;">
+                        <input type="file" id="propertyPhoto" name="propertyPhoto" accept="image/*" multiple style="display:none;">
                         <div class="photo-preview" id="propertyPhotoPreview"></div>
                     </div>
 
-                    <div id="licensePhotoDiv" class="form-group" style="display: none;">
-                        <label>相手�E免許証の写真</label>
+                    <div id="licensePhotoDiv" class="form-group" style="display:none;">
+                        <label>相手の免許証の写真</label>
                         <div class="photo-upload" id="licensePhotoUpload">
-                            <p>📷 写真を選抁E/p>
+                            <p>📷 写真を選択</p>
                         </div>
-                        <input type="file" id="licensePhoto" name="licensePhoto" accept="image/*" style="display: none;">
+                        <input type="file" id="licensePhoto" name="licensePhoto" accept="image/*" style="display:none;">
                         <div class="photo-preview" id="licensePhotoPreview"></div>
                     </div>
                 </div>
@@ -270,27 +283,29 @@
     <!-- 送信ボタン -->
     <div class="submit-section">
         <button type="button" class="btn-submit" id="submitBtn">
-            送信冁E��を確誁E        </button>
+            送信内容を確認
+        </button>
     </div>
 
     <!-- 確認モーダル -->
     <div id="confirmModal" class="modal">
         <div class="modal-content">
-            <h3>送信冁E��の確誁E/h3>
+            <h3>送信内容の確認</h3>
             <div id="confirmContent">
-                <!-- 確認�E容がここに表示されめE-->
+                <!-- JSで確認内容を挿入 -->
             </div>
             <div class="modal-buttons">
                 <button type="button" class="btn-cancel" id="cancelBtn">修正する</button>
                 <button type="button" class="btn-confirm" id="confirmBtn">送信する</button>
             </div>
-            <div id="sendingMessage" style="display: none; color: red; font-weight: bold; text-align: center; margin-top: 10px;">
-                送信中、お征E��ください...
+            <div id="sendingMessage" style="display:none; color:red; font-weight:bold; text-align:center; margin-top:10px;">
+                送信中です。しばらくお待ちください...
             </div>
         </div>
     </div>
 
     <script src="../common/js/woff-init.js?cachebust=20251122001"></script>
-    <script src="js/accident-report.js?cachebust=20251122002"></script>
+    <script src="js/accident-report.js?cachebust=20251122004"></script>
 </body>
 </html>
+
