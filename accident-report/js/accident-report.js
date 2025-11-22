@@ -1488,7 +1488,7 @@ async function submitForm() {
         updateProgress(); // 送信中...
         
         // URLSearchParams形式で送信（参考アプリ準拠）
-//        const formDataParams = new URLSearchParams();
+        const formDataParams = new URLSearchParams();
         formDataParams.append('action', 'submitAccidentReport');
         formDataParams.append('reporterName', reportData.reporterName || '');
         formDataParams.append('office', reportData.office || '');
